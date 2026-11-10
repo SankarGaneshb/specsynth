@@ -183,11 +183,11 @@ python specsynth.py --base s3://bucket/run1 make-ssp --adapter fits --input-file
 
 ## 8. Cosmological Redshift & Realistic Filter Sets
 
-`specsynth` computes Flat $\Lambda\text{CDM}$ cosmological redshift wavelength shifting ($\lambda_{\text{obs}} = \lambda_{\text{rest}}(1+z)$) and projects spectra onto realistic photon-counting filter transmission curves:
+`specsynth` computes Flat $\Lambda\text{CDM}$ cosmological redshift wavelength shifting ($\lambda_{\text{obs}} = \lambda_{\text{rest}}(1+z)$), optional **Madau (1995) IGM attenuation** (`--igm`), and projects spectra onto realistic photon-counting filter transmission curves:
 
 ```bash
-# JWST NIRCam (F090W, F115W, F150W, F200W, F277W, F356W, F444W) at z=2.0
-python specsynth.py --base /tmp/run1 synth --filters jwst_nircam --redshift 2.0
+# JWST NIRCam (F090W..F444W) with Madau IGM attenuation at z=3.5
+python specsynth.py --base /tmp/run1 synth --filters jwst_nircam --redshift 3.5 --igm
 
 # HST ACS & WFC3 (F435W, F606W, F814W, F160W) at z=0.8
 python specsynth.py --base /tmp/run1 synth --filters hst --redshift 0.8
@@ -218,15 +218,27 @@ python specsynth.py --base /tmp/run1 synth --filters jwst_nircam --gpu
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated unit test suite (26 tests)
+# Run automated unit test suite (29 tests)
 pytest -v
 
-# Run local end-to-end pipeline test
+# Run local end-to-end pipeline test with JWST filters and IGM attenuation
 S="python specsynth.py --base /tmp/run1 --workers 2 --memory-limit 1GB"
 $S make-ssp --adapter toy --n-age 40 --n-met 4 --n-wave 2000
 $S make-sfh --n-gal 50000 --chunk 10000
-$S synth --filters jwst_nircam --redshift 1.5
+$S synth --filters jwst_nircam --redshift 2.5 --igm
 $S verify
+```
+
+Upon synthesis completion, `specsynth` displays live in-flight execution telemetry:
+```text
+====================== Performance Telemetry ======================
+  * Elapsed Time       : 0.82s
+  * Throughput         : 60,976 galaxies/s
+  * Processing Rate    : 0.49 GB/s (19.5 GFLOPS)
+  * Workers Active     : 2 (CPU BLAS)
+  * Est. Cloud Cost    : $0.000005 USD
+  * Output Destination : /tmp/run1/spectra.zarr
+===================================================================
 ```
 
 ---
