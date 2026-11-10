@@ -63,6 +63,13 @@ def attenuation_curve(wave: np.ndarray, index: float) -> np.ndarray:
     return ((wave / 5500.0) ** index).astype(np.float32)
 
 
+def planck(wave_A: np.ndarray, T: float) -> np.ndarray:
+    """Planck function blackbody flux in Angstroms."""
+    lam = wave_A * 1e-10
+    x = np.clip(1.4388e-2 / (lam * T), 1e-6, 700)
+    return 1.0 / (lam**5 * np.expm1(x))
+
+
 def _gen_params(block: np.ndarray, seed: int, block_info=None) -> np.ndarray:
     """Generate reproducible physical galaxy parameters per chunk."""
     if block_info is not None and None in block_info:
