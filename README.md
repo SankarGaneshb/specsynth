@@ -47,12 +47,37 @@ CI runs automatically via GitHub Actions across Python 3.10–3.13.
 Any other Dask deployment works the same way: pass its scheduler address with `--scheduler`.
 Use matching Dask/Zarr versions on client and workers.
 
-## Using a real SSP library
+## Using Real SSP Libraries (`make-ssp --adapter`)
 
-`build_toy_ssp()` is a **toy** (blackbody + age-dependent break), included so the pipeline runs
-standalone. For science, write an adapter that fills `ages` (yr, ascending), `mets` (Z),
-`wave` (Å) and `ssp[k, λ]` with `k = i_age * n_met + i_met` (BC03, FSPS, E-MILES, …) and
-writes them to `ssp.zarr` with the same component names. Nothing else changes.
+`specsynth` includes built-in adapters (`specsynth.adapters`) to import and normalize standard astrophysical libraries into `ssp.zarr`:
+
+### 1. Bruzual & Charlot 2003 (BC03)
+Reads binary `.ised` (Fortran unformatted) or exported ASCII tables directly:
+```bash
+# Ingest directory containing multiple metallicity files (e.g. m22..m72)
+python specsynth.py --base s3://bucket/run1 make-ssp --adapter bc03 --input-path /data/bc03/Padova1994/chabrier/
+
+# Or a single .ised file
+python specsynth.py --base s3://bucket/run1 make-ssp --adapter bc03 --input-path /data/bc03/bc2003_lr_m62_chab_ssp.ised
+```
+
+### 2. Astronomical FITS / HDF5 / NPZ Grids (E-MILES, C3K)
+Ingests multi-dimensional spectral grids from FITS HDUs or HDF5 datasets:
+```bash
+python specsynth.py --base s3://bucket/run1 make-ssp --adapter fits --input-file /data/models/emiles_grid.fits
+```
+
+### 3. FSPS (Flexible Stellar Population Synthesis)
+Generates grids dynamically via `python-fsps`:
+```bash
+python specsynth.py --base s3://bucket/run1 make-ssp --adapter fsps --imf chabrier --isochrone mist
+```
+
+### 4. Optional Wavelength Re-gridding
+Any adapter can resample the wavelength grid uniformly:
+```bash
+python specsynth.py --base /tmp/run1 make-ssp --adapter bc03 --input-path ./bc03/ --resample-wave 1000 10000 5000
+```
 
 ## What was tested (sandbox, 1 CPU, 3 GB RAM, local Zarr)
 
