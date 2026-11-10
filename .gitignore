@@ -19,6 +19,7 @@ env/
 *.zarr/
 run1/
 data/
+sample_data/
 tmp/
 
 # Testing & coverage
