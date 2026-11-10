@@ -35,10 +35,10 @@ flowchart TD
     end
 
     subgraph Compute ["Distributed Execution (Dask / Dask-CUDA)"]
-        Scheduler["Dask Scheduler<br/>Dynamic Graph & Memory Backpressure"]
-        W1["Worker 1 (CPU / GPU)<br/>Stream Chunk -> GEMM -> Dust"]
-        W2["Worker 2 (CPU / GPU)<br/>Stream Chunk -> GEMM -> Dust"]
-        W3["Worker N (CPU / GPU)<br/>Stream Chunk -> GEMM -> Dust"]
+        Scheduler["Dask Scheduler<br/>Dynamic Graph and Memory Backpressure"]
+        W1["Worker 1 (CPU / GPU)<br/>Stream Chunk to GEMM to Dust"]
+        W2["Worker 2 (CPU / GPU)<br/>Stream Chunk to GEMM to Dust"]
+        W3["Worker N (CPU / GPU)<br/>Stream Chunk to GEMM to Dust"]
     end
 
     subgraph Output ["Target Products (Zarr)"]
@@ -46,21 +46,21 @@ flowchart TD
         Phot["photometry.zarr<br/>(Broadband Photometry: N x B)"]
     end
 
-    SSP -.->|peer-to-peer broadcast| W1
-    SSP -.->|peer-to-peer broadcast| W2
-    SSP -.->|peer-to-peer broadcast| W3
+    SSP -.->|"peer-to-peer broadcast"| W1
+    SSP -.->|"peer-to-peer broadcast"| W2
+    SSP -.->|"peer-to-peer broadcast"| W3
 
-    GAL -->|stream (chunk x K)| W1
-    GAL -->|stream (chunk x K)| W2
-    GAL -->|stream (chunk x K)| W3
+    GAL -->|"stream (chunk x K)"| W1
+    GAL -->|"stream (chunk x K)"| W2
+    GAL -->|"stream (chunk x K)"| W3
 
     Scheduler --> W1
     Scheduler --> W2
     Scheduler --> W3
 
-    W1 -->|direct chunk write| Phot
-    W2 -->|direct chunk write| Phot
-    W3 -->|direct chunk write| Phot
+    W1 -->|"direct chunk write"| Phot
+    W2 -->|"direct chunk write"| Phot
+    W3 -->|"direct chunk write"| Phot
 ```
 
 ### B. Worker Execution Pipeline (Inside a Single Task)
@@ -72,7 +72,7 @@ flowchart LR
         direction TB
         Input["Galaxy Chunk<br/>(N_chunk x K)"]
         GEMM["Dense Matrix GEMM Contraction<br/>Y = SFH_young @ SSP_young<br/>O = SFH_old @ SSP_old"]
-        Dust["Two-Component Dust Screen<br/>exp(-tau_b*k_b) & exp(-tau_d*k_d)"]
+        Dust["Two-Component Dust Screen<br/>exp(-tau_b*k_b) and exp(-tau_d*k_d)"]
         IGM["Optional Madau (1995) IGM<br/>x T_IGM(lambda, z)"]
         Proj["In-Flight Filter Projection<br/>Phot = Spectra @ FilterMatrix<br/>(W x B)"]
         Write["Direct Zarr Chunk Write<br/>(N_chunk x B)"]
