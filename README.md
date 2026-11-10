@@ -61,19 +61,30 @@ python specsynth.py --base s3://bucket/run1 make-ssp --adapter bc03 --input-path
 python specsynth.py --base s3://bucket/run1 make-ssp --adapter bc03 --input-path /data/bc03/bc2003_lr_m62_chab_ssp.ised
 ```
 
-### 2. Astronomical FITS / HDF5 / NPZ Grids (E-MILES, C3K)
-Ingests multi-dimensional spectral grids from FITS HDUs or HDF5 datasets:
+### 2. E-MILES & MILES (Vazdekis et al.)
+Parses raw directories of individual FITS files (`Ebi1.30Z...T..._baseFe.fits`), reads standard FITS WCS header cards (`CRVAL1`, `CDELT1`), converts $[M/H]$ and $T$ (Gyr) automatically into age-major grids:
 ```bash
-python specsynth.py --base s3://bucket/run1 make-ssp --adapter fits --input-file /data/models/emiles_grid.fits
+python specsynth.py --base s3://bucket/run1 make-ssp --adapter emiles --input-path /data/emiles/Padova1994/
 ```
+*(No `astropy` installation required—includes a built-in pure Python FITS reader!)*
 
 ### 3. FSPS (Flexible Stellar Population Synthesis)
-Generates grids dynamically via `python-fsps`:
+Generates grids dynamically via `python-fsps`, or directly parses raw Fortran FSPS output files:
 ```bash
+# Dynamic generation via python-fsps
 python specsynth.py --base s3://bucket/run1 make-ssp --adapter fsps --imf chabrier --isochrone mist
+
+# Or parse raw Fortran FSPS output text files directly
+python specsynth.py --base s3://bucket/run1 make-ssp --adapter fsps --input-file /data/fsps/OUTPUTS/spstot_chab.spec
 ```
 
-### 4. Optional Wavelength Re-gridding
+### 4. Generic Astronomical Grids (FITS / HDF5 / NPZ)
+Ingests multi-dimensional spectral grids from FITS HDUs, HDF5, or NumPy `.npz` datasets (e.g. C3K, POPSTAR):
+```bash
+python specsynth.py --base s3://bucket/run1 make-ssp --adapter fits --input-file /data/models/custom_grid.fits
+```
+
+### 5. Optional Wavelength Re-gridding
 Any adapter can resample the wavelength grid uniformly:
 ```bash
 python specsynth.py --base /tmp/run1 make-ssp --adapter bc03 --input-path ./bc03/ --resample-wave 1000 10000 5000

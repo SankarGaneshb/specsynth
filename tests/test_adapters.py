@@ -6,6 +6,7 @@ import pytest
 
 from specsynth.adapters import (
     BC03Adapter,
+    EMILESAdapter,
     FITSGridAdapter,
     FSPSAdapter,
     SSPData,
@@ -146,8 +147,66 @@ def test_fits_grid_adapter_npz(tmp_path):
     assert data.ssp.shape == (6, 40)
 
 
+def test_emiles_adapter_directory(tmp_path):
+    # Create mock FITS files matching E-MILES filename conventions:
+    # Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits
+    # Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits
+    n_wave = 10
+    crval1, cdelt1 = 3500.0, 100.0
+    flux = np.ones(n_wave, dtype=">f4") * 2.0
+
+    cards = [
+        "SIMPLE  =                    T / file conforms to FITS standard             ",
+        "BITPIX  =                  -32 / number of bits per data pixel                  ",
+        "NAXIS   =                    1 / number of data axes                            ",
+        f"NAXIS1  =                   {n_wave} / length of data axis 1                         ",
+        f"CRVAL1  =               {crval1} / reference value                              ",
+        f"CDELT1  =                {cdelt1} / coordinate increment                        ",
+        "CRPIX1  =                  1.0 / reference pixel                                ",
+        "END                                                                             ",
+    ]
+    hdr_bytes = "".join(cards).encode("ascii")
+    # Pad to 2880 bytes
+    hdr_bytes += b" " * (2880 - (len(hdr_bytes) % 2880))
+    data_bytes = flux.tobytes()
+    data_bytes += b"\x00" * ((2880 - (len(data_bytes) % 2880)) % 2880)
+
+    f1 = tmp_path / "Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits"
+    f2 = tmp_path / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits"
+    for f in (f1, f2):
+        with open(f, "wb") as fp:
+            fp.write(hdr_bytes)
+            fp.write(data_bytes)
+
+    adapter = EMILESAdapter(path=tmp_path)
+    data = adapter.load()
+    assert len(data.ages) == 2
+    assert len(data.mets) == 2
+    assert len(data.wave) == 10
+    assert np.isclose(data.wave[0], 3500.0)
+    assert np.isclose(data.wave[-1], 3500.0 + 9 * 100.0)
+    assert data.ssp.shape == (4, 10)
+
+
+def test_fsps_adapter_ascii_file(tmp_path):
+    # Mock ASCII spstot_*.spec output from Fortran FSPS
+    wave = np.linspace(1000, 5000, 15)
+    flux1 = np.ones(15) * 0.8
+    flux2 = np.ones(15) * 1.6
+    table = np.column_stack([wave, flux1, flux2])
+
+    fsps_file = tmp_path / "spstot_chabrier.spec"
+    np.savetxt(fsps_file, table, header="15 wavelengths, 2 age steps")
+
+    adapter = FSPSAdapter(filepath=fsps_file, metallicity=0.019)
+    data = adapter.load()
+    assert len(data.wave) == 15
+    assert len(data.mets) == 1
+    assert data.ssp.shape == (2, 15)
+
+
 def test_fsps_adapter_import_error():
-    # If python-fsps is not installed, calling load() should raise an informative ImportError
+    # If python-fsps is not installed, calling load() without a filepath should raise an informative ImportError
     adapter = FSPSAdapter()
     try:
         import fsps

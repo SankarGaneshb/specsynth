@@ -46,6 +46,14 @@ def cmd_make_ssp(a, client: Client):
             "metallicity": a.metallicity,
             "imf": a.imf,
         }
+    elif adapter_name in ("emiles", "e-miles", "miles"):
+        if not a.input_path:
+            raise ValueError("--input-path is required for the emiles adapter")
+        adapter_kwargs = {
+            "path": a.input_path,
+            "z_sun": getattr(a, "z_sun", 0.019),
+            "imf_filter": getattr(a, "imf_filter", None),
+        }
     elif adapter_name in ("fits", "fits_grid", "hdf5", "npz"):
         if not a.input_file:
             raise ValueError("--input-file is required for the fits adapter")
@@ -58,6 +66,7 @@ def cmd_make_ssp(a, client: Client):
         }
     elif adapter_name == "fsps":
         adapter_kwargs = {
+            "filepath": a.input_file if getattr(a, "input_file", None) else None,
             "imf_type": a.imf,
             "isochrone": a.isochrone,
             "add_nebular_emission": a.nebular,
@@ -279,16 +288,18 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument(
         "--adapter",
         default="toy",
-        choices=["toy", "bc03", "fits", "fsps"],
-        help="Model adapter: 'toy' (built-in), 'bc03', 'fits' (or HDF5), 'fsps'",
+        choices=["toy", "bc03", "emiles", "fits", "fsps"],
+        help="Model adapter: 'toy' (built-in), 'bc03', 'emiles', 'fits' (or HDF5), 'fsps'",
     )
     # Toy model options
     s.add_argument("--n-age", type=int, default=60, help="Number of age bins (toy adapter)")
     s.add_argument("--n-met", type=int, default=6, help="Number of metallicity bins (toy adapter)")
     s.add_argument("--n-wave", type=int, default=4000, help="Number of wavelength bins (toy adapter)")
-    # BC03 options
-    s.add_argument("--input-path", help="Path to BC03 file (.ised/.spec) or directory of metallicity files")
+    # BC03 and E-MILES options
+    s.add_argument("--input-path", help="Path to directory or file for BC03 or E-MILES models")
     s.add_argument("--metallicity", type=float, help="Explicit metallicity Z (BC03 single-file mode)")
+    s.add_argument("--z-sun", type=float, default=0.019, help="Solar metallicity mass fraction for E-MILES (default: 0.019)")
+    s.add_argument("--imf-filter", help="IMF substring filter for E-MILES files (e.g. 'bi1.30', 'ku1.30')")
     # FITS / HDF5 options
     s.add_argument("--input-file", help="Path to FITS (.fits), HDF5 (.h5), or NPZ file")
     s.add_argument("--wave-key", default="WAVE", help="Dataset/column name for wavelength in FITS/HDF5")
