@@ -20,7 +20,7 @@ Cloud-agnostic by construction:
   * compute is Dask: LocalCluster for a laptop, or any remote scheduler
     (Kubernetes Dask Operator, Dask-on-Ray, HPC, ...) via --scheduler.
 
-Subcommands:  make-ssp | make-sfh | synth | verify
+Subcommands:  make-ssp | make-sfh | import-catalog | synth | verify | benchmark
 """
 from specsynth.adapters.toy import build_toy_ssp, planck
 from specsynth.cli import main

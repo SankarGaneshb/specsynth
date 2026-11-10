@@ -18,6 +18,8 @@ from specsynth.core import (
     url,
     write_many,
 )
+from specsynth.benchmark import get_system_hardware_info, run_benchmark_suite
+from specsynth.catalog import import_catalog, load_raw_table, resolve_catalog_columns
 from specsynth.cosmology import DEFAULT_COSMOLOGY, FlatLambdaCDM, redshift_flux
 from specsynth.filters import (
     FilterCurve,
@@ -49,8 +51,13 @@ __all__ = [
     "get_filter",
     "build_filter_projection_matrix",
     "flux_to_ab_mag",
-    "is_gpu_available",
     "get_device_info",
+    "is_gpu_available",
     "synth_block_gpu",
     "madau_transmission",
+    "import_catalog",
+    "load_raw_table",
+    "resolve_catalog_columns",
+    "run_benchmark_suite",
+    "get_system_hardware_info",
 ]

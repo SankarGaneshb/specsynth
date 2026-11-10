@@ -237,6 +237,15 @@ def cmd_synth(a, client: Client):
         arrays["spectra"] = spec
     arrays["wave"] = small(wave)
 
+    batch_chunks = getattr(a, "batch_chunks", 0)
+    n_row_blocks = len(sfh.chunks[0])
+    if batch_chunks > 0 and n_row_blocks > batch_chunks:
+        n_batches = (n_row_blocks + batch_chunks - 1) // batch_chunks
+        print(
+            f"Dask Task Graph Pipelining: Processing {n_row_blocks} chunk blocks across {n_batches} "
+            f"scheduler windows ({batch_chunks} blocks/batch) to bound scheduler RAM at scale."
+        )
+
     print(
         f"Synthesising {N:,} galaxies x {W} wavelengths "
         f"(K={K}, chunks of {sfh.chunks[0][0]:,} galaxies, "
@@ -293,6 +302,71 @@ def cmd_synth(a, client: Client):
         f"  * Output Destination : {out}\n"
         f"===================================================================\n"
     )
+
+
+# --------------------------------------------------------------------------
+# import-catalog : ingest external simulation catalogs (FITS, HDF5, CSV, Parquet)
+# --------------------------------------------------------------------------
+def cmd_import_catalog(a, client: Client | None):
+    from specsynth.catalog import import_catalog
+    ssp_store = getattr(a, "ssp_store", None) or url(a.base, "ssp.zarr")
+    gal_store = getattr(a, "output", None) or url(a.base, "galaxies.zarr")
+
+    col_map = {}
+    if getattr(a, "mass_col", None):
+        col_map["mass"] = a.mass_col
+    if getattr(a, "age_col", None):
+        col_map["onset"] = a.age_col
+    if getattr(a, "tau_col", None):
+        col_map["tau"] = a.tau_col
+    if getattr(a, "met_col", None):
+        col_map["met"] = a.met_col
+    if getattr(a, "dust_diffuse_col", None):
+        col_map["tau_diffuse"] = a.dust_diffuse_col
+    if getattr(a, "dust_birth_col", None):
+        col_map["tau_birth"] = a.dust_birth_col
+    if getattr(a, "redshift_col", None):
+        col_map["redshift"] = a.redshift_col
+
+    print(f"Importing simulation catalog: '{a.input_file}' -> {gal_store}...")
+    t0 = time.time()
+    meta = import_catalog(
+        catalog_path=a.input_file,
+        output_zarr=gal_store,
+        ssp_store=ssp_store,
+        chunk_size=a.chunk,
+        explicit_columns=col_map,
+        client=client,
+    )
+    dt = time.time() - t0
+    print(
+        f"Catalog Ingestion Complete [{dt:.1f}s]:\n"
+        f"  * Galaxies Ingested : {meta['n_galaxies']:,}\n"
+        f"  * SFH Grid (K)      : {meta['ssp_grid_k']}\n"
+        f"  * Chunk Size        : {a.chunk:,}\n"
+        f"  * Target Store      : {gal_store}"
+    )
+
+
+# --------------------------------------------------------------------------
+# benchmark : local hardware performance & FLOPs characterization
+# --------------------------------------------------------------------------
+def cmd_benchmark(a, client: Client | None):
+    import json
+    from specsynth.benchmark import print_benchmark_summary, run_benchmark_suite
+
+    print(f"Executing reproducible benchmark suite ({a.n_gal:,} galaxies, {a.n_runs} runs)...")
+    report = run_benchmark_suite(
+        n_gal=a.n_gal,
+        n_runs=a.n_runs,
+        n_warmup=a.n_warmup,
+        enable_gpu=getattr(a, "gpu", False),
+    )
+    print_benchmark_summary(report)
+    out_file = a.output or "benchmark_report.json"
+    with open(out_file, "w") as f:
+        json.dump(report, f, indent=2)
+    print(f"Benchmark provenance report saved to: {out_file}\n")
 
 
 # --------------------------------------------------------------------------
@@ -385,8 +459,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument(
         "--base",
-        required=True,
-        help="Storage base URI, e.g. /data/run1, s3://bucket/run1, gs://bucket/run1",
+        default="./run",
+        help="Storage base URI, e.g. /data/run1, s3://bucket/run1, gs://bucket/run1 (default: ./run)",
     )
     ap.add_argument(
         "--scheduler", help="Dask scheduler address, e.g. tcp://synth-scheduler:8786"
@@ -448,6 +522,30 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--seed", type=int, default=42, help="Random seed for chunk reproducibility")
     s.set_defaults(fn=cmd_make_sfh)
 
+    # import-catalog
+    s = sub.add_parser("import-catalog", help="Import simulation galaxy catalogs (FITS, HDF5, CSV, Parquet, NPZ)")
+    s.add_argument("--input-file", "-i", required=True, help="Path to input catalog file")
+    s.add_argument("--output", "-o", help="Output Zarr store (default: <base>/galaxies.zarr)")
+    s.add_argument("--ssp-store", help="Path to ssp.zarr to project SFH against (default: <base>/ssp.zarr)")
+    s.add_argument("--chunk", type=int, default=50_000, help="Galaxies per chunk")
+    s.add_argument("--mass-col", help="Column name for stellar mass")
+    s.add_argument("--age-col", help="Column name for starburst onset/age")
+    s.add_argument("--tau-col", help="Column name for star formation timescale tau")
+    s.add_argument("--met-col", help="Column name for metallicity")
+    s.add_argument("--dust-diffuse-col", help="Column name for diffuse ISM dust")
+    s.add_argument("--dust-birth-col", help="Column name for birth-cloud dust")
+    s.add_argument("--redshift-col", help="Column name for cosmological redshift")
+    s.set_defaults(fn=cmd_import_catalog)
+
+    # benchmark
+    s = sub.add_parser("benchmark", help="Run local hardware throughput and FLOPs benchmark suite")
+    s.add_argument("--n-gal", type=int, default=50_000, help="Number of galaxies for benchmark workload")
+    s.add_argument("--n-runs", type=int, default=5, help="Number of benchmark trials")
+    s.add_argument("--n-warmup", type=int, default=2, help="Number of warmup trials")
+    s.add_argument("--gpu", action="store_true", help="Include GPU performance benchmark if CuPy available")
+    s.add_argument("--output", "-o", default="benchmark_report.json", help="Path to save JSON benchmark provenance report")
+    s.set_defaults(fn=cmd_benchmark)
+
     # synth and verify
     for name, fn in (("synth", cmd_synth), ("verify", cmd_verify)):
         s = sub.add_parser(name)
@@ -474,6 +572,12 @@ def build_parser() -> argparse.ArgumentParser:
                 help="Re-read SSP from storage per task (for libraries larger than cluster RAM)",
             )
             s.add_argument(
+                "--batch-chunks",
+                type=int,
+                default=0,
+                help="Process galaxy task graph in batches of N chunk row-blocks to bound Dask scheduler memory for billion-galaxy runs",
+            )
+            s.add_argument(
                 "--gpu",
                 action="store_true",
                 help="Enable CuPy GPU acceleration for matrix contractions (falls back to CPU if no GPU)",
@@ -488,6 +592,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main():
     ap = build_parser()
     a = ap.parse_args()
+
+    # For benchmark command, run directly on host without spawning distributed cluster
+    if a.cmd == "benchmark":
+        a.fn(a, None)
+        return
 
     dask.config.set({
         "distributed.worker.memory.target": 0.7,

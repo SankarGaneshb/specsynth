@@ -176,6 +176,8 @@ While Dask provides transparent distributed graphs, submitting millions of indiv
    - The scheduler throttles new chunk reads if downstream workers are writing to storage, preventing OOM spikes.
 3. **Peer-to-Peer Worker Replication**:
    - The SSP library is broadcast once to workers via `client.persist(ssp)` and shared peer-to-peer, eliminating object-store read contention.
+4. **Sliding Window Batch Pipelining (`--batch-chunks B`)**:
+   - For extreme runs ($N \ge 10^8$), passing `--batch-chunks 100` pipelines task graph construction and execution into sliding windows of $B$ chunk blocks. Scheduler memory stays strictly bounded to $O(B)$ instead of growing linearly with $N$.
 
 ---
 
@@ -230,7 +232,33 @@ python specsynth.py --base s3://bucket/run1 make-ssp --adapter fits --input-file
 
 ---
 
-## 8. Cosmological Redshift, Filter Sets & IGM Attenuation
+## 8. External Simulation Catalog Ingestion (IllustrisTNG, EAGLE, SAMs)
+
+In real cosmological workflows, simulated galaxies or star particles already have computed physical properties stored in **FITS tables**, **HDF5**, **Parquet**, **CSV**, or **NPZ** files.
+
+`specsynth import-catalog` directly ingests external catalogs, auto-maps columns (or takes explicit overrides), evaluates the SFH matrix against the target `ssp.zarr`, and populates `galaxies.zarr`:
+
+```bash
+# Ingest an IllustrisTNG or EAGLE galaxy catalog from Parquet or FITS
+python specsynth.py --base /tmp/run1 import-catalog \
+    --input-file /data/simulations/tng100_galaxies.parquet \
+    --chunk 50000
+
+# Ingest HDF5 / FITS with custom column names
+python specsynth.py --base /tmp/run1 import-catalog \
+    --input-file /data/catalogs/subhalos.fits \
+    --mass-col SubhaloMassType_stars \
+    --age-col GFM_StellarFormationTime \
+    --met-col GFM_Metallicity \
+    --dust-diffuse-col Av \
+    --chunk 50000
+```
+- **Auto-conversions**: Automatically detects linear solar masses ($M_* > 100$) and converts to $\log_{10} M_*$; detects linear metallicities ($Z \le 0.2$) and converts to $\log_{10} Z$; converts $A_V$ to optical depth $\tau_V$; derives birth-cloud dust ($\tau_{\text{birth}} = 1.5 \, \tau_{\text{diffuse}}$) if not explicitly present.
+- **Per-Galaxy Redshifts**: Seamlessly imports catalog `redshift` column for mock lightcone surveys.
+
+---
+
+## 9. Cosmological Redshift, Filter Sets & IGM Attenuation
 
 `specsynth` computes Flat $\Lambda\text{CDM}$ cosmological redshift wavelength shifting ($\lambda_{\text{obs}} = \lambda_{\text{rest}}(1+z)$), optional **Madau (1995) IGM attenuation** (`--igm`), and projects spectra onto realistic photon-counting filter transmission curves:
 
@@ -250,7 +278,7 @@ python specsynth.py --base /tmp/run1 synth --filters jwst_f200w,jwst_f444w,hst_f
 
 ---
 
-## 9. GPU Acceleration (CuPy / cuBLAS)
+## 10. GPU Acceleration (CuPy / cuBLAS)
 
 Speed up the matrix contractions (`(N x K) @ (K x W)`) on NVIDIA GPUs using CuPy and tensor cores:
 
@@ -261,13 +289,32 @@ python specsynth.py --base /tmp/run1 synth --filters jwst_nircam --gpu
 
 ---
 
-## 10. Quickstart & Testing
+## 11. Automated Reproducible Benchmark Suite
+
+Users and reviewers can empirically verify exact hardware throughput on their local machine with complete hardware profiling and JSON provenance:
+
+```bash
+# Run local benchmark (50,000 galaxies, 5 runs)
+python specsynth.py benchmark --n-gal 50000 --n-runs 5
+
+# Include GPU benchmarks if CUDA is available
+python specsynth.py benchmark --n-gal 100000 --gpu --output my_benchmark.json
+```
+
+Output includes:
+- **Measured Local Benchmark**: Host OS, CPU processor, physical/logical core counts, total system RAM, BLAS library (`scipy-openblas`, `MKL`, etc.), measured execution time, galaxies/second, compute GFLOPS, and memory bandwidth (GB/s).
+- **Projected Cluster Benchmark**: Extrapolated cluster scaling and spot compute cost estimates ($0.088/hr per 8 vCPUs) at 85-90% weak scaling efficiency.
+- **Machine-Readable Provenance**: Saved directly to `benchmark_report.json` with git commit hash, timestamp, and hardware specs.
+
+---
+
+## 12. Quickstart & Testing
 
 ```bash
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated unit test suite (29 tests)
+# Run automated unit test suite (41 tests)
 pytest -v
 
 # Run local end-to-end pipeline test with JWST filters and IGM attenuation
@@ -294,7 +341,7 @@ $S verify
 
 ---
 
-## 11. Beyond SPS: A General-Purpose Scientific Matrix-Streaming Engine
+## 13. Beyond SPS: A General-Purpose Scientific Matrix-Streaming Engine
 
 While stellar population synthesis is the initial flagship workload, the underlying architectural pattern:
 
@@ -307,7 +354,7 @@ serves as a blueprint for any survey-scale scientific forward model, including:
 
 ---
 
-## 12. Kubernetes Cluster Deployment
+## 14. Kubernetes Cluster Deployment
 
 Deploy on any Kubernetes cluster using the Dask Kubernetes Operator:
 
