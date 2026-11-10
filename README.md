@@ -25,8 +25,35 @@ The problem is embarrassingly parallel over galaxies, so it scales out linearly.
     S="python specsynth.py --base /tmp/run1 --workers 2 --memory-limit 1GB"
     $S make-ssp --n-age 60 --n-met 6 --n-wave 4000
     $S make-sfh --n-gal 1000000 --chunk 20000
-    $S synth                  # add --bands 8 for photometry only
-    $S verify                 # float64 numpy reference on a random sample
+    $S synth --filters jwst_nircam --redshift 1.5   # project onto JWST NIRCam at z=1.5
+    $S verify                                      # float64 numpy reference on a random sample
+
+## Cosmological Redshift & Realistic Filter Sets
+
+`specsynth` computes Flat $\Lambda\text{CDM}$ cosmological redshift wavelength shifting ($\lambda_{\text{obs}} = \lambda_{\text{rest}}(1+z)$) and projects spectra onto realistic photon-counting filter transmission curves:
+
+```bash
+# JWST NIRCam (F090W, F115W, F150W, F200W, F277W, F356W, F444W) at z=2.0
+python specsynth.py --base /tmp/run1 synth --filters jwst_nircam --redshift 2.0
+
+# HST ACS & WFC3 (F435W, F606W, F814W, F160W)
+python specsynth.py --base /tmp/run1 synth --filters hst --redshift 0.8
+
+# Rubin / LSST (u, g, r, i, z, y) or SDSS
+python specsynth.py --base /tmp/run1 synth --filters rubin --redshift 0.3
+
+# Custom combination
+python specsynth.py --base /tmp/run1 synth --filters jwst_f200w,jwst_f444w,hst_f160w
+```
+
+## GPU Acceleration (CuPy / cuBLAS)
+
+Speed up the matrix contractions (`(N x K) @ (K x W)`) on NVIDIA GPUs using CuPy and tensor cores:
+
+```bash
+python specsynth.py --base /tmp/run1 synth --filters jwst_nircam --gpu
+```
+*(If no NVIDIA GPU is available, `--gpu` automatically and silently falls back to optimized CPU BLAS).*
 
 ## Testing
 

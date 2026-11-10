@@ -23,6 +23,14 @@ from specsynth.core import (
     url,
     write_many,
 )
+from specsynth.cosmology import DEFAULT_COSMOLOGY, FlatLambdaCDM, redshift_flux
+from specsynth.filters import (
+    build_filter_projection_matrix,
+    f_lambda_to_f_nu,
+    flux_to_ab_mag,
+    resolve_filter_names,
+)
+from specsynth.gpu import get_device_info, is_gpu_available
 
 
 def _sfh_block(p: np.ndarray, ages: np.ndarray, mets: np.ndarray) -> np.ndarray:
@@ -155,6 +163,11 @@ def cmd_synth(a, client: Client):
     k_d = small(attenuation_curve(wave, a.diffuse_index)).rechunk((ssp.chunks[1],))
     k_b = small(attenuation_curve(wave, a.birth_index)).rechunk((ssp.chunks[1],))
 
+    use_gpu = getattr(a, "gpu", False)
+    if use_gpu:
+        dev_info = get_device_info()
+        print(f"GPU acceleration enabled: {dev_info.get('device_name', 'Device')}")
+
     spec = da.blockwise(
         synth_block,
         "nw",
@@ -173,11 +186,30 @@ def cmd_synth(a, client: Client):
         dtype=np.float32,
         concatenate=True,
         n_young_k=n_young_k,
+        use_gpu=use_gpu,
     )
+
+    redshift = getattr(a, "redshift", 0.0)
+    if redshift > 0.0:
+        print(f"Applying cosmological redshift z = {redshift:.3f}...")
+        dimming = 1.0 / (1.0 + redshift)
+        spec = spec * dimming
+        wave = wave * (1.0 + redshift)
 
     out = url(a.base, "spectra.zarr")
     arrays = {}
-    if a.bands:
+    metadata = {"redshift": redshift}
+
+    filter_req = getattr(a, "filters", None)
+    if filter_req:
+        proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, filter_req)
+        bm = small(proj_mat).rechunk((ssp.chunks[1], (len(filter_names),)))
+        phot = da.matmul(spec, bm)
+        arrays["photometry"] = phot
+        metadata["filters"] = filter_names
+        metadata["pivot_wavelengths"] = pivots
+        print(f"Projecting into {len(filter_names)} filters: {', '.join(filter_names)}")
+    elif a.bands:
         bm = small(band_matrix(wave, a.bands)).rechunk((ssp.chunks[1], (a.bands,)))
         phot = da.matmul(spec, bm)
         arrays["photometry"] = phot  # spectra are streamed through and discarded
@@ -191,7 +223,7 @@ def cmd_synth(a, client: Client):
         f"{len(sfh.chunks[0])} row-blocks)"
     )
     t0 = time.time()
-    write_many(client, out, arrays)
+    write_many(client, out, arrays, metadata=metadata)
     dt = time.time() - t0
     print(f"done in {dt:.1f}s  ({N / dt:,.0f} galaxies/s) -> {out}")
 
@@ -236,11 +268,28 @@ def cmd_verify(a, client: Client):
     ref = np.exp(-td[:, None] * kd) * (
         sfh[:, ny:] @ ssp[ny:] + np.exp(-tb[:, None] * kb) * (sfh[:, :ny] @ ssp[:ny])
     )
+
+    redshift = getattr(a, "redshift", 0.0)
+    if hasattr(g_out, "attrs") and "redshift" in g_out.attrs:
+        redshift = float(g_out.attrs["redshift"])
+
+    if redshift > 0.0:
+        wave = wave * (1.0 + redshift)
+        ref = ref / (1.0 + redshift)
+
     if "spectra" in g_out:
         got = np.stack([g_out["spectra"][i] for i in idx]).astype(np.float64)
     else:
         got = np.stack([g_out["photometry"][i] for i in idx]).astype(np.float64)
-        ref = ref @ band_matrix(wave, got.shape[1]).astype(np.float64)
+        filter_req = getattr(a, "filters", None)
+        if filter_req:
+            p_mat, _, _ = build_filter_projection_matrix(wave, filter_req)
+            ref = ref @ p_mat.astype(np.float64)
+        elif hasattr(g_out, "attrs") and "filters" in g_out.attrs:
+            p_mat, _, _ = build_filter_projection_matrix(wave, g_out.attrs["filters"])
+            ref = ref @ p_mat.astype(np.float64)
+        else:
+            ref = ref @ band_matrix(wave, got.shape[1]).astype(np.float64)
 
     rel = np.abs(got - ref) / (np.abs(ref) + 1e-300)
     print(
@@ -331,6 +380,11 @@ def build_parser() -> argparse.ArgumentParser:
         s = sub.add_parser(name)
         s.add_argument("--diffuse-index", type=float, default=-0.7, help="Diffuse ISM dust power-law index")
         s.add_argument("--birth-index", type=float, default=-1.3, help="Birth cloud dust power-law index")
+        s.add_argument("--redshift", type=float, default=0.0, help="Cosmological redshift z to apply to spectra")
+        s.add_argument(
+            "--filters",
+            help="Filter set or comma-separated filters: 'jwst_nircam', 'hst', 'rubin', 'sdss', 'euclid'",
+        )
         if name == "synth":
             s.add_argument("--chunk", type=int, default=0, help="Rechunk galaxies (0 = keep stored chunks)")
             s.add_argument("--wave-chunk", type=int, default=0, help="Split wavelength axis (0 = whole)")
@@ -344,6 +398,11 @@ def build_parser() -> argparse.ArgumentParser:
                 "--no-persist-ssp",
                 action="store_true",
                 help="Re-read SSP from storage per task (for libraries larger than cluster RAM)",
+            )
+            s.add_argument(
+                "--gpu",
+                action="store_true",
+                help="Enable CuPy GPU acceleration for matrix contractions (falls back to CPU if no GPU)",
             )
         else:
             s.add_argument("--sample", type=int, default=200, help="Sample size to verify against float64 reference")

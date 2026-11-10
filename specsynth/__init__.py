@@ -2,7 +2,7 @@
 specsynth: Distributed, out-of-core stellar population synthesis (SPS).
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 from specsynth.adapters.toy import build_toy_ssp, planck
 from specsynth.core import (
@@ -18,6 +18,14 @@ from specsynth.core import (
     url,
     write_many,
 )
+from specsynth.cosmology import DEFAULT_COSMOLOGY, FlatLambdaCDM, redshift_flux
+from specsynth.filters import (
+    FilterCurve,
+    build_filter_projection_matrix,
+    flux_to_ab_mag,
+    get_filter,
+)
+from specsynth.gpu import get_device_info, is_gpu_available, synth_block_gpu
 
 __all__ = [
     "YOUNG_AGE_YR",
@@ -33,4 +41,14 @@ __all__ = [
     "read_small",
     "write_many",
     "small",
+    "FlatLambdaCDM",
+    "DEFAULT_COSMOLOGY",
+    "redshift_flux",
+    "FilterCurve",
+    "get_filter",
+    "build_filter_projection_matrix",
+    "flux_to_ab_mag",
+    "is_gpu_available",
+    "get_device_info",
+    "synth_block_gpu",
 ]

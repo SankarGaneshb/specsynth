@@ -115,8 +115,13 @@ def synth_block(
     k_d: np.ndarray,
     k_b: np.ndarray,
     n_young_k: int,
+    use_gpu: bool = False,
 ) -> np.ndarray:
-    """One chunk: (n,K)@(K,w) twice, then dust attenuation. Pure numpy, no I/O."""
+    """One chunk: (n,K)@(K,w) twice, then dust attenuation. Pure numpy/CuPy, no I/O."""
+    if use_gpu:
+        from specsynth.gpu import synth_block_gpu
+        return synth_block_gpu(sfh, tau_d, tau_b, ssp, k_d, k_b, n_young_k)
+
     young = sfh[:, :n_young_k] @ ssp[:n_young_k]
     old = sfh[:, n_young_k:] @ ssp[n_young_k:]
     att_b = np.exp(-tau_b[:, None] * k_b[None, :])
