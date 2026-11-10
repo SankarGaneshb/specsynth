@@ -17,25 +17,39 @@ def make_sample_emiles(target_dir: Path):
     flux2 = np.linspace(0.5, 3.5, n_wave, dtype=">f4")
 
     def write_fits_1d(filepath: Path, flux: np.ndarray):
-        cards = [
-            "SIMPLE  =                    T / file conforms to FITS standard             ",
-            "BITPIX  =                  -32 / number of bits per data pixel                  ",
-            "NAXIS   =                    1 / number of data axes                            ",
-            f"NAXIS1  =                  {n_wave:4d} / length of data axis 1                         ",
-            f"CRVAL1  =             {crval1:8.1f} / reference value                              ",
-            f"CDELT1  =               {cdelt1:6.1f} / coordinate increment                        ",
-            "CRPIX1  =                  1.0 / reference pixel                                ",
-            "END                                                                             ",
-        ]
-        hdr_bytes = "".join(cards).encode("ascii")
-        hdr_bytes += b" " * (2880 - (len(hdr_bytes) % 2880))
-        data_bytes = flux.tobytes()
-        rem = len(data_bytes) % 2880
-        if rem != 0:
-            data_bytes += b"\x00" * (2880 - rem)
-        with open(filepath, "wb") as f:
-            f.write(hdr_bytes)
-            f.write(data_bytes)
+        try:
+            from astropy.io import fits
+            hdr = fits.Header()
+            hdr["SIMPLE"] = True
+            hdr["BITPIX"] = -32
+            hdr["NAXIS"] = 1
+            hdr["NAXIS1"] = n_wave
+            hdr["CRVAL1"] = crval1
+            hdr["CDELT1"] = cdelt1
+            hdr["CRPIX1"] = 1.0
+            fits.writeto(filepath, flux.astype(np.float32), hdr, overwrite=True)
+        except ImportError:
+            cards = [
+                "SIMPLE  =                    T",
+                "BITPIX  =                  -32",
+                "NAXIS   =                    1",
+                f"NAXIS1  =                 {n_wave:4d}",
+                f"CRVAL1  =             {crval1:8.1f}",
+                f"CDELT1  =               {cdelt1:6.1f}",
+                "CRPIX1  =                  1.0",
+                "END",
+            ]
+            hdr_bytes = "".join(c.ljust(80) for c in cards).encode("ascii")
+            rem = len(hdr_bytes) % 2880
+            if rem != 0:
+                hdr_bytes += b" " * (2880 - rem)
+            data_bytes = flux.astype(">f4").tobytes()
+            rem_d = len(data_bytes) % 2880
+            if rem_d != 0:
+                data_bytes += b"\x00" * (2880 - rem_d)
+            with open(filepath, "wb") as f:
+                f.write(hdr_bytes)
+                f.write(data_bytes)
 
     f1 = target_dir / "Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits"
     f2 = target_dir / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits"

@@ -153,30 +153,48 @@ def test_emiles_adapter_directory(tmp_path):
     # Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits
     n_wave = 10
     crval1, cdelt1 = 3500.0, 100.0
-    flux = np.ones(n_wave, dtype=">f4") * 2.0
 
-    cards = [
-        "SIMPLE  =                    T / file conforms to FITS standard             ",
-        "BITPIX  =                  -32 / number of bits per data pixel                  ",
-        "NAXIS   =                    1 / number of data axes                            ",
-        f"NAXIS1  =                   {n_wave} / length of data axis 1                         ",
-        f"CRVAL1  =               {crval1} / reference value                              ",
-        f"CDELT1  =                {cdelt1} / coordinate increment                        ",
-        "CRPIX1  =                  1.0 / reference pixel                                ",
-        "END                                                                             ",
-    ]
-    hdr_bytes = "".join(cards).encode("ascii")
-    # Pad to 2880 bytes
-    hdr_bytes += b" " * (2880 - (len(hdr_bytes) % 2880))
-    data_bytes = flux.tobytes()
-    data_bytes += b"\x00" * ((2880 - (len(data_bytes) % 2880)) % 2880)
+    def write_mock_fits(filepath, flux_val):
+        try:
+            from astropy.io import fits
+            hdr = fits.Header()
+            hdr["SIMPLE"] = True
+            hdr["BITPIX"] = -32
+            hdr["NAXIS"] = 1
+            hdr["NAXIS1"] = n_wave
+            hdr["CRVAL1"] = crval1
+            hdr["CDELT1"] = cdelt1
+            hdr["CRPIX1"] = 1.0
+            data = np.full(n_wave, flux_val, dtype=np.float32)
+            fits.writeto(filepath, data, hdr, overwrite=True)
+        except ImportError:
+            cards = [
+                "SIMPLE  =                    T",
+                "BITPIX  =                  -32",
+                "NAXIS   =                    1",
+                f"NAXIS1  =                 {n_wave:4d}",
+                f"CRVAL1  =             {crval1:8.1f}",
+                f"CDELT1  =               {cdelt1:6.1f}",
+                "CRPIX1  =                  1.0",
+                "END",
+            ]
+            hdr_bytes = "".join(c.ljust(80) for c in cards).encode("ascii")
+            rem = len(hdr_bytes) % 2880
+            if rem != 0:
+                hdr_bytes += b" " * (2880 - rem)
+            data = np.full(n_wave, flux_val, dtype=">f4")
+            data_bytes = data.tobytes()
+            rem_d = len(data_bytes) % 2880
+            if rem_d != 0:
+                data_bytes += b"\x00" * (2880 - rem_d)
+            with open(filepath, "wb") as fp:
+                fp.write(hdr_bytes)
+                fp.write(data_bytes)
 
     f1 = tmp_path / "Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits"
     f2 = tmp_path / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits"
-    for f in (f1, f2):
-        with open(f, "wb") as fp:
-            fp.write(hdr_bytes)
-            fp.write(data_bytes)
+    write_mock_fits(f1, 2.0)
+    write_mock_fits(f2, 3.0)
 
     adapter = EMILESAdapter(path=tmp_path)
     data = adapter.load()
