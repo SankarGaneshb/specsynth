@@ -1,0 +1,8 @@
+numpy>=2.0
+dask[distributed]>=2024.12
+zarr>=3.0
+fsspec>=2024.6
+# pick the object-store driver(s) you need:
+# s3fs     # AWS S3, MinIO, Ceph, Cloudflare R2
+# gcsfs    # Google Cloud Storage
+# adlfs    # Azure Blob / ADLS Gen2

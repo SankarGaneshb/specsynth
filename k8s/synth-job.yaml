@@ -1,0 +1,26 @@
+# Runs the whole pipeline as a Job against the Dask cluster above.
+# Change BASE to s3://..., gs://..., or abfs://... - no shared volume required.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: specsynth-run
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: client
+          image: YOUR_REGISTRY/specsynth:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              BASE=s3://YOUR_BUCKET/specsynth/run1
+              S="python /app/specsynth.py --base $BASE --scheduler tcp://synth-scheduler:8786"
+              $S make-ssp --n-age 220 --n-met 6 --n-wave 8000
+              $S make-sfh --n-gal 100000000 --chunk 20000
+              $S synth --bands 12          # or omit --bands to keep full spectra
+              $S verify
+          resources:
+            requests: { cpu: "1", memory: "2Gi" }

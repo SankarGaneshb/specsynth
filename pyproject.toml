@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "specsynth"
+version = "0.1.0"
+description = "Distributed, out-of-core stellar population synthesis (SPS) powered by Dask and Zarr"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Sankar Ganesh" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=2.0",
+    "dask[distributed]>=2024.12",
+    "zarr>=3.0",
+    "fsspec>=2024.6",
+]
+
+[project.optional-dependencies]
+storage = [
+    "s3fs",
+    "gcsfs",
+    "adlfs",
+]
+test = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+specsynth = "specsynth:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
