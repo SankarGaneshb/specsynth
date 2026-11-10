@@ -31,6 +31,7 @@ from specsynth.filters import (
     resolve_filter_names,
 )
 from specsynth.gpu import get_device_info, is_gpu_available
+from specsynth.igm import madau_transmission
 
 
 def _sfh_block(p: np.ndarray, ages: np.ndarray, mets: np.ndarray) -> np.ndarray:
@@ -116,6 +117,19 @@ def cmd_make_sfh(a, client: Client):
     ssp_store = url(a.base, "ssp.zarr")
     ages, mets = read_small(ssp_store, "ages"), read_small(ssp_store, "mets")
     K = len(ages) * len(mets)
+
+    # Task Graph Guard: Prevent scheduler bottlenecks at scale (> 25k tasks)
+    n_tasks = (a.n_gal + a.chunk - 1) // a.chunk
+    if n_tasks > 25_000:
+        recommended_chunk = max(a.chunk, (a.n_gal // 10_000))
+        print(
+            f"Notice [Dask Task Graph Guard]: --chunk {a.chunk} produces {n_tasks:,} tasks, "
+            f"which can bloat scheduler memory.\n"
+            f"  -> Auto-tuning chunk size to {recommended_chunk:,} ({a.n_gal // recommended_chunk:,} tasks) "
+            f"for optimal scheduler throughput."
+        )
+        a.chunk = recommended_chunk
+
     n_full, rem = divmod(a.n_gal, a.chunk)
     row_chunks = (a.chunk,) * n_full + ((rem,) if rem else ())
 
@@ -190,15 +204,21 @@ def cmd_synth(a, client: Client):
     )
 
     redshift = getattr(a, "redshift", 0.0)
+    apply_igm = getattr(a, "igm", False) and redshift > 0.0
     if redshift > 0.0:
         print(f"Applying cosmological redshift z = {redshift:.3f}...")
         dimming = 1.0 / (1.0 + redshift)
         spec = spec * dimming
         wave = wave * (1.0 + redshift)
 
+    if apply_igm:
+        print("Applying Madau (1995) IGM attenuation...")
+        t_igm = madau_transmission(wave, redshift)
+        spec = spec * small(t_igm).rechunk((ssp.chunks[1],))
+
     out = url(a.base, "spectra.zarr")
     arrays = {}
-    metadata = {"redshift": redshift}
+    metadata = {"redshift": redshift, "igm": apply_igm}
 
     filter_req = getattr(a, "filters", None)
     if filter_req:
@@ -218,14 +238,61 @@ def cmd_synth(a, client: Client):
     arrays["wave"] = small(wave)
 
     print(
-        f"synthesising {N:,} galaxies x {W} wavelengths "
+        f"Synthesising {N:,} galaxies x {W} wavelengths "
         f"(K={K}, chunks of {sfh.chunks[0][0]:,} galaxies, "
         f"{len(sfh.chunks[0])} row-blocks)"
     )
     t0 = time.time()
     write_many(client, out, arrays, metadata=metadata)
-    dt = time.time() - t0
-    print(f"done in {dt:.1f}s  ({N / dt:,.0f} galaxies/s) -> {out}")
+    dt = max(time.time() - t0, 0.001)
+
+    # Performance & Cost Telemetry Engine
+    throughput = N / dt
+    # GEMM FLOPs: 2 * (N * K * W) * 2 contractions
+    total_flops = 4.0 * N * K * W
+    gflops = (total_flops / dt) / 1e9
+    # Memory volume processed (SFH: N*K*4 bytes + output spectra/photometry)
+    data_bytes = (N * K * 4) + (N * (len(filter_names) if filter_req else (a.bands or W)) * 4)
+    data_rate_gb_s = (data_bytes / 1e9) / dt
+
+    # Estimated cloud cost based on standard Spot pricing ($0.088/hr per 8 vCPUs)
+    n_workers = len(client.scheduler_info().get("workers", {})) or 1
+    hourly_rate = n_workers * (0.088 / 8.0)
+    est_cost = (dt / 3600.0) * hourly_rate
+
+    telemetry = {
+        "elapsed_seconds": round(dt, 2),
+        "throughput_galaxies_per_sec": round(throughput, 1),
+        "processing_rate_gb_s": round(data_rate_gb_s, 2),
+        "compute_gflops": round(gflops, 1),
+        "estimated_cloud_spot_cost_usd": round(est_cost, 6),
+        "gpu_accelerated": use_gpu,
+        "n_workers": n_workers,
+    }
+    metadata["telemetry"] = telemetry
+
+    # Update metadata with telemetry
+    try:
+        import zarr
+        try:
+            grp = zarr.open_group(out, mode="a")
+        except Exception:
+            import fsspec
+            grp = zarr.open_group(fsspec.get_mapper(out), mode="a")
+        grp.attrs["telemetry"] = telemetry
+    except Exception:
+        pass
+
+    print(
+        f"\n====================== Performance Telemetry ======================\n"
+        f"  * Elapsed Time       : {dt:.2f}s\n"
+        f"  * Throughput         : {throughput:,.0f} galaxies/s\n"
+        f"  * Processing Rate    : {data_rate_gb_s:.2f} GB/s ({gflops:.1f} GFLOPS)\n"
+        f"  * Workers Active     : {n_workers} ({'GPU (CuPy)' if use_gpu else 'CPU BLAS'})\n"
+        f"  * Est. Cloud Cost    : ${est_cost:.6f} USD\n"
+        f"  * Output Destination : {out}\n"
+        f"===================================================================\n"
+    )
 
 
 # --------------------------------------------------------------------------
@@ -273,9 +340,15 @@ def cmd_verify(a, client: Client):
     if hasattr(g_out, "attrs") and "redshift" in g_out.attrs:
         redshift = float(g_out.attrs["redshift"])
 
+    has_igm = getattr(a, "igm", False) or (hasattr(g_out, "attrs") and g_out.attrs.get("igm", False))
+
     if redshift > 0.0:
         wave = wave * (1.0 + redshift)
         ref = ref / (1.0 + redshift)
+
+    if has_igm and redshift > 0.0:
+        t_igm = madau_transmission(wave, redshift).astype(np.float64)
+        ref = ref * t_igm
 
     if "spectra" in g_out:
         got = np.stack([g_out["spectra"][i] for i in idx]).astype(np.float64)
@@ -381,6 +454,7 @@ def build_parser() -> argparse.ArgumentParser:
         s.add_argument("--diffuse-index", type=float, default=-0.7, help="Diffuse ISM dust power-law index")
         s.add_argument("--birth-index", type=float, default=-1.3, help="Birth cloud dust power-law index")
         s.add_argument("--redshift", type=float, default=0.0, help="Cosmological redshift z to apply to spectra")
+        s.add_argument("--igm", action="store_true", help="Apply Madau (1995) IGM attenuation for z > 0")
         s.add_argument(
             "--filters",
             help="Filter set or comma-separated filters: 'jwst_nircam', 'hst', 'rubin', 'sdss', 'euclid'",

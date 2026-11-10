@@ -26,6 +26,7 @@ from specsynth.filters import (
     get_filter,
 )
 from specsynth.gpu import get_device_info, is_gpu_available, synth_block_gpu
+from specsynth.igm import madau_transmission
 
 __all__ = [
     "YOUNG_AGE_YR",
@@ -51,4 +52,5 @@ __all__ = [
     "is_gpu_available",
     "get_device_info",
     "synth_block_gpu",
+    "madau_transmission",
 ]

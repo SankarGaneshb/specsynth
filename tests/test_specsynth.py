@@ -91,3 +91,25 @@ def test_sfh_and_synth_block():
     assert spec.shape == (n_gal, n_wave)
     assert np.all(np.isfinite(spec))
     assert np.all(spec >= 0)
+
+
+def test_wave_chunking_contract():
+    # Verify column-partitioned wavelength contractions
+    n_gal, K, W = 10, 8, 40
+    ny = 3
+    sfh = np.ones((n_gal, K), dtype=np.float32)
+    ssp = np.ones((K, W), dtype=np.float32)
+    td = np.zeros(n_gal, dtype=np.float32)
+    tb = np.zeros(n_gal, dtype=np.float32)
+    kd = np.ones(W, dtype=np.float32)
+    kb = np.ones(W, dtype=np.float32)
+
+    # Full wavelength evaluation
+    full_spec = synth_block(sfh, td, tb, ssp, kd, kb, ny)
+
+    # Split into 2 wavelength chunks of 20 each
+    chunk1_spec = synth_block(sfh, td, tb, ssp[:, :20], kd[:20], kb[:20], ny)
+    chunk2_spec = synth_block(sfh, td, tb, ssp[:, 20:], kd[20:], kb[20:], ny)
+    combined = np.hstack([chunk1_spec, chunk2_spec])
+
+    assert np.allclose(full_spec, combined)
