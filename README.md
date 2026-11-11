@@ -493,6 +493,12 @@ If you use `specsynth` in your research or survey pipeline, please cite our JOSS
 
 ---
 
+## Contributing & Support
+
+Contributions, bug reports, new SSP model adapters, and scaling benchmarks are warmly welcomed! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on submitting pull requests, filing issues, and seeking community support.
+
+---
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
