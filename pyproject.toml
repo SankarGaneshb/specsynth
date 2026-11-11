@@ -8,7 +8,7 @@ version = "0.3.0"
 description = "Distributed, out-of-core stellar population synthesis (SPS) powered by Dask and Zarr"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "Sankar Ganesh", email = "b.sankarganesh@gmail.com" }
 ]
@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "numpy>=2.0",
     "dask[distributed]>=2024.12",
-    "zarr>=3.0",
+    "zarr>=2.16",
     "fsspec>=2024.6",
     "psutil>=5.9",
 ]

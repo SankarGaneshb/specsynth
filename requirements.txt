@@ -1,6 +1,6 @@
 numpy>=2.0
 dask[distributed]>=2024.12
-zarr>=3.0
+zarr>=2.16
 fsspec>=2024.6
 psutil>=5.9
 astropy>=5.0
