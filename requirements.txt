@@ -2,6 +2,10 @@ numpy>=2.0
 dask[distributed]>=2024.12
 zarr>=3.0
 fsspec>=2024.6
+psutil>=5.9
+astropy>=5.0
+h5py>=3.8
+pytest>=7.0
 # pick the object-store driver(s) you need:
 # s3fs     # AWS S3, MinIO, Ceph, Cloudflare R2
 # gcsfs    # Google Cloud Storage
