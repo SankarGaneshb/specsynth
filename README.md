@@ -318,6 +318,10 @@ pip install -r requirements.txt
 # Run automated unit test suite (41 tests)
 pytest -v
 
+# Or run tests with automated cache cleanup (Windows / cross-platform):
+.\test.ps1             # PowerShell
+# or: python scripts/clean.py   # clean caches anytime
+
 # Run local end-to-end pipeline test with JWST filters and IGM attenuation
 S="python specsynth.py --base /tmp/run1 --workers 2 --memory-limit 1GB"
 $S make-ssp --adapter toy --n-age 40 --n-met 4 --n-wave 2000
