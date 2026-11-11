@@ -23,7 +23,7 @@ bibliography: paper.bib
 
 Forward-modeling the synthetic spectra and broadband photometry of billions of simulated galaxies is a foundational requirement for upcoming wide-field cosmological surveys, including the Vera C. Rubin Observatory's Legacy Survey of Space and Time (LSST) [@ivezic2019lsst], the Nancy Grace Roman Space Telescope [@spergel2015wide], and the Euclid Space Mission [@laureijs2011euclid].
 
-Rather than merely synthesizing individual galaxies faster, `specsynth` enables previously impractical **population-scale forward-modeling experiments** involving $10^8 - 10^9$ galaxies. By coupling chunked **Zarr** storage via `fsspec` with **Dask** distributed task graphs [@rocklin2015dask] and optional **CuPy** GPU tensor contractions [@okuta2017cupy], `specsynth` streams galaxy parameters from cloud object stores, contracts them against Simple Stellar Population (SSP) spectral grids in worker cache/VRAM, and projects them in-flight into photometric bandpasses without materializing multi-terabyte intermediate spectra onto disk. This enables generation of full LSST mock universes, Roman survey mocks, Euclid photometric calibration universes, and billion-object statistical color distributions at scales previously computationally inaccessible.
+Rather than merely synthesizing individual galaxies faster, `specsynth` enables previously impractical **population-scale forward-modeling experiments** involving $10^8 - 10^9$ galaxies. By coupling chunked **Zarr** storage via `fsspec` with **Dask** distributed task graphs [@rocklin2015dask] and optional **CuPy** GPU tensor contractions [@okuta2017cupy], `specsynth` streams galaxy parameters from cloud object stores, contracts them against Simple Stellar Population (SSP) spectral grids in worker cache/VRAM, and projects them in-flight into photometric bandpasses without materializing multi-terabyte intermediate spectra onto disk. This architecture is designed to support generation of full LSST mock universes, Roman survey mocks, Euclid photometric calibration universes, and billion-object statistical color distributions at scales previously computationally inaccessible.
 
 # Statement of Need and Comparison with Alternative Architectures
 
@@ -80,66 +80,81 @@ The core execution path is designed around dense matrix multiplication (GEMM) ov
 
 # Performance, Scalability, and Reproducibility
 
-To maintain strict scientific and engineering rigor, `specsynth` evaluates four performance dimensions independently:
+To prevent conflation between verified local executions and multi-node extrapolations, our evaluation explicitly separates **Empirical Measurements** from **Analytical Scaling Projections**.
+
+---
+
+## Empirical Measurements (Host Workstation)
+
+All measurements in this section were executed directly on our reference workstation (`Intel64 Family 6 Model 170`, 12 cores / 14 threads, 15.49 GB RAM, `scipy-openblas`) and recorded in `paper/benchmark_manifest.json`.
 
 ### 1. Numerical Correctness
-Distributed production execution (float32 Dask / Zarr streaming) is verified against an independent serial reference engine evaluated in full **float64 precision** over 2,000 galaxies (K = 60 SSP templates, W = 1,200 wavelength bins) directly captured in `paper/benchmark_manifest.json`:
+Distributed production execution (float32 Dask / Zarr streaming) is verified against an independent serial reference engine evaluated in full **float64 precision** over 2,000 galaxies (K = 60 SSP templates, W = 1,200 wavelength bins):
 
-| Correctness Metric | Value | Numerical Tolerance | Status | Provenance |
-| :--- | :---: | :---: | :---: | :---: |
-| **Max Relative Spectral Error** | **9.87e-7** | < 5.0e-4 | **PASS** | Measured Benchmark |
-| **Mean Relative Spectral Error** | **8.77e-8** | < 1.0e-5 | **PASS** | Measured Benchmark |
-| **Median Relative Spectral Error** | **7.21e-8** | < 1.0e-5 | **PASS** | Measured Benchmark |
-| **Root Mean Square Error (RMSE)** | **2.24e-11** | -- | **PASS** | Measured Benchmark |
+| Correctness Metric | Measured Value | Numerical Tolerance | Status |
+| :--- | :---: | :---: | :---: |
+| **Max Relative Spectral Error** | **9.87e-7** | < 5.0e-4 | **PASS** |
+| **Mean Relative Spectral Error** | **8.77e-8** | < 1.0e-5 | **PASS** |
+| **Median Relative Spectral Error** | **7.21e-8** | < 1.0e-5 | **PASS** |
+| **Root Mean Square Error (RMSE)** | **2.24e-11** | -- | **PASS** |
 
-### 2. Single-Node Performance and Hardware Acceleration
-Evaluated empirically on our reference benchmark workstation (50,000 galaxies, K = 60 age-metallicity bins, W = 1,200 wavelength bins, 5 runs after 2 warmups):
+### 2. Single-Node CPU BLAS Throughput
+Evaluated across 5 timed runs (after 2 warmups) for 50,000 galaxies, K = 60 age-metallicity bins, W = 1,200 wavelength bins:
 
-| Compute Backend | Processor / Device | Throughput | Compute Rate | Provenance |
-| :--- | :--- | :---: | :---: | :---: |
-| **CPU BLAS (`scipy-openblas`)** | Intel64 Family 6 Model 170 (12C / 14T) | **57,978 gal/s** | 17.12 GFLOPS | Measured (`benchmark_manifest.json`) |
-| **GPU (`CuPy / CUDA`)** | NVIDIA CUDA Tensor Core Architecture | **~350,000+ gal/s** | ~100+ GFLOPS | Analytical Compute-Bound Estimate (~6x vs CPU) |
+- **Mean Execution Time**: **0.8624 s** (± 0.0577 s)
+- **Measured Throughput**: **57,978 galaxies/sec** (baseline 172.5 s per 10M galaxies on 1 node)
+- **Compute Utilization**: **17.12 GFLOPS** (`scipy-openblas`)
 
-When an external SSP spectral library exceeds single-worker RAM, the `--wave-chunk` flag partitions the wavelength dimension into streaming slices while keeping the SFH contraction axis contiguous, enabling out-of-core synthesis of arbitrarily large spectral libraries.
+### 3. Out-of-Core Memory Boundedness
+Measured directly via OS kernel working-set tracking (`psutil`) while streaming 100,000 to 1,000,000 galaxies sequentially in 20,000-galaxy chunks (`O(N_chunk)`):
 
-### 3. Distributed Scaling and Memory Boundedness
-Because galaxy chunks are independent and the read-only SSP matrix is broadcast once peer-to-peer via `client.persist(ssp)`, the computational workload scales cleanly across cluster nodes:
+| Streamed Catalog Scale | Measured Peak Resident RAM (RSS) | Monolithic Unchunked Footprint (W=4,000) |
+| :--- | :---: | :---: |
+| **100,000 Galaxies** | **260.6 MB** | 1.49 GB |
+| **250,000 Galaxies** | **260.6 MB** | 3.73 GB |
+| **500,000 Galaxies** | **261.0 MB** | 7.45 GB |
+| **1,000,000 Galaxies** | **261.0 MB** | 14.90 GB |
+
+Across a 10x catalog expansion, worker memory stayed strictly bounded with < 0.2% variance and zero disk spill.
+
+![Figure 4: Measured peak worker RAM vs. monolithic unchunked memory consumption.](figures/fig4_memory_usage.png)
+
+---
+
+## Analytical Scaling Projections and Cloud Economics
+
+The metrics in this section represent analytical extrapolations parameterized by our single-node measured baseline (`57,978 gal/s`) and standard cloud Spot compute pricing.
+
+### 1. Multi-Node Strong and Weak Scaling Models
+Because galaxy chunks are statistically independent and the read-only SSP matrix is broadcast once peer-to-peer via `client.persist(ssp)`, multi-node behavior follows an embarrassingly parallel scaling model with an assumed network/scheduler efficiency decay curve (0.98 at 2 nodes down to 0.75 at 64 nodes):
 
 ![Figure 2: Strong scaling throughput and parallel efficiency on a fixed 10M galaxy catalog.](figures/fig2_strong_scaling.png)
 
-- **Strong Scaling on Fixed 10M Workload** (Figure 2, anchored to our measured 1-worker baseline):
-  - **1 Node / Worker Baseline**: 172.5 s (57,978 gal/s, efficiency 1.00) `[Measured Baseline]`
-  - **2 Nodes**: 88.0 s (113,637 gal/s, efficiency 0.98) `[Analytical Projection]`
-  - **4 Nodes**: 44.9 s (222,636 gal/s, efficiency 0.96) `[Analytical Projection]`
-  - **8 Nodes**: 23.2 s (431,357 gal/s, efficiency 0.93) `[Analytical Projection]`
-  - **16 Nodes**: 12.2 s (816,332 gal/s, efficiency 0.88) `[Analytical Projection]`
-  - **32 Nodes**: 6.6 s (1,521,345 gal/s, efficiency 0.82) `[Analytical Projection]`
+- **Analytical Strong Scaling (Fixed 10M Workload, Figure 2)**:
+  - **2 Nodes**: 88.0 s (113,637 gal/s, eff. 0.98)
+  - **4 Nodes**: 44.9 s (222,636 gal/s, eff. 0.96)
+  - **8 Nodes**: 23.2 s (431,357 gal/s, eff. 0.93)
+  - **16 Nodes**: 12.2 s (816,332 gal/s, eff. 0.88)
+  - **32 Nodes**: 6.6 s (1,521,345 gal/s, eff. 0.82)
 
 ![Figure 3: Weak scaling runtime under constant 500k galaxies/worker load.](figures/fig3_weak_scaling.png)
 
-- **Weak Scaling with Constant 500k Galaxies / Worker Load** (Figure 3):
-  Starting from the measured host execution time of 8.6 s per 500,000 galaxies, weak-scaling analytical modeling predicts near-constant wall-clock runtime across 1 to 32 cluster workers (~8.6 s to ~9.7 s), confirming horizontal scalability without central scheduler contention.
+- **Analytical Weak Scaling (Fixed 500k Galaxies / Worker, Figure 3)**:
+  Anchored to the measured 8.6 s per 500k galaxies on 1 node, analytical modeling indicates near-constant execution time (~8.6 s to ~9.7 s) as cluster size expands to 32 nodes.
 
-![Figure 4: Bounded worker RAM vs. monolithic unchunked memory consumption.](figures/fig4_memory_usage.png)
+### 2. GPU Acceleration Architecture Status
+`specsynth` implements zero-copy CuPy GPU tensor contractions (`specsynth/gpu.py`) with automated numerical equivalence testing against NumPy (`tests/test_gpu.py`) and transparent CPU fallback. Because our local verification workstation lacked a discrete NVIDIA CUDA GPU, empirical multi-GPU throughput measurements (e.g., on NVIDIA A10G or T4 cloud instances) are deferred to future multi-node cluster evaluations.
 
-- **Out-of-Core Memory Boundedness** (Figure 4):
-  Measured directly on the host machine via kernel working-set tracking (`psutil`) while streaming 100,000, 250,000, 500,000, and 1,000,000 galaxies in 20,000-galaxy chunks (`O(N_chunk)`), peak resident memory (RSS) stayed strictly invariant across a 10x catalog expansion:
-  - **100,000 Galaxies**: 260.6 MB `[Measured]`
-  - **250,000 Galaxies**: 260.6 MB `[Measured]`
-  - **500,000 Galaxies**: 261.0 MB `[Measured]`
-  - **1,000,000 Galaxies**: 261.0 MB `[Measured]`
-  In contrast, monolithic in-memory storage of unchunked spectra (W = 4,000) scales linearly into gigabytes and terabytes at survey scale.
-
-### 4. Cloud Economics and Analytical Projections
-Based on standard cloud spot pricing (USD 0.088/hr per 8-vCPU VM) and our measured worker throughput:
+### 3. Cloud Economics Projections
+Using AWS/GCP Spot pricing (USD 0.088/hr per 8-vCPU VM) and our measured worker throughput:
 
 ![Figure 5: Analytical cloud spot compute economics (USD 0.088/hr per 8 vCPU).](figures/fig5_cloud_economics.png)
 
-| Catalog Scale | Synthesized Output (8 Bands) | Estimated Cluster Runtime | Analytical Spot Cost | Provenance |
-| :--- | :---: | :---: | :---: | :---: |
-| **10 Million Galaxies** | 320 MB Photometry | ~24 seconds | **~USD 0.02** | Analytical Projection |
-| **100 Million Galaxies** | 3.2 GB Photometry | ~1.1 minutes | **~USD 0.25** | Analytical Projection |
-| **1 Billion Galaxies** | 32 GB Photometry | ~5.6 minutes (64 nodes) | **~USD 4.20** | Analytical Projection |
+| Survey Catalog Scale | Projected Output (8 Bands) | Analytical Cluster Runtime | Projected Spot Cost |
+| :--- | :---: | :---: | :---: |
+| **10 Million Galaxies** | 320 MB Photometry | ~24 seconds | **~USD 0.02** |
+| **100 Million Galaxies** | 3.2 GB Photometry | ~1.1 minutes | **~USD 0.25** |
+| **1 Billion Galaxies** | 32 GB Photometry | ~5.6 minutes (64 nodes) | **~USD 4.20** |
 
 # Scientific Demonstration: Synthetic JWST NIRCam Population
 
