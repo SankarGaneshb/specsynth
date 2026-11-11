@@ -165,6 +165,10 @@ To demonstrate end-to-end astrophysical utility beyond systems metrics, we execu
 
 Figure 6 displays the resulting Color-Magnitude Diagram (`F200W - F444W` vs. `F200W`, left) colored by diffuse dust optical depth, and the two-color sequence (`F277W - F444W` vs. `F150W - F277W`, right) colored by stellar mass. `specsynth` cleanly recovers the physically expected dust-reddened slope and mass-color correlation across high-redshift populations.
 
+# Limitations
+
+Current empirical evaluation validates numerical correctness, out-of-core memory boundedness, and hardware acceleration across individual CPU workstations and cloud NVIDIA Tesla T4 GPU hosts. Multi-node cluster throughput and billion-object scaling behavior remain analytically modeled based on single-node baselines and parallel scaling assumptions, and will be empirically validated across distributed Kubernetes Dask deployments in future work. Furthermore, `specsynth` is scoped to population-scale forward modeling of composite stellar continua and broadband photometry, omitting radiative transfer photoionization modeling, stellar velocity dispersion kinematics, and active galactic nucleus emission.
+
 # Appendix: Benchmark Provenance and Reproducibility Manifests
 
 All empirical benchmarks, system profiles, and unit test validations reported in this manuscript are machine-verified and stored alongside the codebase in `paper/benchmark_manifest.json` (Local CPU Workstation) and `paper/benchmark_manifest_gpu_t4.json` (Cloud NVIDIA Tesla T4 Node):
