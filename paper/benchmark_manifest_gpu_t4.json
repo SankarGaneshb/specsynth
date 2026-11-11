@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-11-11T18:14:36Z",
+  "provenance_type": "Measured Benchmark (Kaggle Cloud GPU Node)",
+  "provenance": {
+    "correctness": "Measured Empirical",
+    "single_node": "Measured Empirical (CPU BLAS & NVIDIA Tesla T4 GPU)",
+    "distributed_scaling": "Analytical Weak & Strong Scaling (85% Parallel Efficiency)",
+    "cloud_economics": "Analytical Cloud Spot Cost Model"
+  },
+  "workload": {
+    "n_galaxies": 50000,
+    "ssp_grid_k": 60,
+    "n_wavelengths": 1200,
+    "n_runs": 5,
+    "n_warmup": 2,
+    "total_giga_ops": 14.76
+  },
+  "system": {
+    "os": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "python_version": "3.13.16",
+    "cpu_arch": "x86_64",
+    "cpu_processor": "x86_64",
+    "cpu_count_physical": 2,
+    "cpu_count_logical": 4,
+    "total_ram_gb": 31.35,
+    "available_ram_gb": 29.03,
+    "git_commit": "b0cd760",
+    "blas_backend": "scipy-openblas",
+    "gpu_available": true,
+    "gpu_device_name": "Tesla T4",
+    "gpu_cuda_driver_version": "13.0",
+    "gpu_total_memory_gb": 14.56
+  },
+  "category_1_correctness": {
+    "status": "PASS",
+    "sample_size": 2000,
+    "max_relative_error": 9.87e-07,
+    "mean_relative_error": 8.83e-08,
+    "median_relative_error": 7.27e-08,
+    "root_mean_square_error": 2.25e-11
+  },
+  "category_2_single_node": {
+    "cpu_blas": {
+      "mean_elapsed_seconds": 0.8537,
+      "std_elapsed_seconds": 0.0039,
+      "throughput_galaxies_per_sec": 58565.4,
+      "compute_gflops": 17.29,
+      "memory_bandwidth_gb_s": 0.28
+    },
+    "gpu_cupy": {
+      "mean_elapsed_seconds": 0.1966,
+      "std_elapsed_seconds": 0.0053,
+      "throughput_galaxies_per_sec": 254326.3,
+      "compute_gflops": 75.08,
+      "memory_bandwidth_gb_s": 1.2,
+      "speedup_vs_cpu": 4.34
+    }
+  }
+}

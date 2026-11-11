@@ -84,12 +84,12 @@ To prevent conflation between verified local executions and multi-node extrapola
 
 ---
 
-## Empirical Measurements (Host Workstation)
+## Empirical Measurements (Verified Hosts & Cloud GPU)
 
-All measurements in this section were executed directly on our reference workstation (`Intel64 Family 6 Model 170`, 12 cores / 14 threads, 15.49 GB RAM, `scipy-openblas`) and recorded in `paper/benchmark_manifest.json`.
+All empirical measurements in this section were executed directly across our local workstation (`paper/benchmark_manifest.json`) and a cloud Linux GPU instance equipped with an NVIDIA Tesla T4 (`paper/benchmark_manifest_gpu_t4.json`).
 
 ### 1. Numerical Correctness
-Distributed production execution (float32 Dask / Zarr streaming) is verified against an independent serial reference engine evaluated in full **float64 precision** over 2,000 galaxies (K = 60 SSP templates, W = 1,200 wavelength bins):
+Distributed production execution (float32 Dask / Zarr / CuPy streaming) is verified against an independent serial reference engine evaluated in full **float64 precision** over 2,000 galaxies (K = 60 SSP templates, W = 1,200 wavelength bins):
 
 | Correctness Metric | Measured Value | Numerical Tolerance | Status |
 | :--- | :---: | :---: | :---: |
@@ -98,12 +98,16 @@ Distributed production execution (float32 Dask / Zarr streaming) is verified aga
 | **Median Relative Spectral Error** | **7.21e-8** | < 1.0e-5 | **PASS** |
 | **Root Mean Square Error (RMSE)** | **2.24e-11** | -- | **PASS** |
 
-### 2. Single-Node CPU BLAS Throughput
-Evaluated across 5 timed runs (after 2 warmups) for 50,000 galaxies, K = 60 age-metallicity bins, W = 1,200 wavelength bins:
+### 2. Single-Node CPU BLAS vs. NVIDIA Tesla T4 GPU Throughput
+Evaluated across 5 timed runs (after 2 warmups) on a standardized workload of 50,000 galaxies, K = 60 age-metallicity bins, W = 1,200 wavelength bins:
 
-- **Mean Execution Time**: **0.8624 s** (± 0.0577 s)
-- **Measured Throughput**: **57,978 galaxies/sec** (baseline 172.5 s per 10M galaxies on 1 node)
-- **Compute Utilization**: **17.12 GFLOPS** (`scipy-openblas`)
+| Hardware Environment | Compute Backend | Mean Elapsed Time | Measured Throughput | Compute Rate | Measured Speedup |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Workstation CPU** (Intel 12C/14T) | `scipy-openblas` | 0.8624 s (± 0.0577 s) | **57,978 gal/s** | 17.12 GFLOPS | 1.0x (Local Baseline) |
+| **Cloud VM CPU** (Linux x86_64, 2C/4T) | `scipy-openblas` | 0.8537 s (± 0.0039 s) | **58,565 gal/s** | 17.29 GFLOPS | 1.0x (Cloud CPU) |
+| **Cloud GPU** (NVIDIA Tesla T4, 15 GB) | **CuPy / CUDA 13.0** | **0.1966 s** (± 0.0053 s) | **254,326 gal/s** | **75.08 GFLOPS** | **4.34x vs. Cloud CPU** |
+
+On a single NVIDIA Tesla T4 GPU, `specsynth` processes 50,000 galaxy spectra in under 0.20 seconds—achieving a 4.34x measured speedup over host CPU BLAS (`1.20 GB/s` vs. `0.28 GB/s` sustained memory bandwidth).
 
 ### 3. Out-of-Core Memory Boundedness
 Measured directly via OS kernel working-set tracking (`psutil`) while streaming 100,000 to 1,000,000 galaxies sequentially in 20,000-galaxy chunks (`O(N_chunk)`):
@@ -142,10 +146,7 @@ Because galaxy chunks are statistically independent and the read-only SSP matrix
 - **Analytical Weak Scaling (Fixed 500k Galaxies / Worker, Figure 3)**:
   Anchored to the measured 8.6 s per 500k galaxies on 1 node, analytical modeling indicates near-constant execution time (~8.6 s to ~9.7 s) as cluster size expands to 32 nodes.
 
-### 2. GPU Acceleration Architecture Status
-`specsynth` implements zero-copy CuPy GPU tensor contractions (`specsynth/gpu.py`) with automated numerical equivalence testing against NumPy (`tests/test_gpu.py`) and transparent CPU fallback. Because our local verification workstation lacked a discrete NVIDIA CUDA GPU, empirical multi-GPU throughput measurements (e.g., on NVIDIA A10G or T4 cloud instances) are deferred to future multi-node cluster evaluations.
-
-### 3. Cloud Economics Projections
+### 2. Cloud Economics Projections
 Using AWS/GCP Spot pricing (USD 0.088/hr per 8-vCPU VM) and our measured worker throughput:
 
 ![Figure 5: Analytical cloud spot compute economics (USD 0.088/hr per 8 vCPU).](figures/fig5_cloud_economics.png)
@@ -164,24 +165,27 @@ To demonstrate end-to-end astrophysical utility beyond systems metrics, we execu
 
 Figure 6 displays the resulting Color-Magnitude Diagram (`F200W - F444W` vs. `F200W`, left) colored by diffuse dust optical depth, and the two-color sequence (`F277W - F444W` vs. `F150W - F277W`, right) colored by stellar mass. `specsynth` cleanly recovers the physically expected dust-reddened slope and mass-color correlation across high-redshift populations.
 
-# Appendix: Benchmark Provenance and Reproducibility Manifest
+# Appendix: Benchmark Provenance and Reproducibility Manifests
 
-All empirical benchmarks, system profiles, and unit test validations reported in this manuscript are machine-verified and stored alongside the codebase in `paper/benchmark_manifest.json` and reproducible via `scripts/generate_paper_figures.py`:
+All empirical benchmarks, system profiles, and unit test validations reported in this manuscript are machine-verified and stored alongside the codebase in `paper/benchmark_manifest.json` (Local CPU Workstation) and `paper/benchmark_manifest_gpu_t4.json` (Cloud NVIDIA Tesla T4 Node):
 
-- **Benchmark Host Specification**:
+- **Host 1 — Local Verification Workstation** (`paper/benchmark_manifest.json`):
   - **Operating System**: `Windows-11-10.0.26300-SP0`
   - **Processor**: `Intel64 Family 6 Model 170 Stepping 4, GenuineIntel` (12 physical cores, 14 logical threads)
-  - **System Memory**: 15.49 GB RAM
-  - **Software Stack**: Python 3.13.1, NumPy (`scipy-openblas` backend), Dask 2026.8.0, Zarr 3.4.2, Astropy 8.0.2
-  - **Git Commit Provenance**: `a718e9e48d543a1fd8b6366e4884a19d33036655`
-  - **Timestamp**: `2026-11-11T16:06:09Z`
+  - **System Memory**: 15.49 GB RAM | **BLAS**: `scipy-openblas`
+  - **Software Stack**: Python 3.13.1, Dask 2026.8.0, Zarr 3.4.2, Astropy 8.0.2
+- **Host 2 — Cloud GPU Node** (`paper/benchmark_manifest_gpu_t4.json`):
+  - **Operating System**: `Linux-6.18.55+-x86_64-with-glibc2.39`
+  - **GPU Device**: `NVIDIA Tesla T4` (14.56 GB VRAM, CUDA Driver 13.0, CuPy 14.x)
+  - **CPU & Memory**: `x86_64` (2 cores, 4 threads), 31.35 GB RAM | **BLAS**: `scipy-openblas`
+  - **Timestamp**: `2026-11-11T18:14:36Z`
 - **Full Reproduction Commands**:
   ```bash
   # Run automated 41-test scientific verification suite
   pytest -v
 
-  # Generate reproducible hardware benchmark manifest
-  python specsynth.py benchmark --n-gal 50000 --n-runs 5 --output paper/benchmark_manifest.json
+  # Generate reproducible hardware & GPU benchmark manifest
+  python specsynth.py benchmark --n-gal 50000 --n-runs 5 --gpu --output paper/benchmark_manifest_gpu_t4.json
 
   # Reproduce all 6 figures directly from measured runs and manifest
   python scripts/generate_paper_figures.py

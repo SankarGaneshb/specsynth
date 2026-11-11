@@ -130,13 +130,13 @@ To establish scientific fidelity, distributed production runs (float32 Dask / Za
 ### Category II: Single-Node Performance & Acceleration (Experiments 5 & 6)
 
 #### A. CPU BLAS vs. CuPy GPU Acceleration (Experiment 5)
-Evaluated on a standardized workload of 10M galaxies, $K = 240$ age-metallicity bins, $W = 4,000$ wavelength bins:
+Evaluated across 5 timed runs (50,000 galaxies, $K = 60$ age-metallicity bins, $W = 1,200$ wavelength bins):
 
-| Compute Backend | Hardware Model | Workers / Threads | Throughput (Gal/sec) | Compute Rate | Measured Speedup |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **CPU (OpenBLAS)** | Intel Core i7-13700H | 2 workers | **14,500 gal/s** | 4.6 GFLOPS | 1.0x (Baseline) |
-| **CPU (AMD EPYC / Ryzen 9)** | AMD Ryzen 9 7950X (16C) | 8 workers | **56,000 gal/s** | 17.8 GFLOPS | 3.9x |
-| **GPU (CuPy / Tensor Cores)**| NVIDIA A10G (24 GB VRAM) | 1 GPU Worker | **340,000 gal/s** | 108.2 GFLOPS | **23.4x vs Laptop / 6.1x vs Workstation** |
+| Compute Backend | Hardware Model | Workers / Threads | Throughput (Gal/sec) | Compute Rate | Measured Speedup | Provenance |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **CPU (`scipy-openblas`)** | Intel 12C / 14T Workstation | Single-node BLAS | **57,978 gal/s** | 17.12 GFLOPS | 1.0x (Workstation) | `[Measured]` (`benchmark_manifest.json`) |
+| **CPU (`scipy-openblas`)** | Cloud Linux x86_64 (2C / 4T) | Single-node BLAS | **58,565 gal/s** | 17.29 GFLOPS | 1.0x (Cloud CPU) | `[Measured]` (`benchmark_manifest_gpu_t4.json`) |
+| **GPU (CuPy / CUDA 13.0)**| **NVIDIA Tesla T4 (15 GB)** | 1 GPU Worker | **254,326 gal/s** | **75.08 GFLOPS** | **4.34x vs. Cloud CPU** | `[Measured]` (`benchmark_manifest_gpu_t4.json`) |
 
 #### B. Wavelength Chunking Memory Stress Test (Experiment 6)
 Demonstrates out-of-core wavelength partitioning (`--wave-chunk`) when the SSP spectral grid exceeds worker RAM:
