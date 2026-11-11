@@ -1,5 +1,6 @@
 # specsynth: Cloud-Native Infrastructure for Survey-Scale Astrophysical Spectral Synthesis
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SankarGaneshb/specsynth/blob/main/notebooks/quickstart.ipynb)
 [![CI](https://github.com/SankarGaneshb/specsynth/actions/workflows/ci.yml/badge.svg)](https://github.com/SankarGaneshb/specsynth/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
@@ -367,6 +368,22 @@ kubectl apply -f k8s/dask-cluster.yaml
 
 # 3. Submit Synthesis Job
 kubectl apply -f k8s/synth-job.yaml
+```
+
+---
+
+## Citation
+
+If you use `specsynth` in your research or survey pipeline, please cite our JOSS paper (`paper/paper.md`):
+
+```bibtex
+@article{ganesh2026specsynth,
+  title={{specsynth}: Cloud-Native Distributed Infrastructure for Survey-Scale Astrophysical Spectral Synthesis},
+  author={Ganesh, Sankar},
+  journal={Journal of Open Source Software},
+  year={2026},
+  note={Submitted}
+}
 ```
 
 ---
