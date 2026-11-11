@@ -51,6 +51,9 @@ test = [
 [project.scripts]
 specsynth = "specsynth.cli:main"
 
+[tool.setuptools.packages.find]
+include = ["specsynth*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
