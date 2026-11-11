@@ -11,7 +11,7 @@ tags:
   - cupy
 authors:
   - name: Sankar Ganesh
-  - orcid: 0009-0006-1590-1356
+    orcid: 0009-0006-1590-1356
     affiliation: 1
 affiliations:
   - name: Independent Researcher
