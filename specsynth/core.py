@@ -14,7 +14,8 @@ N_PARAM = 6  # log10 M*, t_onset[Gyr], tau[Gyr], log10 Z_centre, tau_diffuse, ta
 
 def url(base: str, name: str) -> str:
     """Format an fsspec URL or filesystem path."""
-    return f"{base.rstrip('/\\')}/{name}"
+    cleaned = base.rstrip("/\\")
+    return f"{cleaned}/{name}"
 
 
 def read_small(store: str, comp: str) -> np.ndarray:
