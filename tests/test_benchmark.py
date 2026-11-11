@@ -48,6 +48,8 @@ def test_print_benchmark_summary(capsys):
     report = run_benchmark_suite(n_gal=100, n_runs=1, n_warmup=1, enable_gpu=False)
     print_benchmark_summary(report)
     captured = capsys.readouterr()
-    assert "SPECSYNTH REPRODUCIBLE BENCHMARK REPORT" in captured.out
-    assert "MEASURED LOCAL BENCHMARK" in captured.out
-    assert "PROJECTED CLUSTER BENCHMARK" in captured.out
+    assert "SPECSYNTH SCIENTIFIC BENCHMARK & SCALING REPORT" in captured.out
+    assert "NUMERICAL CORRECTNESS" in captured.out
+    assert "SINGLE-NODE ACCELERATION" in captured.out
+    assert "DISTRIBUTED SCALING" in captured.out
+    assert "CLOUD ECONOMICS" in captured.out
