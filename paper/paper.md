@@ -41,8 +41,8 @@ Exploring statistical galaxy populations across gigaparsec cosmological volumes 
 | **Physics vs. Execution** | Coupled (integrates per galaxy) | Agnostic | **Decoupled (Offline $K \times W$ basis, online streaming GEMM)** |
 | **Storage Architecture** | POSIX filesystem (NFS / Lustre) | HDFS / Object store (JVM partitioned) | **Cloud object storage (`s3://`, `gs://`, `abfs://`) via Zarr/fsspec** |
 | **Memory Footprint** | Large (stateful models per core) | High (JVM serialization & shuffle) | **Bounded strictly to one chunk ($O(N_{\text{chunk}})$)** |
-| **In-Flight Filter Projection** | ❌ (Must write or retain spectra) | ⚠️ (Requires custom pipeline stages) | **✅ (Streams spectra in L3 cache/VRAM, writes only photometry)** |
-| **GPU Tensor Cores** | ❌ (CPU only) | ⚠️ (Requires specialized plugins) | **✅ (CuPy GEMM with transparent CPU BLAS fallback)** |
+| **In-Flight Filter Projection** | No (Must write or retain spectra) | Partial (Requires custom pipeline stages) | **Yes (Streams spectra in L3 cache/VRAM, writes only photometry)** |
+| **GPU Tensor Cores** | No (CPU only) | Partial (Requires specialized plugins) | **Yes (CuPy GEMM with transparent CPU BLAS fallback)** |
 
 By overcoming these bottlenecks, `specsynth` transforms billion-object synthesis from an intractable supercomputing allocation into a reproducible cloud workflow—enabling full-volume LSST mock universes, Roman survey mocks, Euclid photometric calibration universes, and billion-object statistical color distributions previously beyond reach.
 
