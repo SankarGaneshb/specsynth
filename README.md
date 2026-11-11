@@ -7,7 +7,7 @@
 
 `specsynth` is a distributed, out-of-core stellar population synthesis (SPS) platform designed to forward-model galaxy spectra and broadband photometry at survey scales ($10^7 - 10^9+$ galaxies). By coupling chunked **Zarr** storage over `fsspec` with **Dask** and **CuPy** matrix streaming, `specsynth` eliminates shared-storage bottlenecks and scales linearly from laptops to cloud Kubernetes clusters.
 
-> **Population-Scale Forward Modeling**: Rather than merely synthesizing spectra faster, `specsynth` enables previously impractical population-scale experiments involving **$10^8 - 10^9$ galaxies**—such as full Vera C. Rubin Observatory (LSST) mock universes, Nancy Grace Roman survey simulations, Euclid photometric calibration catalogs, and billion-object color distribution sweeps. The core novelty is empowering astrophysicists to explore statistical galaxy populations at scales previously computationally inaccessible.
+> **Population-Scale Forward Modeling**: Rather than merely synthesizing spectra faster, `specsynth` enables previously impractical population-scale experiments involving **$10^8 - 10^9$ galaxies**—supporting generation of full Vera C. Rubin Observatory (LSST) mock universes, Nancy Grace Roman survey simulations, Euclid photometric calibration catalogs, and billion-object color distribution sweeps. The core novelty is empowering astrophysicists to explore statistical galaxy populations at scales previously computationally inaccessible.
 
 ---
 

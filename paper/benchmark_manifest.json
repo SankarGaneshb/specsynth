@@ -1,0 +1,141 @@
+{
+  "timestamp": "2026-11-11T16:06:09Z",
+  "provenance_type": "Measured Benchmark (Local Hardware)",
+  "provenance": {
+    "correctness": "Measured Empirical",
+    "single_node": "Measured Empirical (Local Hardware)",
+    "distributed_scaling": "Analytical Weak & Strong Scaling (85% Parallel Efficiency)",
+    "cloud_economics": "Analytical Cloud Spot Cost Model"
+  },
+  "workload": {
+    "n_galaxies": 50000,
+    "ssp_grid_k": 60,
+    "n_wavelengths": 1200,
+    "n_runs": 5,
+    "n_warmup": 2,
+    "total_giga_ops": 14.76
+  },
+  "system": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "python_version": "3.13.1",
+    "cpu_arch": "AMD64",
+    "cpu_processor": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
+    "cpu_count_physical": 12,
+    "cpu_count_logical": 14,
+    "total_ram_gb": 15.49,
+    "available_ram_gb": 1.78,
+    "git_commit": "a718e9e48d543a1fd8b6366e4884a19d33036655",
+    "blas_backend": "scipy-openblas",
+    "gpu_available": false
+  },
+  "category_1_correctness": {
+    "status": "PASS",
+    "sample_size": 2000,
+    "max_relative_error": 9.87e-07,
+    "mean_relative_error": 8.77e-08,
+    "median_relative_error": 7.21e-08,
+    "root_mean_square_error": 2.24e-11
+  },
+  "category_2_single_node": {
+    "cpu_blas": {
+      "mean_elapsed_seconds": 0.8624,
+      "std_elapsed_seconds": 0.0577,
+      "throughput_galaxies_per_sec": 57978.1,
+      "compute_gflops": 17.12,
+      "memory_bandwidth_gb_s": 0.27
+    }
+  },
+  "cpu_performance": {
+    "mean_elapsed_seconds": 0.8624,
+    "std_elapsed_seconds": 0.0577,
+    "throughput_galaxies_per_sec": 57978.1,
+    "compute_gflops": 17.12,
+    "memory_bandwidth_gb_s": 0.27
+  },
+  "category_3_distributed_scaling": {
+    "strong_scaling_10m_galaxies": [
+      {
+        "workers": 1,
+        "runtime_seconds": 172.5,
+        "throughput_gal_s": 57978.0,
+        "scaling_efficiency": 1.0
+      },
+      {
+        "workers": 2,
+        "runtime_seconds": 88.0,
+        "throughput_gal_s": 113637.0,
+        "scaling_efficiency": 0.98
+      },
+      {
+        "workers": 4,
+        "runtime_seconds": 44.9,
+        "throughput_gal_s": 222636.0,
+        "scaling_efficiency": 0.96
+      },
+      {
+        "workers": 8,
+        "runtime_seconds": 23.2,
+        "throughput_gal_s": 431357.0,
+        "scaling_efficiency": 0.93
+      },
+      {
+        "workers": 16,
+        "runtime_seconds": 12.2,
+        "throughput_gal_s": 816332.0,
+        "scaling_efficiency": 0.88
+      },
+      {
+        "workers": 32,
+        "runtime_seconds": 6.6,
+        "throughput_gal_s": 1521345.0,
+        "scaling_efficiency": 0.82
+      },
+      {
+        "workers": 64,
+        "runtime_seconds": 3.6,
+        "throughput_gal_s": 2782948.0,
+        "scaling_efficiency": 0.75
+      }
+    ],
+    "weak_scaling_500k_per_worker": {
+      "per_worker_galaxies": 500000,
+      "expected_runtime_seconds": 8.6,
+      "scaling_behavior": "Constant runtime within 5-10% network overhead"
+    },
+    "memory_scalability": {
+      "architecture": "Out-of-core chunk streaming via Zarr",
+      "worker_ram_upper_bound_mb": 550,
+      "spill_to_disk": false
+    }
+  },
+  "projected_cluster_scaling": {
+    "provenance_type": "Analytical Cluster Scaling Model (85% Efficiency)",
+    "assumptions": "Dask distributed cluster on GCP Spot VMs ($0.088/hr per 8 vCPU)",
+    "estimates": {
+      "8_cpu_workers": {
+        "projected_throughput_gal_s": 417442.0,
+        "time_for_1m_galaxies_s": 2.4,
+        "estimated_cost_per_million_usd": 0.0001
+      },
+      "32_cpu_workers": {
+        "projected_throughput_gal_s": 1577004.0,
+        "time_for_100m_galaxies_min": 1.1,
+        "estimated_cost_per_100m_usd": 0.01
+      }
+    }
+  },
+  "category_4_cloud_economics": {
+    "10_million_galaxies": {
+      "runtime_seconds": 24.0,
+      "cost_usd": 0.02
+    },
+    "100_million_galaxies": {
+      "runtime_seconds": 63.4,
+      "cost_usd": 0.25
+    },
+    "1_billion_galaxies": {
+      "runtime_seconds": 336.9,
+      "cost_usd": 4.2
+    }
+  }
+}
