@@ -29,6 +29,17 @@ from specsynth.filters import (
 )
 from specsynth.gpu import get_device_info, is_gpu_available, synth_block_gpu
 from specsynth.igm import madau_transmission
+from specsynth.sentry import (
+    AnomalyRecord,
+    SentryReport,
+    check_energy_conservation,
+    check_finite_positive,
+    check_magnitude_bounds,
+    check_population_bimodality,
+    measure_d4000_break,
+    measure_uv_slope,
+    run_sentry_audit,
+)
 
 __all__ = [
     "YOUNG_AGE_YR",
@@ -60,4 +71,13 @@ __all__ = [
     "resolve_catalog_columns",
     "run_benchmark_suite",
     "get_system_hardware_info",
+    "AnomalyRecord",
+    "SentryReport",
+    "check_finite_positive",
+    "check_energy_conservation",
+    "measure_d4000_break",
+    "measure_uv_slope",
+    "check_magnitude_bounds",
+    "check_population_bimodality",
+    "run_sentry_audit",
 ]

@@ -410,13 +410,30 @@ Output includes:
 
 ---
 
-## 12. Quickstart & Testing
+## 12. Automated Scientific Sentry & Quality Assurance (`specsynth sentry`)
+
+At survey scale ($10^7 - 10^9$ galaxies), human inspection of individual spectra or photometry is impossible. Even if the GEMM engine is mathematically bug-free, cosmological simulation catalogs frequently contain edge-case unphysical subhalos (negative masses, extreme dust optical depths, unphysical burst ages).
+
+`specsynth` includes an automated four-tier **Scientific Sentry** (`specsynth/sentry.py`) to safeguard catalog fidelity:
+1. **Tier 1 (Fast Numerical Invariants)**: Vectorized bitmasks detect `NaN`, `+Inf`, `-Inf`, non-positive fluxes ($F \le 0$), and energy conservation violations ($\int F_{\text{attenuated}} d\lambda \le \int F_{\text{intrinsic}} d\lambda$).
+2. **Tier 2 (Astrophysical & Spectral Diagnostics)**: Measures the Balogh et al. (1999) narrow $D_n(4000)$ break ($0.95 \le D_n(4000) \le 2.50$), Calzetti UV continuum slope $\beta_{\text{UV}}$ ($-2.80 \le \beta \le +1.80$), and apparent AB magnitude bounds ($10 \le m_{\text{AB}} \le 35$).
+3. **Tier 3 (Population Benchmark Validation)**: Analyzes Color-Magnitude Diagram dispersion and color sequences to prevent degenerate population collapse.
+4. **Tier 4 (Non-Stop Quarantine & Agentic Diagnosis)**: Corrupt subhalos are isolated into `sentry_quarantine/` and flagged in a companion `is_valid` array without crashing long-running cloud cluster jobs. Generates machine-readable `sentry_report.json` and executive `sentry_report.md`.
+
+```bash
+# Run standalone QA audit on 50,000 sampled galaxies
+specsynth sentry --base /data/run1 --sample 50000 --output sentry_report.json --markdown-report sentry_report.md
+```
+
+---
+
+## 13. Quickstart & Testing
 
 ```bash
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated unit test suite (41 tests)
+# Run automated unit test suite (51 tests)
 pytest -v
 
 # Or run tests with automated cache cleanup (Windows / cross-platform):
@@ -429,6 +446,9 @@ $S make-ssp --adapter toy --n-age 40 --n-met 4 --n-wave 2000
 $S make-sfh --n-gal 50000 --chunk 10000
 $S synth --filters jwst_nircam --redshift 2.5 --igm
 $S verify
+
+# Run automated Scientific Sentry QA audit across synthesized catalogs
+python specsynth.py sentry --base /tmp/run1 --sample 50000 --output sentry_report.json --markdown-report sentry_report.md
 ```
 
 ### Sample Measured Execution Output
@@ -447,7 +467,7 @@ $S verify
 
 ---
 
-## 13. Beyond SPS: A General-Purpose Scientific Matrix-Streaming Engine
+## 14. Beyond SPS: A General-Purpose Scientific Matrix-Streaming Engine
 
 While stellar population synthesis is the initial flagship workload, the underlying architectural pattern:
 
@@ -460,7 +480,7 @@ serves as a blueprint for any survey-scale scientific forward model, including:
 
 ---
 
-## 14. Kubernetes Cluster Deployment
+## 15. Kubernetes Cluster Deployment
 
 Deploy on any Kubernetes cluster using the Dask Kubernetes Operator:
 
@@ -490,6 +510,16 @@ If you use `specsynth` in your research or survey pipeline, please cite our JOSS
   note={Submitted}
 }
 ```
+
+---
+
+## Acknowledgements & Scientific Foundations
+
+`specsynth` builds upon decades of foundational work across astrophysics and distributed scientific computing:
+* **Two-Component Dust Formulation**: Dr. Stéphane Charlot and Dr. S. Michael Fall ([Charlot & Fall 2000, ApJ 539: 718](https://doi.org/10.1086/309250)), which enabled turning synthesis into dense linear matrix contractions ($\mathbf{SFH} \times \mathbf{SSP}$).
+* **Analytic IGM Transmission**: Prof. Piero Madau ([Madau 1995, ApJ 441: 18](https://doi.org/10.1086/175332)) for cosmological Lyman series and Lyman limit continuum absorption.
+* **Stellar Population Synthesis Libraries**: Dr. Gustavo Bruzual & Dr. Stéphane Charlot (GALAXEV / BC03), Prof. Charlie Conroy (FSPS), Dr. Alexandre Vazdekis and the E-MILES team, and Assoc. Prof. J. J. Eldridge & Prof. Elizabeth Stanway (BPASS).
+* **Distributed & HPC Ecosystem**: Dr. Matthew Rocklin and the Dask community, Zarr, Astropy, CuPy, and NumPy.
 
 ---
 

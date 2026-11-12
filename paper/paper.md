@@ -28,21 +28,22 @@ Rather than merely synthesizing individual galaxies faster, `specsynth` enables 
 
 # Statement of Need and Comparison with Alternative Architectures
 
-Exploring statistical galaxy populations across gigaparsec cosmological volumes requires evaluating spectral energy distributions (SEDs) across $10^7 - 10^9+$ simulated objects from hydrodynamical boxes and Semi-Analytic Models (e.g., IllustrisTNG [@pillepich2018simulating], EAGLE). Existing computational paradigms cannot tractably sustain these population-scale experiments due to three architectural bottlenecks:
+Exploring statistical galaxy populations across gigaparsec cosmological volumes requires evaluating spectral energy distributions (SEDs) across $10^7 - 10^9+$ simulated objects from hydrodynamical boxes and Semi-Analytic Models (e.g., IllustrisTNG [@pillepich2018simulating], EAGLE). Existing computational paradigms cannot tractably sustain these population-scale experiments due to four architectural bottlenecks:
 
 1. **Standalone SPS Wrappers (e.g., FSPS + MPI or Dask Bags)**: Codes such as FSPS [@conroy2009propagation] and BC03 [@bruzual2003stellar] were designed for single-galaxy precision. Wrapping them in parallel loops (e.g., via `mpi4py` or `dask.bag.map`) requires shipping complex C/Fortran state to worker processes. Because these integrators re-evaluate stellar evolutionary tracks and interpolate isochrones per galaxy, they incur severe worker initialization latency, high per-worker memory footprints, and redundant computations.
 2. **General-Purpose Big Data Engines (Apache Spark, Ray)**: Distributed engines such as Apache Spark [@zaharia2016apache] and Ray [@moritz2018ray] are optimized for tabular relational joins, row-level transformations, and distributed machine learning. However, they lack native zero-copy integration with high-performance BLAS/CuPy tensor contractions, introduce substantial JVM-Python serialization overhead when transferring large dense spectral arrays, and lack direct chunked streaming from Zarr without POSIX filesystem mounts.
 3. **In-Memory Array Processing (NumPy, SciPy)**: Standard scientific Python workflows [@harris2020array] rely on allocating monolithic arrays in RAM. Storing high-resolution spectra ($W \approx 4,000 - 10,000$ wavelength bins) for $10^8$ galaxies requires hundreds of terabytes of memory, inevitably triggering out-of-memory (OOM) crashes or exhausting local scratch disks.
+4. **Differentiable & Neural Emulator Frameworks (DSPS, SPECULATOR)**: Differentiable SPS frameworks such as `DSPS` [@hearin2023dsps] provide GPU auto-differentiation for parameter inference, while neural network emulators like `SPECULATOR` [@alsing2020speculator] achieve millisecond spectral approximation. However, differentiable codes remain constrained to in-memory GPU buffers without out-of-core cloud streaming, while deep-learning emulators introduce surrogate approximation errors and require expensive retraining whenever stellar evolution libraries, IMFs, or dust models are modified. `specsynth` instead provides an exact, first-principles physical pipeline that streams directly out-of-core to billion-galaxy survey volumes.
 
 `specsynth` resolves these challenges by reformulating stellar population synthesis as a **cloud-native, linear matrix-streaming pipeline**:
 
-| Architectural Dimension | Standalone SPS Wrappers (FSPS + MPI) | General Big Data (Spark / Ray) | **`specsynth` (This Work)** |
-| :--- | :--- | :--- | :--- |
-| **Physics vs. Execution** | Coupled (integrates per galaxy) | Agnostic | **Decoupled (Offline $K \times W$ basis, online streaming GEMM)** |
-| **Storage Architecture** | POSIX filesystem (NFS / Lustre) | HDFS / Object store (JVM partitioned) | **Cloud object storage (`s3://`, `gs://`, `abfs://`) via Zarr/fsspec** |
-| **Memory Footprint** | Large (stateful models per core) | High (JVM serialization & shuffle) | **Bounded strictly to one chunk ($O(N_{\text{chunk}})$)** |
-| **In-Flight Filter Projection** | No (Must write or retain spectra) | Partial (Requires custom pipeline stages) | **Yes (Streams spectra in L3 cache/VRAM, writes only photometry)** |
-| **GPU Tensor Cores** | No (CPU only) | Partial (Requires specialized plugins) | **Yes (CuPy GEMM with transparent CPU BLAS fallback)** |
+| Architectural Dimension | Standalone SPS Wrappers (FSPS + MPI) | Differentiable / Emulators (DSPS / SPECULATOR) | General Big Data (Spark / Ray) | **`specsynth` (This Work)** |
+| :--- | :--- | :--- | :--- | :--- |
+| **Physics vs. Execution** | Coupled (integrates per galaxy) | Neural surrogate or auto-diff | Agnostic | **Decoupled (Offline $K \times W$ basis, online streaming GEMM)** |
+| **Storage Architecture** | POSIX filesystem (NFS / Lustre) | Host / GPU VRAM allocation | HDFS / Object store (JVM partitioned) | **Cloud object storage (`s3://`, `gs://`, `abfs://`) via Zarr/fsspec** |
+| **Memory Footprint** | Large (stateful models per core) | Bounded by GPU memory (OOM risk) | High (JVM serialization & shuffle) | **Bounded strictly to one chunk ($O(N_{\text{chunk}})$)** |
+| **In-Flight Filter Projection** | No (Must write or retain spectra) | Custom tensor operations | Partial (Requires custom pipeline stages) | **Yes (Streams spectra in L3 cache/VRAM, writes only photometry)** |
+| **GPU Tensor Cores** | No (CPU only) | Yes (JAX / PyTorch) | Partial (Requires specialized plugins) | **Yes (CuPy GEMM with transparent CPU BLAS fallback)** |
 
 By overcoming these bottlenecks, `specsynth` transforms billion-object synthesis from an intractable supercomputing allocation into a reproducible cloud workflow—enabling full-volume LSST mock universes, Roman survey mocks, Euclid photometric calibration universes, and billion-object statistical color distributions previously beyond reach.
 
@@ -72,12 +73,13 @@ The core execution path is designed around dense matrix multiplication (GEMM) ov
 
 ![Figure 1: Streaming worker execution pipeline with in-flight filter projection.](figures/fig1_pipeline.png)
 
-1. **Pluggable Model Adapters**: Standardized adapters convert raw spectral libraries into immutable Zarr basis matrices ($K \times W$), supporting Bruzual & Charlot (2003) `.ised` binary/ASCII tables [@bruzual2003stellar], E-MILES FITS headers [@vazdekis2016uv], FSPS grids [@conroy2009propagation], and generic multi-dimensional FITS/HDF5/NPZ datasets.
+1. **Pluggable Model Adapters**: Standardized adapters convert raw spectral libraries into immutable Zarr basis matrices ($K \times W$), supporting Bruzual & Charlot (2003) `.ised` binary/ASCII tables [@bruzual2003stellar], E-MILES FITS headers [@vazdekis2016uv], FSPS grids [@conroy2009propagation], binary stellar population models such as BPASS [@eldridge2017binary], and generic multi-dimensional FITS/HDF5/NPZ datasets.
 2. **In-Flight Filter Projection**: When broadband photometry is requested (`--filters` or `--bands`), the intermediate spectrum $\mathbf{F}_{\text{chunk}}$ is projected in-flight into $B$ photometric bands:
    $$\mathbf{Phot} = \mathbf{F}_{\text{chunk}} \times \mathbf{M}_{\text{filter}}$$
    Full spectra are streamed through worker cache/VRAM and discarded, reducing persistent cloud storage by **$>99.9\%$** ($3.2\text{ GB}$ vs. $3.2\text{ TB}$ for $10^8$ galaxies).
 3. **Simulation Catalog Ingestion (`import-catalog`)**: Native ingestion of cosmological simulation catalogs from Parquet, FITS, HDF5, CSV, and NPZ formats, automatically mapping physical columns (mass, age, metallicity, dust) to SFH parameter matrices.
-4. **Task Graph Guard and Batch Pipelining (`--batch-chunks`)**: For billion-object simulations ($N \ge 10^8$), submitting millions of chunk tasks bloats the centralized Dask scheduler memory. `specsynth` enforces an automatic task graph guard (keeping total graph tasks $< 25,000$) and provides a sliding-window batch pipeline (`--batch-chunks`) that bounds scheduler memory strictly to $O(B)$ chunks.
+4. **Task Graph Guard and Batch Pipelining (`--batch-chunks`)**: For billion-object simulations ($N \ge 10^8$), submitting millions of chunk tasks bloats the centralized Dask scheduler memory. `specsynth` enforces an automatic task guard (keeping total graph tasks $< 25,000$) and provides a sliding-window batch pipeline (`--batch-chunks`) that bounds scheduler memory strictly to $O(B)$ chunks.
+5. **Automated Scientific Sentry & Quality Assurance (`specsynth sentry`)**: At survey scale ($10^7 - 10^9$ galaxies), human inspection of individual spectra is impossible, yet simulation subhalos frequently harbor unphysical edge cases. `specsynth` integrates a high-throughput, four-tier quality sentry enforcing numerical finiteness, energy conservation ($\int F_{\text{attenuated}} d\lambda \le \int F_{\text{intrinsic}} d\lambda$), physical $D_n(4000)$ break ranges ($[0.95, 2.50]$), and UV continuum slope limits ($\beta_{\text{UV}} \in [-2.8, 1.8]$). Anomalies are automatically quarantined to disk without halting distributed cluster execution, generating reproducible JSON and Markdown audit reports.
 
 # Performance, Scalability, and Reproducibility
 
@@ -186,7 +188,7 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **Timestamp**: `2026-11-11T18:14:36Z`
 - **Full Reproduction Commands**:
   ```bash
-  # Run automated 41-test scientific verification suite
+  # Run automated 51-test scientific verification suite
   pytest -v
 
   # Generate reproducible hardware & GPU benchmark manifest
@@ -198,6 +200,10 @@ All empirical benchmarks, system profiles, and unit test validations reported in
 
 # Acknowledgements
 
-The author acknowledges the open-source scientific Python community and the developers of Dask, Zarr, Astropy, and CuPy.
+The author gratefully acknowledges the foundational theoretical and computational contributions that made this work possible:
+- **Dr. Stéphane Charlot and Dr. S. Michael Fall** for their seminal analytical two-component dust attenuation formulation [@charlot2000simple], which enabled reformulating composite stellar synthesis into high-throughput linear matrix contractions.
+- **Prof. Piero Madau** for the analytic intergalactic medium transmission equations [@madau1995radiative].
+- The authors and teams behind the open stellar population synthesis libraries and empirical models—**Dr. Gustavo Bruzual & Dr. Stéphane Charlot** (GALAXEV / BC03 [@bruzual2003stellar]), **Prof. Charlie Conroy** (FSPS [@conroy2009propagation]), **Dr. Alexandre Vazdekis** and the E-MILES team [@vazdekis2016uv], and **Assoc. Prof. J. J. Eldridge & Prof. Elizabeth Stanway** (BPASS [@eldridge2017binary])—whose public spectral templates empower reproducible astrophysical modeling.
+- The open-source scientific computing community and the developers of **Dask** (Dr. Matthew Rocklin and contributors [@rocklin2015dask]), **Zarr**, **Astropy**, **CuPy** [@okuta2017cupy], and **NumPy** [@harris2020array].
 
 # References

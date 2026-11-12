@@ -468,6 +468,56 @@ def cmd_verify(a, client: Client):
 
 
 # --------------------------------------------------------------------------
+# sentry : automated Scientific Sentry QA audit across synthesized catalogs
+# --------------------------------------------------------------------------
+def cmd_sentry(a, client: Client | None = None):
+    from specsynth.sentry import run_sentry_audit
+
+    print(f"\n====================== Scientific Sentry Audit ======================")
+    print(f"  * Base Storage       : {a.base}")
+    print(f"  * Sample Size        : {a.sample:,} galaxies")
+    print(f"  * Max Anomaly Rate   : {a.max_anomaly_rate:.2%}")
+    print(f"--------------------------------------------------------------------")
+
+    report = run_sentry_audit(
+        base=a.base,
+        sample_size=a.sample,
+        min_mag=a.min_mag,
+        max_mag=a.max_mag,
+        max_anomaly_rate=a.max_anomaly_rate,
+        quarantine_dir=a.quarantine_dir,
+    )
+
+    if a.output:
+        report.to_json(a.output)
+        print(f"  * Saved JSON report  : {a.output}")
+    if a.markdown_report:
+        report.to_markdown(a.markdown_report)
+        print(f"  * Saved Markdown rpt : {a.markdown_report}")
+
+    print(
+        f"\nAudit Summary:\n"
+        f"  * Status             : {report.status}\n"
+        f"  * Evaluated Galaxies : {report.total_galaxies_evaluated:,}\n"
+        f"  * Valid Objects      : {report.passed_count:,} ({report.pass_rate_pct:.3f}%)\n"
+        f"  * Quarantined/Flagged: {report.flagged_count:,}\n"
+    )
+    if report.anomalies:
+        print("  * Anomalies Detected (Sample):")
+        for anom in report.anomalies[:5]:
+            obs_str = f"{anom.observed_value:.3e}" if anom.observed_value is not None else "N/A"
+            print(f"    - [{anom.category}] Galaxy #{anom.galaxy_index}: {anom.metric_name} = {obs_str} ({anom.root_cause})")
+    print(f"====================================================================\n")
+
+    if report.status == "CRITICAL_FAILURE":
+        sys.exit(2)
+    elif report.status == "WARNING":
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
+
+# --------------------------------------------------------------------------
 # CLI Parser
 # --------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
@@ -565,6 +615,17 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--output", "-o", default="benchmark_report.json", help="Path to save JSON benchmark provenance report")
     s.set_defaults(fn=cmd_benchmark)
 
+    # sentry
+    s = sub.add_parser("sentry", help="Run automated Scientific Sentry QA audit across synthesized catalogs")
+    s.add_argument("--sample", type=int, default=50_000, help="Number of galaxies to sample for audit (default: 50000)")
+    s.add_argument("--min-mag", type=float, default=10.0, help="Minimum acceptable apparent AB magnitude")
+    s.add_argument("--max-mag", type=float, default=35.0, help="Maximum acceptable apparent AB magnitude")
+    s.add_argument("--max-anomaly-rate", type=float, default=0.001, help="Max acceptable anomaly rate before CRITICAL_FAILURE (default: 0.001 = 0.1 percent)")
+    s.add_argument("--output", "-o", default="sentry_report.json", help="Path to save JSON audit report")
+    s.add_argument("--markdown-report", "-m", help="Path to save human-readable Markdown report")
+    s.add_argument("--quarantine-dir", help="Directory to dump quarantined input parameters for failing objects")
+    s.set_defaults(fn=cmd_sentry)
+
     # synth and verify
     for name, fn in (("synth", cmd_synth), ("verify", cmd_verify)):
         s = sub.add_parser(name)
@@ -612,8 +673,8 @@ def main():
     ap = build_parser()
     a = ap.parse_args()
 
-    # For benchmark command, run directly on host without spawning distributed cluster
-    if a.cmd == "benchmark":
+    # For benchmark and sentry commands, run directly on host without spawning distributed cluster
+    if a.cmd in ("benchmark", "sentry"):
         a.fn(a, None)
         return
 

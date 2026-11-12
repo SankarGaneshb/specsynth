@@ -39,3 +39,10 @@ Thumbs.db
 
 # Compiled JOSS PDF previews
 paper/*.pdf
+
+# Local QA and benchmark outputs
+*report.json
+*report.md
+sentry_quarantine/
+run/
+
