@@ -144,7 +144,7 @@ class FITSGridAdapter(BaseAdapter):
         fmt: str,
     ) -> SSPData:
         # Convert ages in Gyr or log10 yr to linear years if needed
-        ages = np.asarray(ages, dtype=np.float64).squeeze()
+        ages = np.atleast_1d(np.asarray(ages, dtype=np.float64).squeeze())
         if np.all(ages < 100.0):
             # Check if log10(yr) (e.g. 6 to 10.2) or Gyr (0.001 to 13.8)
             if np.all(ages > 5.0):
@@ -154,8 +154,8 @@ class FITSGridAdapter(BaseAdapter):
                 # Gyr
                 ages = ages * 1e9
 
-        mets = np.asarray(mets, dtype=np.float64).squeeze()
-        wave = np.asarray(wave, dtype=np.float64).squeeze()
+        mets = np.atleast_1d(np.asarray(mets, dtype=np.float64).squeeze())
+        wave = np.atleast_1d(np.asarray(wave, dtype=np.float64).squeeze())
         flux = np.asarray(flux, dtype=np.float32)
 
         if flux.ndim == 3:
