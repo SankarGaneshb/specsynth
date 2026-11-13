@@ -71,6 +71,14 @@ class SentryReport:
             f"- **Valid Physical Objects**: {self.passed_count:,} ({self.pass_rate_pct:.3f}%)",
             f"- **Quarantined / Flagged**: {self.flagged_count:,} ({100.0 - self.pass_rate_pct:.3f}%)",
             "",
+            "### Breakdown by Diagnostic Tier",
+            "| Diagnostic Tier | Scope | Anomalies | Status |",
+            "| :--- | :--- | :---: | :---: |",
+            f"| **Tier 1: Numerical Integrity** | Finiteness, non-negative flux & input schema | {self.tier_summary.get('tier1_numerical', 0)} | {'FAIL' if self.tier_summary.get('tier1_numerical', 0) > 0 else 'PASS'} |",
+            f"| **Tier 2: Astrophysical Invariants** | Dn(4000), UV slope, magnitude bounds | {self.tier_summary.get('tier2_physical', 0)} | {'WARN' if self.tier_summary.get('tier2_physical', 0) > 0 else 'PASS'} |",
+            f"| **Tier 3: Population Statistics** | Color dispersion & anti-collapse | {self.tier_summary.get('tier3_population', 0)} | {'WARN' if self.tier_summary.get('tier3_population', 0) > 0 else 'PASS'} |",
+            f"| **Tier 4: Runtime Quarantine** | Isolated chunk crash reports & dumps | {self.tier_summary.get('tier4_quarantine', 0)} | {'FAIL' if self.tier_summary.get('tier4_quarantine', 0) > 0 else 'PASS'} |",
+            "",
             "### Breakdown by Severity & Category",
             "| Category | Count | Status |",
             "| :--- | :---: | :---: |",
@@ -571,22 +579,23 @@ def run_sentry_audit(
             tb_str = traceback.format_exc(limit=4)
             category_counts["UNKNOWN_EXCEPTION"] += 1
 
-            Path(quarantine_dir).mkdir(parents=True, exist_ok=True)
-            dump_filename = f"quarantine_chunk_{start_idx}_{end_idx}.json"
-            dump_path = os.path.join(quarantine_dir, dump_filename)
-            quarantined_files.append(dump_path)
+            if len(quarantined_files) < 50:
+                Path(quarantine_dir).mkdir(parents=True, exist_ok=True)
+                dump_filename = f"quarantine_chunk_{start_idx}_{end_idx}.json"
+                dump_path = os.path.join(quarantine_dir, dump_filename)
+                quarantined_files.append(dump_path)
 
-            with open(dump_path, "w", encoding="utf-8") as qf:
-                json.dump({
-                    "start_index": int(start_idx),
-                    "end_index": int(end_idx),
-                    "error_message": err_msg,
-                    "stack_trace": tb_str,
-                }, qf, indent=2)
+                with open(dump_path, "w", encoding="utf-8") as qf:
+                    json.dump({
+                        "start_index": int(start_idx),
+                        "end_index": int(end_idx),
+                        "error_message": err_msg,
+                        "stack_trace": tb_str,
+                    }, qf, indent=2)
 
             anomalies.append(AnomalyRecord(
                 anomaly_id=f"UNK-{start_idx}",
-                tier=1,
+                tier=4,
                 category="UNKNOWN_EXCEPTION",
                 severity="CRITICAL",
                 galaxy_index=int(batch_sample_idx[0]),
@@ -638,9 +647,10 @@ def run_sentry_audit(
         status = "PASSED"
 
     tier_summary = {
-        "tier1_numerical": category_counts["NUMERICAL_FAULT"] + category_counts["INPUT_SCHEMA_FAULT"] + category_counts["UNKNOWN_EXCEPTION"],
+        "tier1_numerical": category_counts["NUMERICAL_FAULT"] + category_counts["INPUT_SCHEMA_FAULT"],
         "tier2_physical": category_counts["PHYSICAL_ANOMALY"],
         "tier3_population": category_counts["POPULATION_DRIFT"],
+        "tier4_quarantine": category_counts["UNKNOWN_EXCEPTION"],
     }
 
     if attach_is_valid:
