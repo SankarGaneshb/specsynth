@@ -21,11 +21,16 @@ from pathlib import Path
 
 
 def get_kaggle_credentials() -> tuple[str | None, str | None]:
-    """Retrieve Kaggle credentials from environment or ~/.kaggle/kaggle.json."""
+    """Retrieve Kaggle credentials from environment, ~/.kaggle/access_token, or ~/.kaggle/kaggle.json."""
     user = os.environ.get("KAGGLE_USERNAME")
     key = os.environ.get("KAGGLE_KEY") or os.environ.get("KAGGLE_API_TOKEN")
-    if user and key:
-        return user, key
+
+    acc_file = Path.home() / ".kaggle" / "access_token"
+    if not key and acc_file.exists():
+        try:
+            key = acc_file.read_text(encoding="utf-8").strip()
+        except Exception:
+            pass
 
     cfg_file = Path.home() / ".kaggle" / "kaggle.json"
     if cfg_file.exists():
@@ -34,7 +39,10 @@ def get_kaggle_credentials() -> tuple[str | None, str | None]:
                 data = json.load(f)
                 u = data.get("username")
                 k = data.get("key") or data.get("api_token")
-                return u or user, k or key
+                if not user and u:
+                    user = u
+                if not key and k:
+                    key = k
         except Exception:
             pass
 
@@ -132,8 +140,8 @@ def main() -> int:
         return 1
 
     username = (args.username or "").strip()
+    user_env, key_env = get_kaggle_credentials()
     if not username:
-        user_env, _ = get_kaggle_credentials()
         username = (user_env or "").strip()
 
     if not username:
@@ -141,6 +149,24 @@ def main() -> int:
         print("    Please ensure KAGGLE_USERNAME is configured in GitHub Secrets -> Repository Secrets (not Environment Secrets).", file=sys.stderr)
         print("    If running locally, pass --username <your_kaggle_username> or set KAGGLE_USERNAME in your environment.", file=sys.stderr)
         return 1
+
+    # Synchronize authentication token for both modern and legacy Kaggle CLI
+    if key_env:
+        key_clean = key_env.strip()
+        os.environ["KAGGLE_KEY"] = key_clean
+        os.environ["KAGGLE_API_TOKEN"] = key_clean
+        try:
+            acc_file = Path.home() / ".kaggle" / "access_token"
+            acc_file.parent.mkdir(parents=True, exist_ok=True)
+            acc_file.write_text(key_clean, encoding="utf-8")
+        except Exception:
+            pass
+        try:
+            cfg_file = Path.home() / ".kaggle" / "kaggle.json"
+            cfg_file.parent.mkdir(parents=True, exist_ok=True)
+            cfg_file.write_text(json.dumps({"username": username, "key": key_clean}), encoding="utf-8")
+        except Exception:
+            pass
 
     kernel_id = f"{username}/{args.kernel_slug}"
     print(f"[*] Target Kaggle Kernel ID: {kernel_id}")
