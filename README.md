@@ -2,6 +2,7 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SankarGaneshb/specsynth/blob/main/notebooks/quickstart.ipynb)
 [![CI](https://github.com/SankarGaneshb/specsynth/actions/workflows/ci.yml/badge.svg)](https://github.com/SankarGaneshb/specsynth/actions)
+[![Kaggle GPU Benchmark](https://github.com/SankarGaneshb/specsynth/actions/workflows/kaggle-gpu.yml/badge.svg)](https://github.com/SankarGaneshb/specsynth/actions/workflows/kaggle-gpu.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
@@ -135,8 +136,8 @@ Evaluated across 5 timed runs (50,000 galaxies, $K = 60$ age-metallicity bins, $
 | Compute Backend | Hardware Model | Workers / Threads | Throughput (Gal/sec) | Compute Rate | Measured Speedup | Provenance |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **CPU (`scipy-openblas`)** | Intel 12C / 14T Workstation | Single-node BLAS | **57,978 gal/s** | 17.12 GFLOPS | 1.0x (Workstation) | `[Measured]` (`benchmark_manifest.json`) |
-| **CPU (`scipy-openblas`)** | Cloud Linux x86_64 (2C / 4T) | Single-node BLAS | **58,565 gal/s** | 17.29 GFLOPS | 1.0x (Cloud CPU) | `[Measured]` (`benchmark_manifest_gpu_t4.json`) |
-| **GPU (CuPy / CUDA 13.0)**| **NVIDIA Tesla T4 (15 GB)** | 1 GPU Worker | **254,326 gal/s** | **75.08 GFLOPS** | **4.34x vs. Cloud CPU** | `[Measured]` (`benchmark_manifest_gpu_t4.json`) |
+| **CPU (`scipy-openblas`)** | Cloud Linux x86_64 (2C / 4T) | Single-node BLAS | **57,344 gal/s** | 16.93 GFLOPS | 1.0x (Cloud CPU) | `[Measured]` (`benchmark_manifest_gpu_t4.json`) |
+| **GPU (CuPy / CUDA 13.0)**| **NVIDIA Tesla T4 (15 GB)** | 1 GPU Worker | **258,812 gal/s** | **76.40 GFLOPS** | **4.51x vs. Cloud CPU** | `[Measured]` (`benchmark_manifest_gpu_t4.json`) |
 
 #### B. Wavelength Chunking Memory Stress Test (Experiment 6)
 Demonstrates out-of-core wavelength partitioning (`--wave-chunk`) when the SSP spectral grid exceeds worker RAM:
@@ -403,6 +404,14 @@ python specsynth.py benchmark --n-gal 50000 --n-runs 5
 python specsynth.py benchmark --n-gal 100000 --gpu --output my_benchmark.json
 ```
 
+### On-Demand Cloud GPU Benchmark (Kaggle Tesla T4)
+Users and reviewers can trigger the verified GPU benchmark on a live **NVIDIA Tesla T4 GPU** node on a need basis:
+1. **One-Click GitHub Actions Workflow**: Go to the [Kaggle Tesla T4 GPU Benchmark](https://github.com/SankarGaneshb/specsynth/actions/workflows/kaggle-gpu.yml) page, click **Run workflow**, and view the execution table and download the output `benchmark_manifest_gpu_t4.json`.
+2. **Local Orchestrator CLI**:
+   ```bash
+   python scripts/run_kaggle_gpu.py --n-gal 50000 --n-runs 5
+   ```
+
 Output includes:
 - **Measured Local Benchmark**: Host OS, CPU processor, physical/logical core counts, total system RAM, BLAS library (`scipy-openblas`, `MKL`, etc.), measured execution time, galaxies/second, compute GFLOPS, and memory bandwidth (GB/s).
 - **Projected Cluster Benchmark**: Extrapolated cluster scaling and spot compute cost estimates ($0.088/hr per 8 vCPUs) at 85-90% weak scaling efficiency.
@@ -442,7 +451,7 @@ specsynth synth --base /data/run1 --filters jwst_nircam --sentry
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated unit test suite (101 tests, 83% coverage, strict tier markers)
+# Run automated unit test suite (113 tests, >85% coverage, strict tier markers)
 pytest -v --cov=specsynth
 
 # Or run tests with automated cache cleanup (Windows / cross-platform):
