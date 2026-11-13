@@ -268,11 +268,10 @@ def test_fsps_adapter_ascii_file(tmp_path):
     assert data.ssp.shape == (2, 15)
 
 
-def test_fsps_adapter_import_error():
-    # If python-fsps is not installed, calling load() without a filepath should raise an informative ImportError
+def test_fsps_adapter_import_error(monkeypatch):
+    # Ensure attempting to load without python-fsps raises an informative ImportError
+    import sys
+    monkeypatch.setitem(sys.modules, "fsps", None)
     adapter = FSPSAdapter()
-    try:
-        import fsps
-    except ImportError:
-        with pytest.raises(ImportError, match="python-fsps is required"):
-            adapter.load()
+    with pytest.raises(ImportError, match="python-fsps is required"):
+        adapter.load()
