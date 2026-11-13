@@ -2,6 +2,8 @@ import json
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.integration
+
 from specsynth.benchmark import (
     get_system_hardware_info,
     print_benchmark_summary,

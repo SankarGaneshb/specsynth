@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.astrophysics
+
 from specsynth.filters import (
     FILTER_SETS,
     STANDARD_FILTER_SPECS,

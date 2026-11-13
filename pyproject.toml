@@ -58,3 +58,10 @@ include = ["specsynth*"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["."]
+markers = [
+    "critical: Tier 1 - Core numerical contractions, BLAS, finite-flux, and energy conservation",
+    "astrophysics: Tier 2 - Astrophysical invariants (D4000 break, UV slopes, Madau IGM, filter projections, cosmology)",
+    "sentry: Tier 3 & 4 - Population bimodality, fault containment, quarantine, and audit reports",
+    "integration: End-to-end multi-chunk pipelines, CLI subcommands, and agent tools",
+]
+addopts = "-v --strict-markers"

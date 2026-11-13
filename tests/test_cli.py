@@ -6,6 +6,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.integration
+
 from specsynth.cli import (
     build_parser,
     cmd_benchmark,

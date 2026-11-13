@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.critical
+
 from specsynth.core import synth_block
 from specsynth.gpu import get_device_info, is_gpu_available, synth_block_gpu
 

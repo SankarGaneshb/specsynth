@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.astrophysics
+
 from specsynth.cosmology import FlatLambdaCDM, redshift_flux
 
 

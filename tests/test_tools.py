@@ -6,6 +6,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.integration
+
 from specsynth.sentry import AnomalyRecord, SentryReport
 from specsynth.tools import (
     tool_clean_catalog,

@@ -15,6 +15,7 @@ from specsynth.adapters import (
 )
 
 
+@pytest.mark.critical
 def test_ssp_data_validation():
     ages = np.array([1e7, 1e8, 1e9])
     mets = np.array([0.004, 0.02])
@@ -53,6 +54,7 @@ def test_ssp_data_validation():
         SSPData(ages=ages, mets=mets, wave=wave, ssp=bad_ssp)
 
 
+@pytest.mark.critical
 def test_ssp_data_from_3d_grid():
     ages = np.array([1e8, 1e7])  # unsorted
     mets = np.array([0.02, 0.004])  # unsorted
@@ -67,6 +69,7 @@ def test_ssp_data_from_3d_grid():
     assert data.ssp.shape == (4, 2)
 
 
+@pytest.mark.critical
 def test_ssp_data_resample_wavelength():
     ages = np.array([1e7, 1e8])
     mets = np.array([0.02])
@@ -87,6 +90,7 @@ def test_ssp_data_resample_wavelength():
         data.resample_wavelength(np.array([2500.0, 1500.0]))
 
 
+@pytest.mark.critical
 def test_toy_adapter():
     adapter = ToyAdapter(n_age=5, n_met=2, n_wave=50)
     data = adapter.load()
@@ -98,6 +102,7 @@ def test_toy_adapter():
     assert data.metadata.get("model") == "toy"
 
 
+@pytest.mark.critical
 def test_get_adapter_factory():
     toy = get_adapter("toy", n_age=10, n_met=3, n_wave=100)
     assert isinstance(toy, ToyAdapter)
@@ -118,6 +123,7 @@ def test_get_adapter_factory():
         get_adapter("nonexistent_model")
 
 
+@pytest.mark.critical
 def test_ssp_data_from_3d_grid_shape_mismatch():
     ages = np.array([1e7, 1e8])
     mets = np.array([0.02])
@@ -127,6 +133,7 @@ def test_ssp_data_from_3d_grid_shape_mismatch():
         SSPData.from_3d_grid(ages=ages, mets=mets, wave=wave, grid_3d=bad_grid)
 
 
+@pytest.mark.astrophysics
 def test_bc03_adapter_ascii(tmp_path):
     # Create mock ASCII file: column 0 = wavelength, columns 1..N = flux at ages
     wave = np.linspace(1000, 3000, 20)
@@ -145,6 +152,7 @@ def test_bc03_adapter_ascii(tmp_path):
     assert data.ssp.shape == (2, 20)
 
 
+@pytest.mark.astrophysics
 def test_bc03_adapter_ised_binary(tmp_path):
     # Create a mock Fortran unformatted .ised file
     n_age = 3
@@ -175,6 +183,7 @@ def test_bc03_adapter_ised_binary(tmp_path):
     assert data.ssp.shape == (3, 5)
 
 
+@pytest.mark.astrophysics
 def test_fits_grid_adapter_npz(tmp_path):
     npz_file = tmp_path / "test_grid.npz"
     ages = np.array([1e7, 5e8, 1e9])
@@ -192,6 +201,7 @@ def test_fits_grid_adapter_npz(tmp_path):
     assert data.ssp.shape == (6, 40)
 
 
+@pytest.mark.astrophysics
 def test_emiles_adapter_directory(tmp_path):
     # Create mock FITS files matching E-MILES filename conventions:
     # Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits
@@ -251,6 +261,7 @@ def test_emiles_adapter_directory(tmp_path):
     assert data.ssp.shape == (4, 10)
 
 
+@pytest.mark.astrophysics
 def test_fsps_adapter_ascii_file(tmp_path):
     # Mock ASCII spstot_*.spec output from Fortran FSPS
     wave = np.linspace(1000, 5000, 15)
@@ -268,6 +279,7 @@ def test_fsps_adapter_ascii_file(tmp_path):
     assert data.ssp.shape == (2, 15)
 
 
+@pytest.mark.astrophysics
 def test_fsps_adapter_import_error(monkeypatch):
     # Ensure attempting to load without python-fsps raises an informative ImportError
     import sys

@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.astrophysics
+
 from specsynth.igm import LYMAN_LIMIT_AA, madau_transmission
 
 

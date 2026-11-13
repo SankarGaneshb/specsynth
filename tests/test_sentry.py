@@ -20,6 +20,7 @@ from specsynth.sentry import (
 )
 
 
+@pytest.mark.critical
 def test_check_finite_positive_clean():
     flux = np.array([
         [1.0, 2.0, 3.0],
@@ -30,6 +31,7 @@ def test_check_finite_positive_clean():
     assert len(bad_idx) == 0
 
 
+@pytest.mark.critical
 def test_check_finite_positive_catches_nan_inf_negative():
     flux = np.array([
         [1.0, 2.0, 3.0],          # Valid
@@ -45,6 +47,7 @@ def test_check_finite_positive_catches_nan_inf_negative():
     assert np.array_equal(bad_idx, np.array([1, 2, 3, 4, 5], dtype=np.int64))
 
 
+@pytest.mark.critical
 def test_check_energy_conservation_clean_and_violation():
     # Intrinsic flux: 10 units each
     f_intr = np.ones((4, 50), dtype=np.float32) * 10.0
@@ -70,6 +73,7 @@ def test_check_energy_conservation_clean_and_violation():
     assert np.isclose(ratios[1], 1.0)
 
 
+@pytest.mark.astrophysics
 def test_measure_d4000_break_nominal_and_inverted():
     wave = np.linspace(3500.0, 4500.0, 100)
     
@@ -91,6 +95,7 @@ def test_measure_d4000_break_nominal_and_inverted():
     assert d4000[2] < 0.8   # Inverted anomaly
 
 
+@pytest.mark.astrophysics
 def test_measure_uv_slope_nominal_and_extreme():
     wave = np.linspace(1400.0, 2600.0, 120)
     
@@ -112,6 +117,7 @@ def test_measure_uv_slope_nominal_and_extreme():
     assert beta[2] < -4.0  # Anomaly
 
 
+@pytest.mark.astrophysics
 def test_check_magnitude_bounds():
     mags = np.array([
         [18.5, 19.2, 20.1],  # Valid
@@ -127,6 +133,7 @@ def test_check_magnitude_bounds():
     assert np.array_equal(bad_idx, np.array([2, 3], dtype=np.int64))
 
 
+@pytest.mark.sentry
 def test_check_population_bimodality():
     # Normal diverse color distribution
     colors_normal = np.random.default_rng(42).normal(1.5, 0.4, size=1000)
@@ -143,6 +150,7 @@ def test_check_population_bimodality():
     assert rep_collapsed["variance"] < 1e-5
 
 
+@pytest.mark.sentry
 def test_sentry_report_serialization():
     rep = SentryReport(
         timestamp="2026-11-13T02:00:00Z",
@@ -189,6 +197,7 @@ def test_sentry_report_serialization():
             assert "#42" in md_text
 
 
+@pytest.mark.sentry
 def test_int64_large_indices():
     # Verify indices exceeding 32-bit int bounds (2^31 - 1 = 2147483647)
     large_idx = np.int64(3_000_000_000)
@@ -204,6 +213,7 @@ def test_int64_large_indices():
     assert anom.galaxy_index > 2**31 - 1
 
 
+@pytest.mark.sentry
 def test_run_sentry_audit_with_mocked_store(monkeypatch):
     from unittest.mock import MagicMock
     from specsynth import build_toy_ssp
@@ -280,6 +290,7 @@ def test_run_sentry_audit_with_mocked_store(monkeypatch):
     assert rep.pass_rate_pct == 100.0
 
 
+@pytest.mark.sentry
 def test_clean_catalog_npz(tmp_path):
     from specsynth.catalog import clean_catalog
 
@@ -313,6 +324,7 @@ def test_clean_catalog_npz(tmp_path):
         assert len(data["redshift"]) == 97
 
 
+@pytest.mark.sentry
 def test_clean_catalog_from_sentry_report(tmp_path):
     from specsynth.catalog import clean_catalog
 
@@ -347,6 +359,7 @@ def test_clean_catalog_from_sentry_report(tmp_path):
     assert os.path.exists(clean_csv)
 
 
+@pytest.mark.integration
 def test_tools_system_info_and_filters():
     from specsynth.tools import tool_get_system_info, tool_list_available_filters
 
@@ -360,6 +373,7 @@ def test_tools_system_info_and_filters():
     assert filt["individual_filters_count"] > 10
 
 
+@pytest.mark.sentry
 def test_sentry_input_context_recorded():
     # Verify input_parameters field is correctly captured in AnomalyRecord
     anom = AnomalyRecord(
@@ -383,6 +397,7 @@ def test_sentry_input_context_recorded():
     assert anom.input_parameters["tau_diffuse"] == 0.0
 
 
+@pytest.mark.sentry
 def test_run_sentry_audit_with_anomalies_and_attach_is_valid(monkeypatch, tmp_path):
     class MockStore(dict):
         def __init__(self, *args, **kwargs):
@@ -447,6 +462,7 @@ def test_run_sentry_audit_with_anomalies_and_attach_is_valid(monkeypatch, tmp_pa
     assert np.isclose(anom_1.input_parameters["tau_diffuse"], 0.2, atol=1e-5)
 
 
+@pytest.mark.sentry
 def test_run_sentry_audit_photometry_magnitude_faults(monkeypatch, tmp_path):
     class MockStore(dict):
         def __init__(self, *args, **kwargs):
@@ -490,6 +506,7 @@ def test_run_sentry_audit_photometry_magnitude_faults(monkeypatch, tmp_path):
     assert len(mag_anoms) == 2
 
 
+@pytest.mark.sentry
 def test_run_sentry_audit_quarantine_unknown_exception(monkeypatch, tmp_path):
     class MockStore(dict):
         def __init__(self, *args, **kwargs):
@@ -535,6 +552,7 @@ def test_run_sentry_audit_quarantine_unknown_exception(monkeypatch, tmp_path):
     assert len(unk) == 1
 
 
+@pytest.mark.sentry
 def test_sentry_report_to_markdown_truncation(tmp_path):
     # Test > 25 anomalies produces truncation notice in markdown report
     anoms = [
@@ -568,6 +586,7 @@ def test_sentry_report_to_markdown_truncation(tmp_path):
     assert "and 5 more anomalies logged" in content
 
 
+@pytest.mark.sentry
 def test_run_sentry_audit_input_schema_fault(monkeypatch, tmp_path):
     class MockStore(dict):
         def __init__(self, *args, **kwargs):
@@ -607,6 +626,7 @@ def test_run_sentry_audit_input_schema_fault(monkeypatch, tmp_path):
     assert len(sch_anoms) >= 2
 
 
+@pytest.mark.sentry
 def test_run_sentry_audit_tier3_population_collapse(monkeypatch, tmp_path):
     class MockStore(dict):
         def __init__(self, *args, **kwargs):

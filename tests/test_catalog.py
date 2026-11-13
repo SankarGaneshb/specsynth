@@ -3,6 +3,8 @@ import numpy as np
 import pytest
 from astropy.table import Table
 
+pytestmark = pytest.mark.integration
+
 from specsynth.catalog import (
     COLUMN_ALIASES,
     catalog_to_params_matrix,

@@ -14,12 +14,14 @@ from specsynth import (
 )
 
 
+@pytest.mark.integration
 def test_url_formatting():
     assert url("/data/run1", "ssp.zarr") == "/data/run1/ssp.zarr"
     assert url("/data/run1/", "ssp.zarr") == "/data/run1/ssp.zarr"
     assert url("s3://bucket/run1/", "ssp.zarr") == "s3://bucket/run1/ssp.zarr"
 
 
+@pytest.mark.critical
 def test_planck():
     wave = np.linspace(1000, 10000, 50)
     flux = planck(wave, 6000.0)
@@ -28,6 +30,7 @@ def test_planck():
     assert np.all(np.isfinite(flux))
 
 
+@pytest.mark.critical
 def test_build_toy_ssp():
     n_age, n_met, n_wave = 10, 3, 100
     ages, mets, wave, ssp = build_toy_ssp(n_age, n_met, n_wave)
@@ -39,6 +42,7 @@ def test_build_toy_ssp():
     assert np.all(ssp >= 0)
 
 
+@pytest.mark.astrophysics
 def test_attenuation_curve():
     wave = np.array([2750.0, 5500.0, 11000.0], dtype=np.float32)
     k = attenuation_curve(wave, index=-1.0)
@@ -47,6 +51,7 @@ def test_attenuation_curve():
     assert np.isclose(k[2], 0.5)
 
 
+@pytest.mark.astrophysics
 def test_band_matrix():
     wave = np.logspace(np.log10(1000.0), np.log10(10000.0), 200)
     n_bands = 5
@@ -57,6 +62,7 @@ def test_band_matrix():
     assert np.allclose(sums, 1.0, atol=1e-5)
 
 
+@pytest.mark.critical
 def test_gen_params_reproducibility():
     dummy = np.zeros((10, 6), dtype=np.float32)
     p1 = _gen_params(dummy, seed=42)
@@ -66,6 +72,7 @@ def test_gen_params_reproducibility():
     assert not np.allclose(p1, p3)
 
 
+@pytest.mark.critical
 def test_sfh_and_synth_block():
     n_age, n_met, n_wave = 8, 3, 50
     ages, mets, wave, ssp = build_toy_ssp(n_age, n_met, n_wave)
@@ -93,6 +100,7 @@ def test_sfh_and_synth_block():
     assert np.all(spec >= 0)
 
 
+@pytest.mark.critical
 def test_wave_chunking_contract():
     # Verify column-partitioned wavelength contractions
     n_gal, K, W = 10, 8, 40
@@ -115,6 +123,7 @@ def test_wave_chunking_contract():
     assert np.allclose(full_spec, combined)
 
 
+@pytest.mark.critical
 def test_small_and_read_small(monkeypatch):
     import dask.array as da
     from specsynth.core import small, read_small
@@ -131,6 +140,7 @@ def test_small_and_read_small(monkeypatch):
     assert np.allclose(arr, read_back)
 
 
+@pytest.mark.integration
 def test_write_many_with_mock_client(monkeypatch):
     import dask.array as da
     from unittest.mock import MagicMock
@@ -162,6 +172,7 @@ def test_write_many_with_mock_client(monkeypatch):
     assert mock_grp.attrs["created_by"] == "test"
 
 
+@pytest.mark.critical
 def test_gen_params_with_block_info():
     from specsynth.core import _gen_params
 
