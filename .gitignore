@@ -26,6 +26,8 @@ tmp/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.xml
+*.xml
 
 # IDE & editors
 .idea/

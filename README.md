@@ -3,6 +3,7 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SankarGaneshb/specsynth/blob/main/notebooks/quickstart.ipynb)
 [![Kaggle GPU Benchmark](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/bsankarganesh/specsynth-gpu-benchmark)
 [![CI](https://github.com/SankarGaneshb/specsynth/actions/workflows/ci.yml/badge.svg)](https://github.com/SankarGaneshb/specsynth/actions)
+[![codecov](https://codecov.io/gh/SankarGaneshb/specsynth/branch/main/graph/badge.svg)](https://codecov.io/gh/SankarGaneshb/specsynth)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
