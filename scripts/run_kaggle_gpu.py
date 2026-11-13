@@ -119,13 +119,15 @@ def main() -> int:
         print("    Install it via: pip install kaggle", file=sys.stderr)
         return 1
 
-    username = args.username
+    username = (args.username or "").strip()
     if not username:
         user_env, _ = get_kaggle_credentials()
-        username = user_env
+        username = (user_env or "").strip()
 
     if not username:
-        print("[!] Error: Kaggle username could not be resolved from --username or KAGGLE_USERNAME.", file=sys.stderr)
+        print("[!] Error: Kaggle username could not be resolved.", file=sys.stderr)
+        print("    Please ensure KAGGLE_USERNAME is configured in GitHub Secrets -> Repository Secrets (not Environment Secrets).", file=sys.stderr)
+        print("    If running locally, pass --username <your_kaggle_username> or set KAGGLE_USERNAME in your environment.", file=sys.stderr)
         return 1
 
     kernel_id = f"{username}/{args.kernel_slug}"
