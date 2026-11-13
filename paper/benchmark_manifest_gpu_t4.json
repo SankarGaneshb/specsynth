@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-11-11T18:14:36Z",
-  "provenance_type": "Measured Benchmark (Kaggle Cloud GPU Node)",
+  "timestamp": "2026-11-13T15:19:21Z",
+  "provenance_type": "Measured Benchmark (Local Hardware)",
   "provenance": {
     "correctness": "Measured Empirical",
-    "single_node": "Measured Empirical (CPU BLAS & NVIDIA Tesla T4 GPU)",
+    "single_node": "Measured Empirical (Local Hardware)",
     "distributed_scaling": "Analytical Weak & Strong Scaling (85% Parallel Efficiency)",
     "cloud_economics": "Analytical Cloud Spot Cost Model"
   },
@@ -23,12 +23,13 @@
     "cpu_count_physical": 2,
     "cpu_count_logical": 4,
     "total_ram_gb": 31.35,
-    "available_ram_gb": 29.03,
-    "git_commit": "b0cd760",
+    "available_ram_gb": 29.2,
+    "git_commit": "unknown",
     "blas_backend": "scipy-openblas",
     "gpu_available": true,
     "gpu_device_name": "Tesla T4",
-    "gpu_cuda_driver_version": "13.0",
+    "gpu_cupy_version": "unknown",
+    "gpu_cuda_version": "unknown",
     "gpu_total_memory_gb": 14.56
   },
   "category_1_correctness": {
@@ -41,19 +42,120 @@
   },
   "category_2_single_node": {
     "cpu_blas": {
-      "mean_elapsed_seconds": 0.8537,
-      "std_elapsed_seconds": 0.0039,
-      "throughput_galaxies_per_sec": 58565.4,
-      "compute_gflops": 17.29,
-      "memory_bandwidth_gb_s": 0.28
+      "mean_elapsed_seconds": 0.8719,
+      "std_elapsed_seconds": 0.0252,
+      "throughput_galaxies_per_sec": 57343.9,
+      "compute_gflops": 16.93,
+      "memory_bandwidth_gb_s": 0.27
     },
     "gpu_cupy": {
-      "mean_elapsed_seconds": 0.1966,
-      "std_elapsed_seconds": 0.0053,
-      "throughput_galaxies_per_sec": 254326.3,
-      "compute_gflops": 75.08,
-      "memory_bandwidth_gb_s": 1.2,
-      "speedup_vs_cpu": 4.34
+      "mean_elapsed_seconds": 0.1932,
+      "std_elapsed_seconds": 0.004,
+      "throughput_galaxies_per_sec": 258812.3,
+      "compute_gflops": 76.4,
+      "memory_bandwidth_gb_s": 1.22,
+      "speedup_vs_cpu": 4.51
+    }
+  },
+  "cpu_performance": {
+    "mean_elapsed_seconds": 0.8719,
+    "std_elapsed_seconds": 0.0252,
+    "throughput_galaxies_per_sec": 57343.9,
+    "compute_gflops": 16.93,
+    "memory_bandwidth_gb_s": 0.27
+  },
+  "gpu_performance": {
+    "mean_elapsed_seconds": 0.1932,
+    "std_elapsed_seconds": 0.004,
+    "throughput_galaxies_per_sec": 258812.3,
+    "compute_gflops": 76.4,
+    "memory_bandwidth_gb_s": 1.22,
+    "speedup_vs_cpu": 4.51
+  },
+  "category_3_distributed_scaling": {
+    "strong_scaling_10m_galaxies": [
+      {
+        "workers": 1,
+        "runtime_seconds": 174.4,
+        "throughput_gal_s": 57344.0,
+        "scaling_efficiency": 1.0
+      },
+      {
+        "workers": 2,
+        "runtime_seconds": 89.0,
+        "throughput_gal_s": 112394.0,
+        "scaling_efficiency": 0.98
+      },
+      {
+        "workers": 4,
+        "runtime_seconds": 45.4,
+        "throughput_gal_s": 220201.0,
+        "scaling_efficiency": 0.96
+      },
+      {
+        "workers": 8,
+        "runtime_seconds": 23.4,
+        "throughput_gal_s": 426639.0,
+        "scaling_efficiency": 0.93
+      },
+      {
+        "workers": 16,
+        "runtime_seconds": 12.4,
+        "throughput_gal_s": 807403.0,
+        "scaling_efficiency": 0.88
+      },
+      {
+        "workers": 32,
+        "runtime_seconds": 6.6,
+        "throughput_gal_s": 1504705.0,
+        "scaling_efficiency": 0.82
+      },
+      {
+        "workers": 64,
+        "runtime_seconds": 3.6,
+        "throughput_gal_s": 2752509.0,
+        "scaling_efficiency": 0.75
+      }
+    ],
+    "weak_scaling_500k_per_worker": {
+      "per_worker_galaxies": 500000,
+      "expected_runtime_seconds": 8.7,
+      "scaling_behavior": "Constant runtime within 5-10% network overhead"
+    },
+    "memory_scalability": {
+      "architecture": "Out-of-core chunk streaming via Zarr",
+      "worker_ram_upper_bound_mb": 550,
+      "spill_to_disk": false
+    }
+  },
+  "projected_cluster_scaling": {
+    "provenance_type": "Analytical Cluster Scaling Model (85% Efficiency)",
+    "assumptions": "Dask distributed cluster on GCP Spot VMs ($0.088/hr per 8 vCPU)",
+    "estimates": {
+      "8_cpu_workers": {
+        "projected_throughput_gal_s": 412876.0,
+        "time_for_1m_galaxies_s": 2.4,
+        "estimated_cost_per_million_usd": 0.0001
+      },
+      "32_cpu_workers": {
+        "projected_throughput_gal_s": 1559755.0,
+        "time_for_100m_galaxies_min": 1.1,
+        "estimated_cost_per_100m_usd": 0.01
+      }
+    }
+  },
+  "category_4_cloud_economics": {
+    "10_million_galaxies": {
+      "runtime_seconds": 24.2,
+      "cost_usd": 0.02
+    },
+    "100_million_galaxies": {
+      "runtime_seconds": 64.1,
+      "cost_usd": 0.25
+    },
+    "1_billion_galaxies": {
+      "runtime_seconds": 340.6,
+      "cost_usd": 4.2
     }
   }
 }
