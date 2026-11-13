@@ -382,38 +382,29 @@ def run_sentry_audit(
             else:
                 batch_out = np.asarray(g_out["photometry"][:][batch_sample_idx] if total_galaxies <= 50_000 else np.stack([g_out["photometry"][i] for i in batch_sample_idx]))
 
+            # Preload batch context once to avoid O(N) random I/O reads in anomaly loops
+            batch_td = np.asarray(g_in["tau_diffuse"][:])[batch_sample_idx] if "tau_diffuse" in g_in else None
+            batch_tb = np.asarray(g_in["tau_birth"][:])[batch_sample_idx] if "tau_birth" in g_in else None
+            batch_p = np.asarray(g_in["params"][:])[batch_sample_idx] if "params" in g_in else None
+            batch_sfh_ctx = np.asarray(g_in["sfh"][:])[batch_sample_idx] if "sfh" in g_in else None
+
             def _extract_galaxy_context(local_i: int) -> dict[str, float]:
                 ctx: dict[str, float] = {}
-                global_i = int(batch_sample_idx[local_i])
-                if "tau_diffuse" in g_in:
-                    try:
-                        ctx["tau_diffuse"] = float(g_in["tau_diffuse"][global_i])
-                    except Exception:
-                        pass
-                if "tau_birth" in g_in:
-                    try:
-                        ctx["tau_birth"] = float(g_in["tau_birth"][global_i])
-                    except Exception:
-                        pass
-                if "sfh" in g_in:
-                    try:
-                        sfh_row = np.asarray(g_in["sfh"][global_i], dtype=np.float64)
-                        tot_mass = float(np.sum(sfh_row))
-                        young_mass = float(np.sum(sfh_row[:ny])) if ny > 0 else 0.0
-                        ctx["total_stellar_mass_msun"] = tot_mass
-                        ctx["young_stellar_fraction"] = young_mass / max(tot_mass, 1e-35)
-                    except Exception:
-                        pass
-                if "params" in g_in:
-                    try:
-                        p_row = np.asarray(g_in["params"][global_i], dtype=np.float64)
-                        if len(p_row) >= 6:
-                            ctx["log_stellar_mass"] = float(p_row[0])
-                            ctx["t_onset_gyr"] = float(p_row[1])
-                            ctx["sfh_tau_gyr"] = float(p_row[2])
-                            ctx["log_metallicity"] = float(p_row[3])
-                    except Exception:
-                        pass
+                if batch_td is not None:
+                    ctx["tau_diffuse"] = float(batch_td[local_i])
+                if batch_tb is not None:
+                    ctx["tau_birth"] = float(batch_tb[local_i])
+                if batch_sfh_ctx is not None:
+                    sfh_row = np.asarray(batch_sfh_ctx[local_i], dtype=np.float64)
+                    tot_mass = float(np.sum(sfh_row))
+                    young_mass = float(np.sum(sfh_row[:ny])) if ny > 0 else 0.0
+                    ctx["total_stellar_mass_msun"] = tot_mass
+                    ctx["young_stellar_fraction"] = young_mass / max(tot_mass, 1e-35)
+                if batch_p is not None and len(batch_p[local_i]) >= 6:
+                    ctx["log_stellar_mass"] = float(batch_p[local_i, 0])
+                    ctx["t_onset_gyr"] = float(batch_p[local_i, 1])
+                    ctx["sfh_tau_gyr"] = float(batch_p[local_i, 2])
+                    ctx["log_metallicity"] = float(batch_p[local_i, 3])
                 if redshift > 0.0:
                     ctx["redshift"] = float(redshift)
                 return ctx
@@ -423,19 +414,20 @@ def run_sentry_audit(
             for bad_i in bad_num:
                 g_idx = int(batch_sample_idx[bad_i])
                 category_counts["NUMERICAL_FAULT"] += 1
-                anomalies.append(AnomalyRecord(
-                    anomaly_id=f"NUM-{g_idx}",
-                    tier=1,
-                    category="NUMERICAL_FAULT",
-                    severity="CRITICAL",
-                    galaxy_index=g_idx,
-                    metric_name="finite_positive_flux",
-                    observed_value=float(np.nanmin(batch_out[bad_i])) if np.any(np.isnan(batch_out[bad_i])) else float(np.min(batch_out[bad_i])),
-                    expected_range=[1e-35, 1e30],
-                    input_parameters=_extract_galaxy_context(bad_i),
-                    root_cause="Flux contains NaN, Inf, or non-positive value.",
-                    remediation="Inspect input parameters for negative masses or unphysical zeros.",
-                ))
+                if len(anomalies) < 1000:
+                    anomalies.append(AnomalyRecord(
+                        anomaly_id=f"NUM-{g_idx}",
+                        tier=1,
+                        category="NUMERICAL_FAULT",
+                        severity="CRITICAL",
+                        galaxy_index=g_idx,
+                        metric_name="finite_positive_flux",
+                        observed_value=float(np.nanmin(batch_out[bad_i])) if np.any(np.isnan(batch_out[bad_i])) else float(np.min(batch_out[bad_i])),
+                        expected_range=[1e-35, 1e30],
+                        input_parameters=_extract_galaxy_context(bad_i),
+                        root_cause="Flux contains NaN, Inf, or non-positive value.",
+                        remediation="Inspect input parameters for negative masses or unphysical zeros.",
+                    ))
 
             # Tier 1 & 2: If spectra are available, run physical invariant checks
             if is_spectra and "sfh" in g_in:
@@ -449,19 +441,20 @@ def run_sentry_audit(
                 for bad_e in bad_energy:
                     g_idx = int(batch_sample_idx[bad_e])
                     category_counts["PHYSICAL_ANOMALY"] += 1
-                    anomalies.append(AnomalyRecord(
-                        anomaly_id=f"ENG-{g_idx}",
-                        tier=1,
-                        category="PHYSICAL_ANOMALY",
-                        severity="ERROR",
-                        galaxy_index=g_idx,
-                        metric_name="energy_conservation_ratio",
-                        observed_value=float(ratios[bad_e]),
-                        expected_range=[0.0, 1.0],
-                        input_parameters=_extract_galaxy_context(bad_e),
-                        root_cause="Attenuated flux exceeds intrinsic flux (negative dust optical depth).",
-                        remediation="Clamp tau_diffuse and tau_birth to non-negative values.",
-                    ))
+                    if len(anomalies) < 1000:
+                        anomalies.append(AnomalyRecord(
+                            anomaly_id=f"ENG-{g_idx}",
+                            tier=1,
+                            category="PHYSICAL_ANOMALY",
+                            severity="ERROR",
+                            galaxy_index=g_idx,
+                            metric_name="energy_conservation_ratio",
+                            observed_value=float(ratios[bad_e]),
+                            expected_range=[0.0, 1.0],
+                            input_parameters=_extract_galaxy_context(bad_e),
+                            root_cause="Attenuated flux exceeds intrinsic flux (negative dust optical depth).",
+                            remediation="Clamp tau_diffuse and tau_birth to non-negative values.",
+                        ))
 
                 # Dn(4000) Break
                 d4000 = measure_d4000_break(wave, batch_out)
@@ -469,19 +462,20 @@ def run_sentry_audit(
                 for bad_d in bad_d4000:
                     g_idx = int(batch_sample_idx[bad_d])
                     category_counts["PHYSICAL_ANOMALY"] += 1
-                    anomalies.append(AnomalyRecord(
-                        anomaly_id=f"D4K-{g_idx}",
-                        tier=2,
-                        category="PHYSICAL_ANOMALY",
-                        severity="WARNING",
-                        galaxy_index=g_idx,
-                        metric_name="d4000_break",
-                        observed_value=float(d4000[bad_d]),
-                        expected_range=[0.95, 2.80],
-                        input_parameters=_extract_galaxy_context(bad_d),
-                        root_cause="Inverted or extreme D_n(4000) break.",
-                        remediation="Check old-to-young stellar age ratio in SFH grid.",
-                    ))
+                    if len(anomalies) < 1000:
+                        anomalies.append(AnomalyRecord(
+                            anomaly_id=f"D4K-{g_idx}",
+                            tier=2,
+                            category="PHYSICAL_ANOMALY",
+                            severity="WARNING",
+                            galaxy_index=g_idx,
+                            metric_name="d4000_break",
+                            observed_value=float(d4000[bad_d]),
+                            expected_range=[0.95, 2.80],
+                            input_parameters=_extract_galaxy_context(bad_d),
+                            root_cause="Inverted or extreme D_n(4000) break.",
+                            remediation="Check old-to-young stellar age ratio in SFH grid.",
+                        ))
 
                 # UV Continuum Slope beta
                 uv_slope = measure_uv_slope(wave, batch_out)
@@ -489,39 +483,43 @@ def run_sentry_audit(
                 for bad_u in bad_uv:
                     g_idx = int(batch_sample_idx[bad_u])
                     category_counts["PHYSICAL_ANOMALY"] += 1
-                    anomalies.append(AnomalyRecord(
-                        anomaly_id=f"UVB-{g_idx}",
-                        tier=2,
-                        category="PHYSICAL_ANOMALY",
-                        severity="WARNING",
-                        galaxy_index=g_idx,
-                        metric_name="uv_slope_beta",
-                        observed_value=float(uv_slope[bad_u]),
-                        expected_range=[-2.80, 1.80],
-                        input_parameters=_extract_galaxy_context(bad_u),
-                        root_cause="Unphysical UV continuum slope (super-Rayleigh-Jeans or over-reddened).",
-                        remediation="Review dust extinction curve index and burst fraction.",
-                    ))
+                    if len(anomalies) < 1000:
+                        anomalies.append(AnomalyRecord(
+                            anomaly_id=f"UVB-{g_idx}",
+                            tier=2,
+                            category="PHYSICAL_ANOMALY",
+                            severity="WARNING",
+                            galaxy_index=g_idx,
+                            metric_name="uv_slope_beta",
+                            observed_value=float(uv_slope[bad_u]),
+                            expected_range=[-2.80, 1.80],
+                            input_parameters=_extract_galaxy_context(bad_u),
+                            root_cause="Unphysical UV continuum slope (super-Rayleigh-Jeans or over-reddened).",
+                            remediation="Review dust extinction curve index and burst fraction.",
+                        ))
 
-            # Tier 2: Check photometry bounds if photometry output
+            # Tier 2: Check photometry bounds if photometry output and values are in apparent magnitude range (~5 to 45)
             if not is_spectra:
-                valid_mags, bad_mags = check_magnitude_bounds(batch_out, min_mag=min_mag, max_mag=max_mag)
-                for bad_m in bad_mags:
-                    g_idx = int(batch_sample_idx[bad_m])
-                    category_counts["PHYSICAL_ANOMALY"] += 1
-                    anomalies.append(AnomalyRecord(
-                        anomaly_id=f"MAG-{g_idx}",
-                        tier=2,
-                        category="PHYSICAL_ANOMALY",
-                        severity="WARNING",
-                        galaxy_index=g_idx,
-                        metric_name="ab_magnitude_range",
-                        observed_value=float(np.min(batch_out[bad_m])),
-                        expected_range=[min_mag, max_mag],
-                        input_parameters=_extract_galaxy_context(bad_m),
-                        root_cause="Magnitude falls outside standard survey limits.",
-                        remediation="Verify cosmological distance modulus and normalization.",
-                    ))
+                med_val = float(np.nanmedian(batch_out))
+                if 5.0 <= med_val <= 45.0:
+                    valid_mags, bad_mags = check_magnitude_bounds(batch_out, min_mag=min_mag, max_mag=max_mag)
+                    for bad_m in bad_mags:
+                        g_idx = int(batch_sample_idx[bad_m])
+                        category_counts["PHYSICAL_ANOMALY"] += 1
+                        if len(anomalies) < 1000:
+                            anomalies.append(AnomalyRecord(
+                                anomaly_id=f"MAG-{g_idx}",
+                                tier=2,
+                                category="PHYSICAL_ANOMALY",
+                                severity="WARNING",
+                                galaxy_index=g_idx,
+                                metric_name="ab_magnitude_range",
+                                observed_value=float(np.min(batch_out[bad_m])),
+                                expected_range=[min_mag, max_mag],
+                                input_parameters=_extract_galaxy_context(bad_m),
+                                root_cause="Magnitude falls outside standard survey limits.",
+                                remediation="Verify cosmological distance modulus and normalization.",
+                            ))
 
         except Exception as e:
             # UNKNOWN EXCEPTION: Safely isolate and dump to quarantine without crashing

@@ -746,14 +746,19 @@ def main():
     if a.scheduler:
         client = Client(a.scheduler)
     else:
-        client = Client(
-            LocalCluster(
-                n_workers=a.workers,
-                threads_per_worker=1,
-                memory_limit=a.memory_limit,
-                dashboard_address=None,
-            )
+        import asyncio
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
+        cluster = LocalCluster(
+            n_workers=a.workers,
+            threads_per_worker=1,
+            memory_limit=a.memory_limit,
+            dashboard_address=None,
         )
+        client = Client(cluster)
 
     print(f"dask: {len(client.scheduler_info()['workers'])} workers connected")
     try:
