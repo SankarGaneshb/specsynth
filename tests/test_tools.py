@@ -161,6 +161,32 @@ def test_tool_inspect_galaxy_photometry(tmp_path, monkeypatch):
     assert details["photometry_magnitudes"][0] == 22.5
 
 
+def test_tool_inspect_galaxy_photometry_in_spectra_zarr(tmp_path, monkeypatch):
+    mock_in = {}
+    class MockSpectraGroup(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {"filters": ["F090W", "F115W", "F150W"]}
+
+    mock_out = MockSpectraGroup({
+        "photometry": np.array([[1.2e-5, 3.4e-5, 5.6e-5]])
+    })
+
+    def mock_open_group(store, mode="r"):
+        if "galaxies.zarr" in store:
+            return mock_in
+        elif "spectra.zarr" in store:
+            return mock_out
+        raise ValueError(f"Unknown store {store}")
+
+    monkeypatch.setattr("zarr.open_group", mock_open_group)
+
+    details = tool_inspect_galaxy(base=str(tmp_path), galaxy_idx=0)
+    assert details["output_type"] == "photometry"
+    assert len(details["photometry_values"]) == 3
+    assert details["filter_names"] == ["F090W", "F115W", "F150W"]
+
+
 def test_tool_inspect_galaxy_not_found(tmp_path, monkeypatch):
     mock_in = {}
 

@@ -45,4 +45,6 @@ paper/*.pdf
 *report.md
 sentry_quarantine/
 run/
+demo_run/
+clean_catalog.*
 

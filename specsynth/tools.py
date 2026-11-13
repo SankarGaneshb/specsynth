@@ -126,19 +126,33 @@ def tool_inspect_galaxy(base: str = "./run", galaxy_idx: int = 0) -> dict[str, A
             details["sfh_tau_gyr"] = float(p_row[2])
             details["log_metallicity"] = float(p_row[3])
 
-    # Check output
-    try:
-        g_out = zarr.open_group(out_store, mode="r")
-        details["output_type"] = "spectra"
-        details["min_spectral_flux"] = float(np.min(g_out["spectra"][galaxy_idx]))
-        details["max_spectral_flux"] = float(np.max(g_out["spectra"][galaxy_idx]))
-    except Exception:
+    # Check output (spectra or photometry)
+    for target_store in (out_store, phot_store):
         try:
-            g_phot = zarr.open_group(phot_store, mode="r")
-            details["output_type"] = "photometry"
-            details["photometry_magnitudes"] = [float(m) for m in g_phot["photometry"][galaxy_idx]]
+            try:
+                g_out = zarr.open_group(target_store, mode="r")
+            except Exception:
+                g_out = zarr.open_group(fsspec.get_mapper(target_store), mode="r")
+
+            if "spectra" in g_out:
+                details["output_type"] = "spectra"
+                row = np.asarray(g_out["spectra"][galaxy_idx], dtype=np.float64)
+                details["min_spectral_flux"] = float(np.min(row))
+                details["max_spectral_flux"] = float(np.max(row))
+                break
+            elif "photometry" in g_out:
+                details["output_type"] = "photometry"
+                p_row = [float(m) for m in np.asarray(g_out["photometry"][galaxy_idx], dtype=np.float64)]
+                details["photometry_magnitudes"] = p_row
+                details["photometry_values"] = p_row
+                attrs = getattr(g_out, "attrs", None)
+                if attrs and "filters" in attrs:
+                    details["filter_names"] = list(attrs["filters"])
+                break
         except Exception:
-            details["output_type"] = "not_found"
+            continue
+    else:
+        details["output_type"] = "not_found"
 
     return details
 
