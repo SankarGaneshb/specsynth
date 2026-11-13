@@ -107,20 +107,20 @@ Evaluated across 5 timed runs (after 2 warmups) on a standardized workload of 50
 | Hardware Environment | Compute Backend | Mean Elapsed Time | Measured Throughput | Compute Rate | Measured Speedup |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Workstation CPU** (Intel 12C/14T) | `scipy-openblas` | 0.8624 s (± 0.0577 s) | **57,978 gal/s** | 17.12 GFLOPS | 1.0x (Local Baseline) |
-| **Cloud VM CPU** (Linux x86_64, 2C/4T) | `scipy-openblas` | 0.8537 s (± 0.0039 s) | **58,565 gal/s** | 17.29 GFLOPS | 1.0x (Cloud CPU) |
-| **Cloud GPU** (NVIDIA Tesla T4, 15 GB) | **CuPy / CUDA 13.0** | **0.1966 s** (± 0.0053 s) | **254,326 gal/s** | **75.08 GFLOPS** | **4.34x vs. Cloud CPU** |
+| **Cloud VM CPU** (Linux x86_64, 2C/4T) | `scipy-openblas` | 0.8719 s (± 0.0252 s) | **57,344 gal/s** | 16.93 GFLOPS | 1.0x (Cloud CPU) |
+| **Cloud GPU** (NVIDIA Tesla T4, 15 GB) | **CuPy / CUDA 13.0** | **0.1932 s** (± 0.0040 s) | **258,812 gal/s** | **76.40 GFLOPS** | **4.51x vs. Cloud CPU** |
 
-On a single NVIDIA Tesla T4 GPU, `specsynth` processes 50,000 galaxy spectra in under 0.20 seconds—achieving a 4.34x measured speedup over host CPU BLAS (`1.20 GB/s` vs. `0.28 GB/s` sustained memory bandwidth).
+On a single NVIDIA Tesla T4 GPU, `specsynth` processes 50,000 galaxy spectra in under 0.20 seconds—achieving a 4.51x measured speedup over host CPU BLAS (`1.22 GB/s` vs. `0.27 GB/s` sustained memory bandwidth). An interactive reproducible notebook is publicly available on [Kaggle](https://www.kaggle.com/code/bsankarganesh/specsynth-gpu-benchmark).
 
 ### 3. Out-of-Core Memory Boundedness
 Measured directly via OS kernel working-set tracking (`psutil`) while streaming 100,000 to 1,000,000 galaxies sequentially in 20,000-galaxy chunks (`O(N_chunk)`):
 
 | Streamed Catalog Scale | Measured Peak Resident RAM (RSS) | Monolithic Unchunked Footprint (W=4,000) |
 | :--- | :---: | :---: |
-| **100,000 Galaxies** | **260.6 MB** | 1.49 GB |
-| **250,000 Galaxies** | **260.6 MB** | 3.73 GB |
-| **500,000 Galaxies** | **261.0 MB** | 7.45 GB |
-| **1,000,000 Galaxies** | **261.0 MB** | 14.90 GB |
+| **100,000 Galaxies** | **261.5 MB** | 1.49 GB |
+| **250,000 Galaxies** | **261.5 MB** | 3.73 GB |
+| **500,000 Galaxies** | **261.5 MB** | 7.45 GB |
+| **1,000,000 Galaxies** | **261.8 MB** | 14.90 GB |
 
 Across a 10x catalog expansion, worker memory stayed strictly bounded with < 0.2% variance and zero disk spill.
 

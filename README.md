@@ -1,8 +1,8 @@
 # specsynth: Cloud-Native Infrastructure for Survey-Scale Astrophysical Spectral Synthesis
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SankarGaneshb/specsynth/blob/main/notebooks/quickstart.ipynb)
+[![Kaggle GPU Benchmark](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/bsankarganesh/specsynth-gpu-benchmark)
 [![CI](https://github.com/SankarGaneshb/specsynth/actions/workflows/ci.yml/badge.svg)](https://github.com/SankarGaneshb/specsynth/actions)
-[![Kaggle GPU Benchmark](https://github.com/SankarGaneshb/specsynth/actions/workflows/kaggle-gpu.yml/badge.svg)](https://github.com/SankarGaneshb/specsynth/actions/workflows/kaggle-gpu.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
@@ -405,9 +405,10 @@ python specsynth.py benchmark --n-gal 100000 --gpu --output my_benchmark.json
 ```
 
 ### On-Demand Cloud GPU Benchmark (Kaggle Tesla T4)
-Users and reviewers can trigger the verified GPU benchmark on a live **NVIDIA Tesla T4 GPU** node on a need basis:
-1. **One-Click GitHub Actions Workflow**: Go to the [Kaggle Tesla T4 GPU Benchmark](https://github.com/SankarGaneshb/specsynth/actions/workflows/kaggle-gpu.yml) page, click **Run workflow**, and view the execution table and download the output `benchmark_manifest_gpu_t4.json`.
-2. **Local Orchestrator CLI**:
+Users and reviewers can inspect the live benchmark and validate throughput on a live **NVIDIA Tesla T4 GPU** node:
+1. **Interactive Kaggle Notebook**: View and run the verified notebook directly on Kaggle: [![Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/bsankarganesh/specsynth-gpu-benchmark)
+2. **One-Click GitHub Actions Workflow**: Go to the [Kaggle Tesla T4 GPU Benchmark](https://github.com/SankarGaneshb/specsynth/actions/workflows/kaggle-gpu.yml) page, click **Run workflow**, and view the execution table and download the output `benchmark_manifest_gpu_t4.json`.
+3. **Local Orchestrator CLI**:
    ```bash
    python scripts/run_kaggle_gpu.py --n-gal 50000 --n-runs 5
    ```
