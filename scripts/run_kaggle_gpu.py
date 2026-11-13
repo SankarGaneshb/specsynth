@@ -121,6 +121,7 @@ def main() -> int:
     parser.add_argument("--n-runs", type=int, default=5, help="Number of benchmark runs (default: 5)")
     parser.add_argument("--output", default="paper/benchmark_manifest_gpu_t4.json", help="Destination manifest path")
     parser.add_argument("--timeout", type=int, default=900, help="Timeout in seconds (default: 900s / 15m)")
+    parser.add_argument("--public", action="store_true", help="Make the Kaggle notebook publicly visible on Kaggle")
     args = parser.parse_args()
 
     # Self-healing: ensure 'six' is installed (known Kaggle CLI packaging bug)
@@ -186,7 +187,7 @@ def main() -> int:
             "code_file": "benchmark_worker.py",
             "language": "python",
             "kernel_type": "script",
-            "is_private": "true",
+            "is_private": "false" if args.public else "true",
             "enable_gpu": "true",
             "enable_internet": "true",
         }
@@ -278,6 +279,7 @@ def main() -> int:
         print(f"  CPU Throughput:     {cpu.get('throughput_galaxies_per_sec', 0):,.1f} gal/s ({cpu.get('compute_gflops', 0):.2f} GFLOPS)")
         print(f"  GPU Throughput:     {gpu.get('throughput_galaxies_per_sec', 0):,.1f} gal/s ({gpu.get('compute_gflops', 0):.2f} GFLOPS)")
         print(f"  Measured Speedup:   {gpu.get('speedup_vs_cpu', 0):.2f}x")
+        print(f"  Kaggle Web URL:     https://www.kaggle.com/code/{kernel_id}")
         print("=" * 60)
 
         # Write to GITHUB_STEP_SUMMARY if running in GitHub Actions
