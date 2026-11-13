@@ -115,6 +115,16 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=900, help="Timeout in seconds (default: 900s / 15m)")
     args = parser.parse_args()
 
+    # Self-healing: ensure 'six' is installed (known Kaggle CLI packaging bug)
+    try:
+        import six
+    except ImportError:
+        try:
+            print("[*] Installing missing 'six' dependency for Kaggle CLI...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "-q", "six"], check=False)
+        except Exception:
+            pass
+
     # Verify Kaggle CLI is installed
     if not shutil.which("kaggle"):
         print("[!] Error: 'kaggle' CLI is not installed or not in PATH.", file=sys.stderr)
