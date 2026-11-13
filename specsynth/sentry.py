@@ -409,6 +409,47 @@ def run_sentry_audit(
                     ctx["redshift"] = float(redshift)
                 return ctx
 
+            # Tier 1: Input schema checks (negative dust or unphysical negative SFH masses)
+            if batch_td is not None:
+                bad_td = np.where(batch_td < 0.0)[0]
+                for bad_i in bad_td:
+                    g_idx = int(batch_sample_idx[bad_i])
+                    category_counts["INPUT_SCHEMA_FAULT"] += 1
+                    if len(anomalies) < 1000:
+                        anomalies.append(AnomalyRecord(
+                            anomaly_id=f"SCH-TD-{g_idx}",
+                            tier=1,
+                            category="INPUT_SCHEMA_FAULT",
+                            severity="CRITICAL",
+                            galaxy_index=g_idx,
+                            metric_name="tau_diffuse_non_negative",
+                            observed_value=float(batch_td[bad_i]),
+                            expected_range=[0.0, 50.0],
+                            input_parameters=_extract_galaxy_context(bad_i),
+                            root_cause="Negative diffuse dust optical depth detected in catalog.",
+                            remediation="Ensure tau_diffuse is non-negative.",
+                        ))
+
+            if batch_tb is not None:
+                bad_tb = np.where(batch_tb < 0.0)[0]
+                for bad_i in bad_tb:
+                    g_idx = int(batch_sample_idx[bad_i])
+                    category_counts["INPUT_SCHEMA_FAULT"] += 1
+                    if len(anomalies) < 1000:
+                        anomalies.append(AnomalyRecord(
+                            anomaly_id=f"SCH-TB-{g_idx}",
+                            tier=1,
+                            category="INPUT_SCHEMA_FAULT",
+                            severity="CRITICAL",
+                            galaxy_index=g_idx,
+                            metric_name="tau_birth_non_negative",
+                            observed_value=float(batch_tb[bad_i]),
+                            expected_range=[0.0, 50.0],
+                            input_parameters=_extract_galaxy_context(bad_i),
+                            root_cause="Negative birth cloud dust optical depth detected in catalog.",
+                            remediation="Ensure tau_birth is non-negative.",
+                        ))
+
             # Tier 1: Numerical checks on outputs
             valid_num, bad_num = check_finite_positive(batch_out)
             for bad_i in bad_num:
@@ -432,8 +473,8 @@ def run_sentry_audit(
             # Tier 1 & 2: If spectra are available, run physical invariant checks
             if is_spectra and "sfh" in g_in:
                 batch_sfh = np.asarray(g_in["sfh"][:][batch_sample_idx] if total_galaxies <= 50_000 else np.stack([g_in["sfh"][i] for i in batch_sample_idx])).astype(np.float64)
-                batch_td = np.asarray(g_in["tau_diffuse"][:])[batch_sample_idx].astype(np.float64)
-                batch_tb = np.asarray(g_in["tau_birth"][:])[batch_sample_idx].astype(np.float64)
+                batch_td_arr = np.asarray(g_in["tau_diffuse"][:])[batch_sample_idx].astype(np.float64) if "tau_diffuse" in g_in else np.zeros(len(batch_sample_idx))
+                batch_tb_arr = np.asarray(g_in["tau_birth"][:])[batch_sample_idx].astype(np.float64) if "tau_birth" in g_in else np.zeros(len(batch_sample_idx))
 
                 # Reference intrinsic spectra before dust
                 batch_intr = batch_sfh[:, ny:] @ ssp[ny:] + batch_sfh[:, :ny] @ ssp[:ny]
@@ -456,8 +497,11 @@ def run_sentry_audit(
                             remediation="Clamp tau_diffuse and tau_birth to non-negative values.",
                         ))
 
+                # De-redshift wave grid to rest frame for accurate physical feature diagnosis
+                wave_rest = wave / (1.0 + redshift) if redshift > 0.0 else wave
+
                 # Dn(4000) Break
-                d4000 = measure_d4000_break(wave, batch_out)
+                d4000 = measure_d4000_break(wave_rest, batch_out)
                 bad_d4000 = np.where(np.isfinite(d4000) & ((d4000 < 0.95) | (d4000 > 2.80)))[0]
                 for bad_d in bad_d4000:
                     g_idx = int(batch_sample_idx[bad_d])
@@ -478,7 +522,7 @@ def run_sentry_audit(
                         ))
 
                 # UV Continuum Slope beta
-                uv_slope = measure_uv_slope(wave, batch_out)
+                uv_slope = measure_uv_slope(wave_rest, batch_out)
                 bad_uv = np.where(np.isfinite(uv_slope) & ((uv_slope < -2.80) | (uv_slope > 1.80)))[0]
                 for bad_u in bad_uv:
                     g_idx = int(batch_sample_idx[bad_u])
@@ -551,6 +595,34 @@ def run_sentry_audit(
                 remediation=f"Inspect quarantined crash report at {dump_path}",
             ))
             del e  # Release exception frame memory immediately
+
+    # ---------------------------------------------------------------------------
+    # Tier 3: Statistical Population Dispersion & Collapse Checks
+    # ---------------------------------------------------------------------------
+    if n_sample >= 20:
+        try:
+            if not is_spectra and "photometry" in g_out and g_out["photometry"].shape[1] >= 2:
+                p_sample = np.asarray(g_out["photometry"][:][sampled_indices[:min(n_sample, 5000)]] if total_galaxies <= 50_000 else np.stack([g_out["photometry"][i] for i in sampled_indices[:min(n_sample, 5000)]]))
+                f0 = np.maximum(p_sample[:, 0], 1e-35)
+                f1 = np.maximum(p_sample[:, 1], 1e-35)
+                pop_colors = -2.5 * np.log10(f0 / f1)
+                bimod_res = check_population_bimodality(pop_colors)
+                if bimod_res.get("status") == "COLLAPSED":
+                    category_counts["POPULATION_DRIFT"] += 1
+                    anomalies.append(AnomalyRecord(
+                        anomaly_id="POP-COLOR-COLLAPSE",
+                        tier=3,
+                        category="POPULATION_DRIFT",
+                        severity="WARNING",
+                        galaxy_index=0,
+                        metric_name="population_color_dispersion",
+                        observed_value=float(bimod_res.get("variance", 0.0)),
+                        expected_range=[1e-4, 10.0],
+                        root_cause="Population color variance collapsed to zero (degenerate or identical galaxies).",
+                        remediation="Verify random seed and parameter spread in SFH generator.",
+                    ))
+        except Exception:
+            pass
 
     # Final calculations
     total_anomalies = len(anomalies)

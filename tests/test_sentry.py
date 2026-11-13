@@ -568,3 +568,80 @@ def test_sentry_report_to_markdown_truncation(tmp_path):
     assert "and 5 more anomalies logged" in content
 
 
+def test_run_sentry_audit_input_schema_fault(monkeypatch, tmp_path):
+    class MockStore(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {}
+
+    wave = np.linspace(1000, 10000, 20)
+    mock_ssp = MockStore({
+        "wave": wave,
+        "ages": np.array([1e7]),
+        "mets": np.array([0.02]),
+        "ssp": np.ones((1, 20), dtype=np.float32),
+    })
+    # Negative tau_diffuse and negative tau_birth
+    mock_gal = MockStore({
+        "sfh": np.ones((2, 1), dtype=np.float32),
+        "tau_diffuse": np.array([-0.5, 0.2], dtype=np.float32),
+        "tau_birth": np.array([0.5, -0.8], dtype=np.float32),
+        "params": np.zeros((2, 6), dtype=np.float32),
+    })
+    mock_out = MockStore({
+        "spectra": np.ones((2, 20), dtype=np.float32) * 1e-15,
+        "wave": wave,
+    })
+
+    def mock_open(store, mode="r"):
+        if "ssp.zarr" in store: return mock_ssp
+        if "galaxies.zarr" in store: return mock_gal
+        return mock_out
+
+    monkeypatch.setattr("zarr.open_group", mock_open)
+
+    report = run_sentry_audit(base=str(tmp_path), sample_size=2)
+    assert report.category_summary["INPUT_SCHEMA_FAULT"] >= 2
+    assert report.status == "CRITICAL_FAILURE"
+    sch_anoms = [a for a in report.anomalies if a.category == "INPUT_SCHEMA_FAULT"]
+    assert len(sch_anoms) >= 2
+
+
+def test_run_sentry_audit_tier3_population_collapse(monkeypatch, tmp_path):
+    class MockStore(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {}
+
+    wave = np.linspace(1000, 10000, 10)
+    mock_ssp = MockStore({
+        "wave": wave,
+        "ages": np.array([1e7]),
+        "mets": np.array([0.02]),
+        "ssp": np.ones((1, 10), dtype=np.float32),
+    })
+    n_gal = 30
+    mock_gal = MockStore({
+        "sfh": np.ones((n_gal, 1), dtype=np.float32),
+    })
+    # Collapsed degenerate colors across 30 galaxies (all identical)
+    phot = np.ones((n_gal, 2), dtype=np.float32) * 20.0
+    mock_out = MockStore({
+        "photometry": phot,
+    })
+
+    def mock_open(store, mode="r"):
+        if "ssp.zarr" in store: return mock_ssp
+        if "galaxies.zarr" in store: return mock_gal
+        return mock_out
+
+    monkeypatch.setattr("zarr.open_group", mock_open)
+
+    report = run_sentry_audit(base=str(tmp_path), sample_size=n_gal)
+    assert report.tier_summary["tier3_population"] >= 1
+    pop_anom = next((a for a in report.anomalies if a.category == "POPULATION_DRIFT"), None)
+    assert pop_anom is not None
+    assert pop_anom.metric_name == "population_color_dispersion"
+
+
+
