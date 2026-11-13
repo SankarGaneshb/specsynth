@@ -124,7 +124,7 @@ To establish scientific fidelity, distributed production runs (float32 Dask / Za
 | **Median Relative Spectral Error** | **$7.21 \times 10^{-8}$** | $< 1.0 \times 10^{-5}$ | **PASS** |
 | **Root Mean Square Error (RMSE)** | **$2.24 \times 10^{-11}$** | -- | **PASS** |
 
-*(Run locally via `specsynth verify` or `specsynth benchmark`).*
+*(Run locally via `specsynth verify`, `specsynth benchmark`, or `pytest tests/test_validation_external.py`. Full scientific audit and verification report available in [AUDIT_GAP_ANALYSIS.md](AUDIT_GAP_ANALYSIS.md) and [Validate_Announcement_Claims_Updated.pdf](Validate_Announcement_Claims_Updated.pdf)).*
 
 ---
 
