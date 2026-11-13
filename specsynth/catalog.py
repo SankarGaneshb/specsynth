@@ -186,13 +186,22 @@ def resolve_catalog_columns(
             met_safe = np.clip(met, 1e-5, 0.1)
             resolved["met"] = np.log10(met_safe).astype(np.float32)
 
-    # Diffuse dust: convert Av -> tau_diffuse (tau_V = Av / 1.086)
+    # Diffuse dust: convert Av -> tau_diffuse (tau_V = Av / 1.086) if source column was Av
     if "tau_diffuse" not in resolved:
         # Default moderate diffuse dust tau_d = 0.5
         resolved["tau_diffuse"] = np.full(n_gals, 0.5, dtype=np.float32)
     else:
-        # If values look like Av in magnitudes (e.g. 0 to 4), check and convert
-        pass
+        # Check if the column name explicitly or via alias corresponds to Av in magnitudes
+        chosen_dust_col = ""
+        for alias in COLUMN_ALIASES["tau_diffuse"]:
+            if alias.lower() in case_map:
+                chosen_dust_col = alias.lower()
+                break
+        if chosen_dust_col in ("av", "a_v"):
+            # Astronomical conversion: optical depth tau_V = A_V / (2.5 * log10(e)) = A_V / 1.086
+            resolved["tau_diffuse"] = (np.clip(resolved["tau_diffuse"], 0.0, None) / 1.086).astype(np.float32)
+        else:
+            resolved["tau_diffuse"] = np.clip(resolved["tau_diffuse"], 0.0, None).astype(np.float32)
 
     # Birth-cloud dust: default to 1.5 * tau_diffuse (Charlot & Fall 2000 model)
     if "tau_birth" not in resolved:
@@ -214,6 +223,66 @@ def catalog_to_params_matrix(resolved: dict[str, np.ndarray]) -> np.ndarray:
     return p
 
 
+def stream_parquet_chunks(filepath: str | Path, chunk_size: int = 50_000):
+    """Yield column dictionaries chunk by chunk from a Parquet catalog without loading into RAM."""
+    import pyarrow.parquet as pq
+    pf = pq.ParquetFile(str(filepath))
+    for batch in pf.iter_batches(batch_size=chunk_size):
+        yield {col.lower(): batch[col].to_numpy() for col in batch.schema.names}
+
+
+def stream_hdf5_chunks(filepath: str | Path, chunk_size: int = 50_000):
+    """Yield column dictionaries chunk by chunk from an HDF5 catalog without loading into RAM."""
+    import h5py
+    with h5py.File(str(filepath), "r") as f:
+        datasets = {}
+        def _find_1d(group, prefix=""):
+            for key in group.keys():
+                item = group[key]
+                full_key = f"{prefix}/{key}".lstrip("/") if prefix else key
+                if isinstance(item, h5py.Dataset) and item.ndim == 1:
+                    datasets[key.lower()] = item
+                    datasets[full_key.lower()] = item
+                elif isinstance(item, h5py.Group):
+                    _find_1d(item, full_key)
+        _find_1d(f)
+        if not datasets:
+            raise ValueError(f"No 1D tabular datasets found in HDF5 file: {filepath}")
+        sample_key = next(iter(datasets))
+        n_total = datasets[sample_key].shape[0]
+        for start in range(0, n_total, chunk_size):
+            stop = min(start + chunk_size, n_total)
+            yield {k: np.asarray(ds[start:stop]) for k, ds in datasets.items()}
+
+
+def stream_csv_chunks(filepath: str | Path, chunk_size: int = 50_000):
+    """Yield column dictionaries chunk by chunk from a CSV/TSV catalog without loading into RAM."""
+    import csv
+    path_str = str(filepath)
+    delimiter = "\t" if path_str.endswith(".tsv") else ","
+    with open(path_str, "r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f, delimiter=delimiter)
+        if not reader.fieldnames:
+            return
+        cols = [c.lower() for c in reader.fieldnames]
+        current_chunk = {c: [] for c in cols}
+        count = 0
+        for row in reader:
+            for c in cols:
+                try:
+                    val = float(row.get(c, 0.0) or 0.0)
+                except ValueError:
+                    val = 0.0
+                current_chunk[c].append(val)
+            count += 1
+            if count >= chunk_size:
+                yield {c: np.asarray(current_chunk[c], dtype=np.float32) for c in cols}
+                current_chunk = {c: [] for c in cols}
+                count = 0
+        if count > 0:
+            yield {c: np.asarray(current_chunk[c], dtype=np.float32) for c in cols}
+
+
 def import_catalog(
     catalog_path: str | Path,
     output_zarr: str,
@@ -221,19 +290,95 @@ def import_catalog(
     chunk_size: int = 50_000,
     explicit_columns: Mapping[str, str] | None = None,
     client: Any = None,
+    streaming: bool = False,
 ) -> dict[str, Any]:
     """
     Import an external cosmological simulation catalog (FITS, HDF5, CSV, Parquet)
     and synthesize standard galaxies.zarr dataset.
+    Supports in-memory loading as well as streaming chunk-by-chunk ingestion for large datasets.
     """
-    raw_data = load_raw_table(catalog_path)
-    resolved = resolve_catalog_columns(raw_data, explicit_columns)
-    n_gals = len(resolved["mass"])
+    path_str = str(catalog_path)
+    ext = os.path.splitext(path_str)[1].lower()
 
     # Load SSP age/metallicity grid to construct SFH
     ages = da.from_zarr(ssp_store, component="ages").compute()
     mets = da.from_zarr(ssp_store, component="mets").compute()
     K = len(ages) * len(mets)
+
+    if streaming and ext in (".parquet", ".pq", ".h5", ".hdf5", ".csv", ".tsv"):
+        # True out-of-core streaming ingestion
+        if ext in (".parquet", ".pq"):
+            chunk_iter = stream_parquet_chunks(path_str, chunk_size)
+        elif ext in (".h5", ".hdf5"):
+            chunk_iter = stream_hdf5_chunks(path_str, chunk_size)
+        else:
+            chunk_iter = stream_csv_chunks(path_str, chunk_size)
+        import zarr
+        import fsspec
+
+        try:
+            grp = zarr.open_group(output_zarr, mode="w")
+        except Exception:
+            grp = zarr.open_group(fsspec.get_mapper(output_zarr), mode="w")
+
+        total_gals = 0
+        cols_mapped = {}
+        for chunk_idx, raw_chunk in enumerate(chunk_iter):
+            resolved = resolve_catalog_columns(raw_chunk, explicit_columns)
+            n_chunk = len(resolved["mass"])
+            if n_chunk == 0:
+                continue
+            cols_mapped = {k: explicit_columns.get(k, "auto") if explicit_columns else "auto" for k in resolved}
+            params_block = catalog_to_params_matrix(resolved)
+            sfh_block = sfh_from_params(params_block, ages, mets)
+
+            if chunk_idx == 0:
+                try:
+                    grp.create_dataset("sfh", data=sfh_block, chunks=(chunk_size, K), dtype=np.float32, overwrite=True)
+                    grp.create_dataset("tau_diffuse", data=params_block[:, 4], chunks=(chunk_size,), dtype=np.float32, overwrite=True)
+                    grp.create_dataset("tau_birth", data=params_block[:, 5], chunks=(chunk_size,), dtype=np.float32, overwrite=True)
+                    grp.create_dataset("params", data=params_block, chunks=(chunk_size, N_PARAM), dtype=np.float32, overwrite=True)
+                    if "redshift" in resolved:
+                        grp.create_dataset("redshift", data=resolved["redshift"], chunks=(chunk_size,), dtype=np.float32, overwrite=True)
+                except (TypeError, AttributeError):
+                    grp.create_array("sfh", shape=sfh_block.shape, chunks=(chunk_size, K), dtype=np.float32, overwrite=True)
+                    grp["sfh"][:] = sfh_block
+                    grp.create_array("tau_diffuse", shape=params_block[:, 4].shape, chunks=(chunk_size,), dtype=np.float32, overwrite=True)
+                    grp["tau_diffuse"][:] = params_block[:, 4]
+                    grp.create_array("tau_birth", shape=params_block[:, 5].shape, chunks=(chunk_size,), dtype=np.float32, overwrite=True)
+                    grp["tau_birth"][:] = params_block[:, 5]
+                    grp.create_array("params", shape=params_block.shape, chunks=(chunk_size, N_PARAM), dtype=np.float32, overwrite=True)
+                    grp["params"][:] = params_block
+                    if "redshift" in resolved:
+                        grp.create_array("redshift", shape=resolved["redshift"].shape, chunks=(chunk_size,), dtype=np.float32, overwrite=True)
+                        grp["redshift"][:] = resolved["redshift"]
+            else:
+                grp["sfh"].append(sfh_block, axis=0)
+                grp["tau_diffuse"].append(params_block[:, 4], axis=0)
+                grp["tau_birth"].append(params_block[:, 5], axis=0)
+                grp["params"].append(params_block, axis=0)
+                if "redshift" in resolved and "redshift" in grp:
+                    grp["redshift"].append(resolved["redshift"], axis=0)
+
+            total_gals += n_chunk
+
+        metadata = {
+            "source_catalog": str(catalog_path),
+            "n_galaxies": total_gals,
+            "ssp_grid_k": K,
+            "columns_mapped": cols_mapped,
+            "ingestion_mode": "streaming_out_of_core",
+        }
+        try:
+            grp.attrs.update(metadata)
+        except Exception:
+            pass
+        return metadata
+
+    # In-memory tabular load with chunked Dask conversion
+    raw_data = load_raw_table(catalog_path)
+    resolved = resolve_catalog_columns(raw_data, explicit_columns)
+    n_gals = len(resolved["mass"])
 
     params = catalog_to_params_matrix(resolved)
 

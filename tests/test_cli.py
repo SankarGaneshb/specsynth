@@ -181,6 +181,39 @@ def test_cli_cmd_synth_full(monkeypatch):
     args.fn(args, mock_client)
 
 
+def test_cli_cmd_synth_batch_chunks(monkeypatch):
+    import dask.array as da
+
+    ages = np.array([1e6, 5e9])
+    mets = np.array([0.02])
+    wave = np.linspace(1000, 10000, 20)
+    monkeypatch.setattr("specsynth.cli.read_small", lambda s, c: ages if c=="ages" else (mets if c=="mets" else wave))
+    monkeypatch.setattr("specsynth.cli.wait", MagicMock())
+
+    ssp_da = da.ones((2, 20), chunks=(2, 20), dtype=np.float32)
+    # 2 chunk blocks of 5 galaxies each
+    sfh_da = da.ones((10, 2), chunks=(5, 2), dtype=np.float32)
+    tau_da = da.zeros(10, chunks=(5,), dtype=np.float32)
+
+    monkeypatch.setattr("dask.array.from_zarr", lambda s, component=None: ssp_da if component=="ssp" else (sfh_da if component=="sfh" else tau_da))
+    mock_batched = MagicMock()
+    monkeypatch.setattr("specsynth.cli.write_many_batched", mock_batched)
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: MagicMock(attrs={}))
+
+    mock_client = MagicMock()
+    mock_client.persist = lambda x: x
+    mock_client.scheduler_info.return_value = {"workers": {"worker1": {}}}
+
+    ap = build_parser()
+    # 2 chunk blocks with batch_chunks=1 -> triggers write_many_batched
+    args = ap.parse_args(["synth", "--filters", "jwst_nircam", "--batch-chunks", "1"])
+    args.fn(args, mock_client)
+
+    mock_batched.assert_called_once()
+    assert mock_batched.call_args[0][5] == 1  # batch_chunks arg is 1
+
+
+
 def test_cli_cmd_synth_fail_on_anomaly(monkeypatch):
     import dask.array as da
     ages, mets, wave = np.array([1e6]), np.array([0.02]), np.linspace(1000, 10000, 10)
@@ -390,3 +423,109 @@ def test_cli_main_with_scheduler(monkeypatch):
     main()
     mock_fn.assert_called_once()
     mock_client.close.assert_called_once()
+
+
+def test_cli_cmd_make_sfh_redshift_range(monkeypatch):
+    mock_client = MagicMock()
+    mock_write = MagicMock()
+    monkeypatch.setattr("specsynth.cli.write_many", mock_write)
+    monkeypatch.setattr(
+        "specsynth.cli.read_small",
+        lambda s, c: np.array([1e6, 1e9]) if c == "ages" else np.array([0.02]),
+    )
+
+    ap = build_parser()
+    args = ap.parse_args(
+        ["make-sfh", "--n-gal", "20", "--chunk", "10", "--redshift-range", "0.5", "2.5"]
+    )
+    args.fn(args, mock_client)
+
+    mock_write.assert_called_once()
+    saved_arrays = mock_write.call_args[0][2]
+    assert "sfh" in saved_arrays
+    assert "tau_diffuse" in saved_arrays
+    assert "tau_birth" in saved_arrays
+    assert "redshift" in saved_arrays
+    z_computed = saved_arrays["redshift"].compute()
+    assert z_computed.shape == (20,)
+    assert np.all((z_computed >= 0.5) & (z_computed <= 2.5))
+
+
+def test_cli_cmd_synth_per_galaxy_z(monkeypatch):
+    import dask.array as da
+
+    ages = np.array([1e6, 5e9])
+    mets = np.array([0.02])
+    wave = np.linspace(5000, 50000, 50)
+    monkeypatch.setattr(
+        "specsynth.cli.read_small",
+        lambda s, c: ages if c == "ages" else (mets if c == "mets" else wave),
+    )
+
+    ssp_da = da.ones((2, 50), chunks=(2, 50), dtype=np.float32)
+    sfh_da = da.ones((6, 2), chunks=(3, 2), dtype=np.float32)
+    tau_da = da.zeros(6, chunks=(3,), dtype=np.float32)
+    z_da = da.from_array(np.array([0.5, 0.5, 1.0, 1.0, 2.0, 2.0], dtype=np.float32), chunks=(3,))
+
+    def mock_from_zarr(store, component=None):
+        if component == "ssp":
+            return ssp_da
+        if component == "sfh":
+            return sfh_da
+        if component in ("tau_diffuse", "tau_birth"):
+            return tau_da
+        if component == "redshift":
+            return z_da
+        raise ValueError(component)
+
+    monkeypatch.setattr("dask.array.from_zarr", mock_from_zarr)
+    monkeypatch.setattr("specsynth.cli.wait", MagicMock())
+    mock_write = MagicMock()
+    monkeypatch.setattr("specsynth.cli.write_many", mock_write)
+
+    class MockGroup:
+        def __contains__(self, key):
+            return key == "redshift"
+
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: MockGroup())
+
+    mock_client = MagicMock()
+    mock_client.persist = lambda x: x
+    mock_client.scheduler_info.return_value = {"workers": {"w1": {}}}
+
+    ap = build_parser()
+    # 1. Test per-galaxy-z with filters and distance dimming
+    args = ap.parse_args([
+        "synth",
+        "--per-galaxy-z",
+        "--distance-dimming",
+        "--filters", "jwst_nircam",
+    ])
+    args.fn(args, mock_client)
+
+    mock_write.assert_called_once()
+    saved = mock_write.call_args[0][2]
+    meta = mock_write.call_args[1]["metadata"]
+    assert "photometry" in saved
+    assert meta["mode"] == "lightcone"
+    assert meta["per_galaxy_z"] is True
+    assert meta["distance_dimming"] is True
+    phot_computed = saved["photometry"].compute()
+    assert phot_computed.shape == (6, 7)
+    # Monotonic dimming by redshift: z=0.5 brighter than z=1.0 brighter than z=2.0
+    assert np.all(phot_computed[0] > phot_computed[2])
+    assert np.all(phot_computed[2] > phot_computed[4])
+
+    # 2. Test per-galaxy-z without filters (full spectra)
+    mock_write.reset_mock()
+    args_spec = ap.parse_args([
+        "synth",
+        "--per-galaxy-z",
+    ])
+    args_spec.fn(args_spec, mock_client)
+    mock_write.assert_called_once()
+    saved_spec = mock_write.call_args[0][2]
+    assert "spectra" in saved_spec
+    spectra_computed = saved_spec["spectra"].compute()
+    assert spectra_computed.shape == (6, 50)
+

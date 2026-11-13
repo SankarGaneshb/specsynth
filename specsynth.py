@@ -36,6 +36,7 @@ from specsynth.core import (
     synth_block,
     url,
     write_many,
+    write_many_batched,
 )
 
 __all__ = [
@@ -45,6 +46,7 @@ __all__ = [
     "url",
     "read_small",
     "write_many",
+    "write_many_batched",
     "small",
     "attenuation_curve",
     "planck",

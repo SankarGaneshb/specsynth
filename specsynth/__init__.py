@@ -17,10 +17,18 @@ from specsynth.core import (
     synth_block,
     url,
     write_many,
+    write_many_batched,
 )
 from specsynth.benchmark import get_system_hardware_info, run_benchmark_suite
 from specsynth.catalog import clean_catalog, import_catalog, load_raw_table, resolve_catalog_columns
-from specsynth.cosmology import DEFAULT_COSMOLOGY, FlatLambdaCDM, redshift_flux
+from specsynth.cosmology import (
+    DEFAULT_COSMOLOGY,
+    FlatLambdaCDM,
+    L_SUN_ERG_S,
+    apply_redshift_to_chunk,
+    project_per_galaxy_photometry_chunk,
+    redshift_flux,
+)
 from specsynth.filters import (
     FilterCurve,
     build_filter_projection_matrix,
@@ -66,7 +74,10 @@ __all__ = [
     "small",
     "FlatLambdaCDM",
     "DEFAULT_COSMOLOGY",
+    "L_SUN_ERG_S",
     "redshift_flux",
+    "apply_redshift_to_chunk",
+    "project_per_galaxy_photometry_chunk",
     "FilterCurve",
     "get_filter",
     "build_filter_projection_matrix",

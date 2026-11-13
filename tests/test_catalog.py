@@ -40,9 +40,11 @@ def test_resolve_catalog_columns_auto_detection():
     assert np.allclose(resolved["tau"], [1.5, 2.5, 0.8])
     # Linear metallicity < 0.2 should be auto-converted to log10
     assert np.allclose(resolved["met"], np.log10([0.02, 0.005, 0.04]))
-    assert np.allclose(resolved["tau_diffuse"], [0.5, 1.2, 0.1])
+    # Av in magnitudes should be converted to optical depth tau_V = Av / 1.086
+    expected_tau_d = np.array([0.5, 1.2, 0.1], dtype=np.float32) / 1.086
+    assert np.allclose(resolved["tau_diffuse"], expected_tau_d)
     # tau_birth should default to 1.5 * tau_diffuse
-    assert np.allclose(resolved["tau_birth"], [0.75, 1.8, 0.15])
+    assert np.allclose(resolved["tau_birth"], 1.5 * expected_tau_d)
     assert np.allclose(resolved["redshift"], [0.1, 0.5, 1.2])
 
 
@@ -263,4 +265,52 @@ def test_import_catalog_with_mock_client(tmp_path, monkeypatch):
 
     assert meta["n_galaxies"] == 2
     mock_write_many.assert_called_once()
+
+
+def test_import_catalog_streaming(tmp_path, monkeypatch):
+    import h5py
+    import dask.array as da
+    from unittest.mock import MagicMock
+    from specsynth.catalog import import_catalog
+
+    h5_path = tmp_path / "test_stream.h5"
+    with h5py.File(str(h5_path), "w") as f:
+        f.create_dataset("m_star", data=np.array([1e10, 2e10, 3e10, 4e10], dtype=np.float32))
+        f.create_dataset("redshift", data=np.array([0.1, 0.5, 1.0, 1.5], dtype=np.float32))
+        f.create_dataset("tau", data=np.array([1.0, 2.0, 1.5, 0.8], dtype=np.float32))
+
+    monkeypatch.setattr("specsynth.catalog.da.from_zarr", lambda s, component: da.from_array(np.array([1e7, 1e8])))
+    mock_write = MagicMock()
+    monkeypatch.setattr("specsynth.catalog.write_many", mock_write)
+
+    zarr_out = str(tmp_path / "stream_h5_out.zarr")
+    meta = import_catalog(
+        catalog_path=h5_path,
+        output_zarr=zarr_out,
+        ssp_store="mock_ssp.zarr",
+        chunk_size=2,
+        client=MagicMock(),
+    )
+    assert meta["n_galaxies"] == 4
+    mock_write.assert_called_once()
+
+
+def test_stream_csv_chunks(tmp_path):
+    from specsynth.catalog import stream_csv_chunks
+
+    csv_path = tmp_path / "test_stream.csv"
+    with open(csv_path, "w", encoding="utf-8") as f:
+        f.write("m_star,redshift,tau\n")
+        for i in range(10):
+            f.write(f"1e10,{i * 0.1},1.0\n")
+
+    chunks = list(stream_csv_chunks(csv_path, chunk_size=4))
+    assert len(chunks) == 3  # 4 + 4 + 2
+    assert len(chunks[0]["m_star"]) == 4
+    assert len(chunks[2]["m_star"]) == 2
+    assert np.isclose(chunks[0]["redshift"][1], 0.1)
+
+
+
+
 

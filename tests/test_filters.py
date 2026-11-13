@@ -32,18 +32,29 @@ def test_filter_curve_properties():
 
 
 def test_standard_filters_and_sets():
-    # Test individual filter retrieval
+    # Test individual filter retrieval (calibrated by default)
     jwst_f200w = get_filter("jwst_f200w")
     assert "jwst_f200w" in jwst_f200w.name
     assert 19000 < jwst_f200w.pivot_wavelength < 21000
+    assert jwst_f200w.is_calibrated is True
+
+    # Test explicit approximation request
+    jwst_f200w_approx = get_filter("jwst_f200w_approx")
+    assert jwst_f200w_approx.is_calibrated is False
+    assert 19000 < jwst_f200w_approx.pivot_wavelength < 21000
 
     sdss_r = get_filter("sdss_r")
     assert 6000 < sdss_r.pivot_wavelength < 6500
+    assert sdss_r.is_calibrated is True
 
     # Test resolving filter set names
     resolved = resolve_filter_names("jwst_nircam")
     assert len(resolved) == len(FILTER_SETS["jwst_nircam"])
     assert "jwst_f200w" in resolved
+
+    # Test resolving approximate filter set names
+    resolved_approx = resolve_filter_names("jwst_nircam_approx")
+    assert "jwst_f200w_approx" in resolved_approx
 
     resolved_combo = resolve_filter_names("hst,sdss_r")
     assert "hst_f606w" in resolved_combo
@@ -106,4 +117,29 @@ def test_get_filter_custom_file_and_f_lambda_conversion(tmp_path):
     f_nu = f_lambda_to_f_nu(f_lam, piv)
     assert f_nu.shape == (2,)
     assert np.all(f_nu > 0)
+
+
+def test_ab_zero_point_reference_spectrum():
+    """
+    Standard photometric reference test:
+    A flat F_nu = 3631 Jy source has m_AB = 0.000 by definition.
+    Test projection and conversion across JWST, HST, and Rubin filter sets.
+    """
+    from specsynth.filters import C_AA_S
+
+    wave = np.linspace(3000.0, 55000.0, 15000)
+    # F_nu = 3631 Jy = 3.631e-20 erg / s / cm^2 / Hz
+    f_nu_zero = 3631.0 * 1e-23
+    # F_lambda = F_nu * c / lambda^2
+    f_lambda_ref = f_nu_zero * C_AA_S / (wave**2)
+
+    for filter_set in ["jwst_nircam", "hst", "rubin"]:
+        proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, filter_set)
+        band_f_lambda = f_lambda_ref @ proj_mat
+        band_f_nu = f_lambda_to_f_nu(band_f_lambda, pivots)
+        mags = flux_to_ab_mag(band_f_nu)
+
+        # Every filter must recover m_AB = 0.00 to within 0.005 mag
+        assert np.allclose(mags, 0.0, atol=0.005), f"Failed for {filter_set}: {dict(zip(filter_names, mags))}"
+
 

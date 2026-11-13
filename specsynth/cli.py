@@ -22,12 +22,21 @@ from specsynth.core import (
     synth_block,
     url,
     write_many,
+    write_many_batched,
 )
-from specsynth.cosmology import DEFAULT_COSMOLOGY, FlatLambdaCDM, redshift_flux
+from specsynth.cosmology import (
+    DEFAULT_COSMOLOGY,
+    FlatLambdaCDM,
+    L_SUN_ERG_S,
+    apply_redshift_to_chunk,
+    project_per_galaxy_photometry_chunk,
+    redshift_flux,
+)
 from specsynth.filters import (
     build_filter_projection_matrix,
     f_lambda_to_f_nu,
     flux_to_ab_mag,
+    get_filter,
     resolve_filter_names,
 )
 from specsynth.gpu import get_device_info, is_gpu_available
@@ -110,6 +119,15 @@ def cmd_make_ssp(a, client: Client):
     )
 
 
+def _gen_redshift(block: np.ndarray, seed: int, z_min: float, z_max: float, block_info=None) -> np.ndarray:
+    if block_info is not None and None in block_info:
+        loc = block_info[None]["chunk-location"][0]
+    else:
+        loc = 0
+    rng = np.random.default_rng([seed + 101, loc])
+    return rng.uniform(z_min, z_max, block.shape[0]).astype(np.float32)
+
+
 # --------------------------------------------------------------------------
 # make-sfh : synthetic galaxy catalogue, generated chunk-wise on the cluster
 # --------------------------------------------------------------------------
@@ -139,15 +157,36 @@ def cmd_make_sfh(a, client: Client):
         _sfh_block, params, ages, mets, chunks=(row_chunks, (K,)), dtype=np.float32
     )
 
+    arrays_to_write = {
+        "sfh": sfh,
+        "tau_diffuse": params[:, 4],
+        "tau_birth": params[:, 5],
+    }
+
+    redshift_range = getattr(a, "redshift_range", None)
+    if redshift_range:
+        z_min, z_max = redshift_range
+        z_da = da.map_blocks(
+            _gen_redshift,
+            dummy[:, 0],
+            a.seed,
+            z_min,
+            z_max,
+            chunks=(row_chunks,),
+            dtype=np.float32,
+        )
+        arrays_to_write["redshift"] = z_da
+
     out = url(a.base, "galaxies.zarr")
     t0 = time.time()
     write_many(
         client,
         out,
-        {"sfh": sfh, "tau_diffuse": params[:, 4], "tau_birth": params[:, 5]},
+        arrays_to_write,
     )
+    z_msg = f", redshifts [{redshift_range[0]:.2f}, {redshift_range[1]:.2f}]" if redshift_range else ""
     print(
-        f"{a.n_gal:,} galaxies, SFH {a.n_gal}x{K} ({a.n_gal * K * 4 / 1e9:.2f} GB) "
+        f"{a.n_gal:,} galaxies, SFH {a.n_gal}x{K} ({a.n_gal * K * 4 / 1e9:.2f} GB){z_msg} "
         f"-> {out}  [{time.time() - t0:.1f}s]"
     )
 
@@ -204,55 +243,190 @@ def cmd_synth(a, client: Client):
     )
 
     redshift = getattr(a, "redshift", 0.0)
-    apply_igm = getattr(a, "igm", False) and redshift > 0.0
-    if redshift > 0.0:
-        print(f"Applying cosmological redshift z = {redshift:.3f}...")
-        dimming = 1.0 / (1.0 + redshift)
-        spec = spec * dimming
-        wave = wave * (1.0 + redshift)
+    per_galaxy_z = getattr(a, "per_galaxy_z", False)
+    distance_dimming = getattr(a, "distance_dimming", False)
+    input_units = getattr(a, "input_units", "lsun")
+    apply_igm = getattr(a, "igm", False)
 
-    if apply_igm:
-        print("Applying Madau (1995) IGM attenuation...")
-        t_igm = madau_transmission(wave, redshift)
-        spec = spec * small(t_igm).rechunk((ssp.chunks[1],))
+    # Inspect if catalog store has per-galaxy redshift array
+    has_catalog_z = False
+    z_da = None
+    try:
+        import zarr
+        grp = zarr.open_group(gal_store, mode="r")
+        if "redshift" in grp:
+            has_catalog_z = True
+            z_da = da.from_zarr(gal_store, component="redshift").rechunk(sfh.chunks[0])
+    except Exception:
+        pass
+
+    if per_galaxy_z and not has_catalog_z:
+        raise ValueError(
+            "Cannot use --per-galaxy-z: 'redshift' component not found in galaxies.zarr. "
+            "Import a catalog with a redshift column or specify uniform snapshot mode with --redshift <z>."
+        )
 
     out = url(a.base, "spectra.zarr")
     arrays = {}
-    metadata = {"redshift": redshift, "igm": apply_igm}
+    metadata = {
+        "igm": apply_igm,
+        "distance_dimming": distance_dimming,
+        "input_units": input_units,
+    }
 
     filter_req = getattr(a, "filters", None)
-    if filter_req:
-        proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, filter_req)
-        bm = small(proj_mat).rechunk((ssp.chunks[1], (len(filter_names),)))
-        phot = da.matmul(spec, bm)
-        arrays["photometry"] = phot
-        metadata["filters"] = filter_names
-        metadata["pivot_wavelengths"] = pivots
-        print(f"Projecting into {len(filter_names)} filters: {', '.join(filter_names)}")
-    elif a.bands:
-        bm = small(band_matrix(wave, a.bands)).rechunk((ssp.chunks[1], (a.bands,)))
-        phot = da.matmul(spec, bm)
-        arrays["photometry"] = phot  # spectra are streamed through and discarded
+
+    if per_galaxy_z:
+        print("[Cosmology] Lightcone Mode: Applying per-galaxy redshifts from catalog...")
+        if distance_dimming:
+            print(f"  * Physical distance dimming: 1 / [4*pi*D_L^2(z)] (input units: {input_units})")
+        if apply_igm:
+            print("  * Per-galaxy Madau (1995) IGM attenuation enabled.")
+
+        metadata["mode"] = "lightcone"
+        metadata["per_galaxy_z"] = True
+
+        if filter_req:
+            filter_names = resolve_filter_names(filter_req)
+            filter_data = []
+            pivots = []
+            for fname in filter_names:
+                flt = get_filter(fname)
+                norm = np.trapezoid(flt.transmission * flt.wave, flt.wave)
+                if norm <= 0.0:
+                    norm = 1.0
+                filter_data.append((fname, flt.wave, flt.transmission, norm))
+                pivots.append(flt.pivot_wavelength)
+
+            phot_dtype = np.float64 if distance_dimming else np.float32
+            phot = da.map_blocks(
+                project_per_galaxy_photometry_chunk,
+                spec,
+                z_da[:, None],
+                wave,
+                filter_data,
+                apply_igm,
+                distance_dimming,
+                input_units,
+                DEFAULT_COSMOLOGY,
+                dtype=phot_dtype,
+                chunks=(sfh.chunks[0], (len(filter_names),)),
+            )
+            arrays["photometry"] = phot
+            metadata["filters"] = filter_names
+            metadata["pivot_wavelengths"] = pivots
+            print(f"Projecting into {len(filter_names)} filters: {', '.join(filter_names)}")
+        else:
+            spec_dtype = np.float64 if distance_dimming else np.float32
+            spec = da.map_blocks(
+                apply_redshift_to_chunk,
+                spec,
+                z_da[:, None],
+                wave,
+                apply_igm,
+                distance_dimming,
+                input_units,
+                DEFAULT_COSMOLOGY,
+                dtype=spec_dtype,
+                chunks=spec.chunks,
+            )
+            arrays["spectra"] = spec
+        arrays["wave"] = small(wave)
+
+    elif redshift > 0.0:
+        if has_catalog_z:
+            print(f"[Cosmology] Snapshot Mode: Applying uniform redshift z = {redshift:.3f} to all galaxies (overriding catalog redshifts).")
+        else:
+            print(f"[Cosmology] Snapshot Mode: Applying cosmological redshift z = {redshift:.3f}...")
+
+        metadata["mode"] = "snapshot"
+        metadata["redshift"] = redshift
+
+        cosmo = DEFAULT_COSMOLOGY
+        dimming = 1.0 / (1.0 + redshift)
+        if distance_dimming:
+            d_L_cm = cosmo.luminosity_distance_cm(redshift)
+            dimming = dimming / (4.0 * np.pi * (max(d_L_cm, 1e-10) ** 2))
+            if input_units == "lsun":
+                dimming = dimming * L_SUN_ERG_S
+            spec = spec.astype(np.float64) * dimming
+        else:
+            spec = spec * np.float32(dimming)
+
+        wave = wave * (1.0 + redshift)
+        if apply_igm:
+            print("Applying Madau (1995) IGM attenuation...")
+            t_igm = madau_transmission(wave, redshift)
+            spec = spec * small(t_igm).rechunk((ssp.chunks[1],))
+
+        if filter_req:
+            proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, filter_req)
+            bm = small(proj_mat).rechunk((ssp.chunks[1], (len(filter_names),)))
+            phot = da.matmul(spec, bm)
+            arrays["photometry"] = phot
+            metadata["filters"] = filter_names
+            metadata["pivot_wavelengths"] = pivots
+            print(f"Projecting into {len(filter_names)} filters: {', '.join(filter_names)}")
+            print("  [Notice: Built-in filter profiles are analytical approximations. Load empirical curves via FilterCurve.from_file() for calibrated photometry.]")
+        elif a.bands:
+            bm = small(band_matrix(wave, a.bands)).rechunk((ssp.chunks[1], (a.bands,)))
+            phot = da.matmul(spec, bm)
+            arrays["photometry"] = phot
+        else:
+            arrays["spectra"] = spec
+        arrays["wave"] = small(wave)
+
     else:
-        arrays["spectra"] = spec
-    arrays["wave"] = small(wave)
+        if has_catalog_z:
+            print(
+                "[Cosmology] Notice: Catalog contains heterogeneous per-galaxy redshifts.\n"
+                "  * Run with --per-galaxy-z to apply lightcone forward-modeling with per-galaxy redshift transformations.\n"
+                "  * Run with --redshift <z> to apply uniform snapshot mode.\n"
+                "  * Proceeding in rest-frame (z = 0.0) synthesis."
+            )
+        metadata["mode"] = "rest"
+        metadata["redshift"] = 0.0
+
+        if filter_req:
+            proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, filter_req)
+            bm = small(proj_mat).rechunk((ssp.chunks[1], (len(filter_names),)))
+            phot = da.matmul(spec, bm)
+            arrays["photometry"] = phot
+            metadata["filters"] = filter_names
+            metadata["pivot_wavelengths"] = pivots
+            print(f"Projecting into {len(filter_names)} filters: {', '.join(filter_names)}")
+            print("  [Notice: Built-in filter profiles are analytical approximations. Load empirical curves via FilterCurve.from_file() for calibrated photometry.]")
+        elif a.bands:
+            bm = small(band_matrix(wave, a.bands)).rechunk((ssp.chunks[1], (a.bands,)))
+            phot = da.matmul(spec, bm)
+            arrays["photometry"] = phot
+        else:
+            arrays["spectra"] = spec
+        arrays["wave"] = small(wave)
 
     batch_chunks = getattr(a, "batch_chunks", 0)
     n_row_blocks = len(sfh.chunks[0])
-    if batch_chunks > 0 and n_row_blocks > batch_chunks:
-        n_batches = (n_row_blocks + batch_chunks - 1) // batch_chunks
-        print(
-            f"Dask Task Graph Pipelining: Processing {n_row_blocks} chunk blocks across {n_batches} "
-            f"scheduler windows ({batch_chunks} blocks/batch) to bound scheduler RAM at scale."
-        )
+    is_batched = batch_chunks > 0 and n_row_blocks > batch_chunks
 
     print(
         f"Synthesising {N:,} galaxies x {W} wavelengths "
         f"(K={K}, chunks of {sfh.chunks[0][0]:,} galaxies, "
         f"{len(sfh.chunks[0])} row-blocks)"
     )
+
     t0 = time.time()
-    write_many(client, out, arrays, metadata=metadata)
+    if is_batched:
+        n_batches = (n_row_blocks + batch_chunks - 1) // batch_chunks
+        print(
+            f"Dask Task Graph Pipelining: Processing {n_row_blocks} chunk blocks across {n_batches} "
+            f"scheduler windows ({batch_chunks} blocks/batch) to bound scheduler RAM at scale."
+        )
+        main_name = "photometry" if "photometry" in arrays else "spectra"
+        main_da = arrays[main_name]
+        static_arrays = {k: v for k, v in arrays.items() if k != main_name}
+        write_many_batched(client, out, static_arrays, main_name, main_da, batch_chunks, metadata=metadata)
+    else:
+        write_many(client, out, arrays, metadata=metadata)
     dt = max(time.time() - t0, 0.001)
 
     # Performance & Cost Telemetry Engine
@@ -351,6 +525,7 @@ def cmd_import_catalog(a, client: Client | None):
         chunk_size=a.chunk,
         explicit_columns=col_map,
         client=client,
+        streaming=getattr(a, "streaming", False),
     )
     dt = time.time() - t0
     print(
@@ -424,33 +599,63 @@ def cmd_verify(a, client: Client):
         sfh[:, ny:] @ ssp[ny:] + np.exp(-tb[:, None] * kb) * (sfh[:, :ny] @ ssp[:ny])
     )
 
-    redshift = getattr(a, "redshift", 0.0)
-    if hasattr(g_out, "attrs") and "redshift" in g_out.attrs:
-        redshift = float(g_out.attrs["redshift"])
+    attrs = getattr(g_out, "attrs", {})
+    per_galaxy_z = getattr(a, "per_galaxy_z", False) or attrs.get("per_galaxy_z", False)
+    distance_dimming = getattr(a, "distance_dimming", False) or attrs.get("distance_dimming", False)
+    input_units = getattr(a, "input_units", None) or (attrs.get("input_units", "lsun") if hasattr(g_out, "attrs") else "lsun")
+    has_igm = getattr(a, "igm", False) or attrs.get("igm", False)
+    redshift = getattr(a, "redshift", 0.0) or float(attrs.get("redshift", 0.0))
 
-    has_igm = getattr(a, "igm", False) or (hasattr(g_out, "attrs") and g_out.attrs.get("igm", False))
-
-    if redshift > 0.0:
-        wave = wave * (1.0 + redshift)
-        ref = ref / (1.0 + redshift)
-
-    if has_igm and redshift > 0.0:
-        t_igm = madau_transmission(wave, redshift).astype(np.float64)
-        ref = ref * t_igm
-
-    if "spectra" in g_out:
-        got = np.stack([g_out["spectra"][i] for i in idx]).astype(np.float64)
-    else:
-        got = np.stack([g_out["photometry"][i] for i in idx]).astype(np.float64)
-        filter_req = getattr(a, "filters", None)
-        if filter_req:
-            p_mat, _, _ = build_filter_projection_matrix(wave, filter_req)
-            ref = ref @ p_mat.astype(np.float64)
-        elif hasattr(g_out, "attrs") and "filters" in g_out.attrs:
-            p_mat, _, _ = build_filter_projection_matrix(wave, g_out.attrs["filters"])
-            ref = ref @ p_mat.astype(np.float64)
+    if per_galaxy_z and "redshift" in g_in:
+        z_sample = np.asarray(g_in["redshift"][:])[idx].astype(np.float64)
+        if "spectra" in g_out:
+            ref = apply_redshift_to_chunk(
+                ref, z_sample, wave, apply_igm=has_igm, distance_dimming=distance_dimming, input_units=input_units
+            )
+            got = np.stack([g_out["spectra"][i] for i in idx]).astype(np.float64)
         else:
-            ref = ref @ band_matrix(wave, got.shape[1]).astype(np.float64)
+            filter_req = getattr(a, "filters", None) or attrs.get("filters", None)
+            filter_names = resolve_filter_names(filter_req)
+            filter_data = []
+            for fname in filter_names:
+                flt = get_filter(fname)
+                norm = np.trapezoid(flt.transmission * flt.wave, flt.wave)
+                if norm <= 0.0:
+                    norm = 1.0
+                filter_data.append((fname, flt.wave, flt.transmission, norm))
+            ref = project_per_galaxy_photometry_chunk(
+                ref, z_sample, wave, filter_data, apply_igm=has_igm, distance_dimming=distance_dimming, input_units=input_units
+            )
+            got = np.stack([g_out["photometry"][i] for i in idx]).astype(np.float64)
+    else:
+        if redshift > 0.0:
+            cosmo = DEFAULT_COSMOLOGY
+            dimming = 1.0 / (1.0 + redshift)
+            if distance_dimming:
+                d_L_cm = cosmo.luminosity_distance_cm(redshift)
+                dimming = dimming / (4.0 * np.pi * (max(d_L_cm, 1e-10) ** 2))
+                if input_units == "lsun":
+                    dimming = dimming * L_SUN_ERG_S
+            ref = ref * dimming
+            wave = wave * (1.0 + redshift)
+
+        if has_igm and redshift > 0.0:
+            t_igm = madau_transmission(wave, redshift).astype(np.float64)
+            ref = ref * t_igm
+
+        if "spectra" in g_out:
+            got = np.stack([g_out["spectra"][i] for i in idx]).astype(np.float64)
+        else:
+            got = np.stack([g_out["photometry"][i] for i in idx]).astype(np.float64)
+            filter_req = getattr(a, "filters", None)
+            if filter_req:
+                p_mat, _, _ = build_filter_projection_matrix(wave, filter_req)
+                ref = ref @ p_mat.astype(np.float64)
+            elif hasattr(g_out, "attrs") and "filters" in g_out.attrs:
+                p_mat, _, _ = build_filter_projection_matrix(wave, g_out.attrs["filters"])
+                ref = ref @ p_mat.astype(np.float64)
+            else:
+                ref = ref @ band_matrix(wave, got.shape[1]).astype(np.float64)
 
     # Numerical Error Diagnostics
     diff = got - ref
@@ -686,6 +891,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--n-gal", type=int, default=1_000_000, help="Number of galaxies to generate")
     s.add_argument("--chunk", type=int, default=20_000, help="Galaxies per chunk")
     s.add_argument("--seed", type=int, default=42, help="Random seed for chunk reproducibility")
+    s.add_argument(
+        "--redshift-range",
+        nargs=2,
+        type=float,
+        metavar=("Z_MIN", "Z_MAX"),
+        help="Generate random per-galaxy redshifts in [z_min, z_max] for lightcone testing",
+    )
     s.set_defaults(fn=cmd_make_sfh)
 
     # import-catalog
@@ -701,6 +913,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--dust-diffuse-col", help="Column name for diffuse ISM dust")
     s.add_argument("--dust-birth-col", help="Column name for birth-cloud dust")
     s.add_argument("--redshift-col", help="Column name for cosmological redshift")
+    s.add_argument("--streaming", action="store_true", help="Stream records in chunk blocks directly to Zarr without full in-memory loading (for large Parquet/HDF5)")
     s.set_defaults(fn=cmd_import_catalog)
 
     # benchmark
@@ -746,6 +959,9 @@ def build_parser() -> argparse.ArgumentParser:
         s.add_argument("--diffuse-index", type=float, default=-0.7, help="Diffuse ISM dust power-law index")
         s.add_argument("--birth-index", type=float, default=-1.3, help="Birth cloud dust power-law index")
         s.add_argument("--redshift", type=float, default=0.0, help="Cosmological redshift z to apply to spectra")
+        s.add_argument("--per-galaxy-z", action="store_true", help="Apply per-galaxy cosmological redshift from catalog 'redshift' column")
+        s.add_argument("--distance-dimming", action="store_true", help="Apply physical 1/(4*pi*D_L^2) cosmological distance dimming")
+        s.add_argument("--input-units", choices=["lsun", "cgs"], default="lsun", help="Input SSP luminosity density units: 'lsun' (L_sun/A) or 'cgs' (erg/s/A)")
         s.add_argument("--igm", action="store_true", help="Apply Madau (1995) IGM attenuation for z > 0")
         s.add_argument(
             "--filters",

@@ -59,6 +59,72 @@ def write_many(
             print(f"Notice: could not attach metadata attributes to {store}: {e}")
 
 
+def write_many_batched(
+    client: Client | None,
+    store: str,
+    static_arrays: dict[str, da.Array],
+    main_name: str,
+    main_array: da.Array,
+    batch_chunks: int,
+    metadata: dict[str, Any] | None = None,
+):
+    """
+    Write arrays into a Zarr store using sliding-window batch pipelining.
+    Executes chunk tasks in windows of `batch_chunks` blocks to keep Dask scheduler memory strictly bounded.
+    """
+    # 1. Write static arrays (e.g., wave grid)
+    if static_arrays:
+        static_tasks = [
+            da.to_zarr(a, store, component=name, overwrite=True, compute=False)
+            for name, a in static_arrays.items()
+        ]
+        if client is not None:
+            fut = client.compute(static_tasks)
+            client.gather(fut)
+        else:
+            da.compute(*static_tasks)
+
+    # 2. Set up chunk-writing task graph for main array
+    main_task = da.to_zarr(main_array, store, component=main_name, overwrite=True, compute=False)
+
+    row_blocks = main_array.chunks[0]
+    n_blocks = len(row_blocks)
+    n_batches = (n_blocks + batch_chunks - 1) // batch_chunks
+
+    for b_idx in range(n_batches):
+        b_start = b_idx * batch_chunks
+        b_end = min((b_idx + 1) * batch_chunks, n_blocks)
+
+        if hasattr(main_task, "blocks"):
+            batch_slice = main_task.blocks[b_start:b_end]
+        elif hasattr(main_task, "__getitem__"):
+            try:
+                batch_slice = main_task[b_start:b_end]
+            except Exception:
+                batch_slice = main_task
+        else:
+            batch_slice = main_task
+
+        if client is not None:
+            fut = client.compute(batch_slice)
+            client.gather(fut)
+        else:
+            da.compute(batch_slice)
+
+    # 3. Attach metadata
+    if metadata:
+        try:
+            import zarr
+            try:
+                grp = zarr.open_group(store, mode="a")
+            except Exception:
+                import fsspec
+                grp = zarr.open_group(fsspec.get_mapper(store), mode="a")
+            grp.attrs.update(metadata)
+        except Exception as e:
+            print(f"Notice: could not attach metadata attributes to {store}: {e}")
+
+
 def small(a: np.ndarray) -> da.Array:
     """Wrap a small NumPy array into a Dask array with a single chunk."""
     return da.from_array(np.asarray(a), chunks=a.shape)

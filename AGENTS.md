@@ -1,12 +1,12 @@
 # AGENTS.md — Operational Guide for AI Coding & Research Agents
 
 ## Project Overview
-`specsynth` is a distributed, out-of-core stellar population synthesis (SPS) engine built on Python 3.10+, Dask, Zarr (`fsspec`), NumPy/SciPy BLAS, and optional CuPy GPU acceleration. It forward-models galaxy spectra and broadband photometry at survey scales ($10^7 - 10^9+$ galaxies) from local laptops to Kubernetes clusters without requiring a shared POSIX filesystem.
+`specsynth` is an open-source distributed framework for scalable stellar population synthesis (SPS) and in-flight photometric forward-modeling built on Python 3.10+, Dask, Zarr (`fsspec`), NumPy/SciPy BLAS, and optional CuPy GPU acceleration. It eliminates intermediate full-spectrum storage by contracting spectra directly into broadband photometry in-flight.
 
 ## Repository Map
 - `specsynth.py`: Primary CLI entry point (`make-ssp`, `make-sfh`, `import-catalog`, `synth`, `verify`, `benchmark`, `sentry`, `clean-catalog`, `sentry-agent`).
 - `specsynth/`: Core package (matrix contractions, dust attenuation, Madau 1995 IGM, filter projections, `specsynth.adapters`, `specsynth.sentry`, `specsynth.tools`, and `specsynth.agent`).
-- `tests/`: Automated `pytest` suite (101 unit & integration tests, >80% coverage, strict tier markers).
+- `tests/`: Automated `pytest` suite (143 unit & integration tests, 88% coverage, strict tier markers, including `test_validation_external.py`).
 - `k8s/`: Kubernetes manifests for Dask Operator cluster deployment (`dask-cluster.yaml`, `synth-job.yaml`).
 - `paper/`: JOSS manuscript (`paper/paper.md`) and benchmark verification artifacts.
 - `scripts/clean.py`, `test.ps1`, `test.bat`: Cross-platform test runners and workspace cleanup utilities.

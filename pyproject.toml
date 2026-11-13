@@ -54,6 +54,9 @@ specsynth = "specsynth.cli:main"
 [tool.setuptools.packages.find]
 include = ["specsynth*"]
 
+[tool.setuptools.package-data]
+"specsynth" = ["data/filters/*.csv"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

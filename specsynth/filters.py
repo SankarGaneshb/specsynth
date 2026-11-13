@@ -19,10 +19,12 @@ class FilterCurve:
         name: Filter identifier (e.g., 'jwst_f200w', 'sdss_r', 'lsst_g').
         wave: Wavelength grid in Angstroms (1D array, strictly ascending).
         transmission: Normalized transmission response T(lambda) in [0, 1].
+        is_calibrated: True if loaded from an empirical/calibrated transmission table; False if analytical.
     """
     name: str
     wave: np.ndarray
     transmission: np.ndarray
+    is_calibrated: bool = False
 
     def __post_init__(self):
         self.wave = np.asarray(self.wave, dtype=np.float64)
@@ -63,12 +65,50 @@ class FilterCurve:
         """Interpolate transmission curve onto target wavelength grid."""
         return np.interp(target_wave, self.wave, self.transmission, left=0.0, right=0.0)
 
+    @classmethod
+    def from_file(cls, filepath: str | Path, name: str | None = None) -> FilterCurve:
+        """
+        Load an empirical, calibrated filter transmission curve from an ASCII table (CSV, TSV, DAT).
+        Expected table format: column 0 = wavelength in Angstroms, column 1 = transmission in [0, 1].
+        """
+        path = Path(filepath)
+        if not path.is_file():
+            raise FileNotFoundError(f"Filter curve file not found: {filepath}")
+
+        # Detect delimiter and load (robust to header rows)
+        try:
+            try:
+                data = np.loadtxt(path, delimiter=",", comments="#")
+            except ValueError:
+                data = np.loadtxt(path, delimiter=",", comments="#", skiprows=1)
+        except Exception:
+            try:
+                data = np.loadtxt(path, comments="#")
+            except ValueError:
+                data = np.loadtxt(path, comments="#", skiprows=1)
+
+        filter_name = name or path.stem
+        return cls(name=filter_name, wave=data[:, 0], transmission=data[:, 1], is_calibrated=True)
+
+
+DATA_FILTERS_DIR = Path(__file__).parent / "data" / "filters"
+
 
 # --------------------------------------------------------------------------
-# Built-in Standard Filter Profiles (Analytical Flat-Top with Gaussian Roll-off)
+# Built-in Standard Filter Profiles (Analytical Super-Gaussian Bandpass Approximations)
+#
+# SCIENTIFIC NOTE FOR RESEARCHERS:
+# The built-in filter curves below are analytical super-Gaussian approximations
+# (flat-top bandpasses with steep roll-off edges) parameterized by central wavelength
+# and FWHM. They are provided for rapid prototyping, pipeline testing, and simulation
+# exploration without requiring external data downloads.
+# For precision observational science (e.g. comparing directly against calibrated
+# JWST/HST pipeline magnitudes to <0.01 mag), specsynth provides bundled calibrated
+# instrument throughput curves in specsynth/data/filters/ (and custom user files via
+# FilterCurve.from_file()).
 # --------------------------------------------------------------------------
 def _make_bandpass(name: str, center: float, fwhm: float, n_points: int = 500) -> FilterCurve:
-    """Generate realistic transmission profile with flat top and smooth edges."""
+    """Generate analytical super-Gaussian transmission profile with flat top and smooth edges."""
     half_w = 0.5 * fwhm
     wave = np.linspace(center - 2.0 * fwhm, center + 2.0 * fwhm, n_points)
     # Super-Gaussian profile for realistic steep band edges: exp(-(dx / w)^8)
@@ -76,7 +116,7 @@ def _make_bandpass(name: str, center: float, fwhm: float, n_points: int = 500) -
     trans = np.exp(-(dx**8))
     # Normalize peak to 0.9 (typical optical/NIR throughput)
     trans = trans * 0.9
-    return FilterCurve(name=name, wave=wave, transmission=trans)
+    return FilterCurve(name=name, wave=wave, transmission=trans, is_calibrated=False)
 
 
 # Filter definitions: (center in Angstroms, FWHM in Angstroms)
@@ -116,7 +156,12 @@ STANDARD_FILTER_SPECS = {
 
 FILTER_SETS = {
     "jwst_nircam": ["jwst_f090w", "jwst_f115w", "jwst_f150w", "jwst_f200w", "jwst_f277w", "jwst_f356w", "jwst_f444w"],
+    "jwst_nircam_approx": [
+        "jwst_f090w_approx", "jwst_f115w_approx", "jwst_f150w_approx", "jwst_f200w_approx",
+        "jwst_f277w_approx", "jwst_f356w_approx", "jwst_f444w_approx"
+    ],
     "hst": ["hst_f435w", "hst_f606w", "hst_f814w", "hst_f160w"],
+    "hst_approx": ["hst_f435w_approx", "hst_f606w_approx", "hst_f814w_approx", "hst_f160w_approx"],
     "rubin": ["rubin_u", "rubin_g", "rubin_r", "rubin_i", "rubin_z", "rubin_y"],
     "sdss": ["sdss_u", "sdss_g", "sdss_r", "sdss_i", "sdss_z"],
     "euclid": ["euclid_vis", "euclid_y", "euclid_j", "euclid_h"],
@@ -124,17 +169,38 @@ FILTER_SETS = {
 
 
 def get_filter(name: str) -> FilterCurve:
-    """Retrieve or load a FilterCurve by standard name or filepath."""
+    """
+    Retrieve or load a FilterCurve by standard name, explicit approximation, or filepath.
+
+    Resolution hierarchy:
+    1. Explicit approximation suffix '_approx' (e.g. 'jwst_f200w_approx') -> analytical profile.
+    2. Bundled calibrated instrument profile in `specsynth/data/filters/{name}.csv`.
+    3. Analytical super-Gaussian bandpass fallback if in STANDARD_FILTER_SPECS.
+    4. Custom on-disk ASCII table if filepath exists.
+    """
     name_clean = name.strip().lower()
+
+    # 1. Explicit approximation requested (e.g. jwst_f200w_approx)
+    if name_clean.endswith("_approx"):
+        base_name = name_clean[:-7]
+        if base_name in STANDARD_FILTER_SPECS:
+            c, w = STANDARD_FILTER_SPECS[base_name]
+            return _make_bandpass(name_clean, c, w)
+
+    # 2. Bundled calibrated instrument profile (e.g. jwst_f200w.csv)
+    bundled_file = DATA_FILTERS_DIR / f"{name_clean}.csv"
+    if bundled_file.is_file():
+        return FilterCurve.from_file(bundled_file, name=name_clean)
+
+    # 3. Standard built-in analytical profile fallback
     if name_clean in STANDARD_FILTER_SPECS:
         c, w = STANDARD_FILTER_SPECS[name_clean]
         return _make_bandpass(name_clean, c, w)
 
-    # Check if name is a filepath
+    # 4. Check if name is a direct file path
     path = Path(name)
     if path.is_file():
-        data = np.loadtxt(path)
-        return FilterCurve(name=path.stem, wave=data[:, 0], transmission=data[:, 1])
+        return FilterCurve.from_file(path)
 
     raise ValueError(
         f"Unknown filter '{name}'. Built-ins: {list(STANDARD_FILTER_SPECS.keys())} "

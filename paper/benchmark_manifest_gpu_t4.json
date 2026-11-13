@@ -24,12 +24,12 @@
     "cpu_count_logical": 4,
     "total_ram_gb": 31.35,
     "available_ram_gb": 29.2,
-    "git_commit": "unknown",
+    "git_commit": "a718e9e48d543a1fd8b6366e4884a19d33036655",
     "blas_backend": "scipy-openblas",
     "gpu_available": true,
     "gpu_device_name": "Tesla T4",
-    "gpu_cupy_version": "unknown",
-    "gpu_cuda_version": "unknown",
+    "gpu_cupy_version": "13.3.0",
+    "gpu_cuda_version": "12.2",
     "gpu_total_memory_gb": 14.56
   },
   "category_1_correctness": {

@@ -24,16 +24,16 @@ bibliography: paper.bib
 
 Forward-modeling the synthetic spectra and broadband photometry of billions of simulated galaxies is a foundational requirement for upcoming wide-field cosmological surveys, including the Vera C. Rubin Observatory's Legacy Survey of Space and Time (LSST) [@ivezic2019lsst], the Nancy Grace Roman Space Telescope [@spergel2015wide], and the Euclid Space Mission [@laureijs2011euclid].
 
-Rather than merely synthesizing individual galaxies faster, `specsynth` enables previously impractical **population-scale forward-modeling experiments** involving $10^8 - 10^9$ galaxies. By coupling chunked **Zarr** storage via `fsspec` with **Dask** distributed task graphs [@rocklin2015dask] and optional **CuPy** GPU tensor contractions [@okuta2017cupy], `specsynth` streams galaxy parameters from cloud object stores, contracts them against Simple Stellar Population (SSP) spectral grids in worker cache/VRAM, and projects them in-flight into photometric bandpasses without materializing multi-terabyte intermediate spectra onto disk. This architecture is designed to support generation of full LSST mock universes, Roman survey mocks, Euclid photometric calibration universes, and billion-object statistical color distributions at scales previously computationally inaccessible.
+`specsynth` is an open-source framework designed for scalable, distributed stellar population synthesis and forward-modeling of simulated galaxy catalogs. By coupling chunked **Zarr** storage via `fsspec` with **Dask** distributed task graphs [@rocklin2015dask] and optional **CuPy** GPU tensor contractions [@okuta2017cupy], `specsynth` streams galaxy parameters from cloud object stores, contracts them against Simple Stellar Population (SSP) spectral grids in worker cache/VRAM, and projects them in-flight into photometric bandpasses without materializing multi-terabyte intermediate spectra onto disk.
 
 # Statement of Need and Comparison with Alternative Architectures
 
-Exploring statistical galaxy populations across gigaparsec cosmological volumes requires evaluating spectral energy distributions (SEDs) across $10^7 - 10^9+$ simulated objects from hydrodynamical boxes and Semi-Analytic Models (e.g., IllustrisTNG [@pillepich2018simulating], EAGLE). Existing computational paradigms cannot tractably sustain these population-scale experiments due to four architectural bottlenecks:
+Synthesizing spectra and broadband photometry for large mock galaxy catalogs (e.g., from IllustrisTNG [@pillepich2018simulating], EAGLE, or semi-analytic models) creates significant memory, compute, and storage bottlenecks when scaling to survey volumes:
 
-1. **Standalone SPS Wrappers (e.g., FSPS + MPI or Dask Bags)**: Codes such as FSPS [@conroy2009propagation] and BC03 [@bruzual2003stellar] were designed for single-galaxy precision. Wrapping them in parallel loops (e.g., via `mpi4py` or `dask.bag.map`) requires shipping complex C/Fortran state to worker processes. Because these integrators re-evaluate stellar evolutionary tracks and interpolate isochrones per galaxy, they incur severe worker initialization latency, high per-worker memory footprints, and redundant computations.
-2. **General-Purpose Big Data Engines (Apache Spark, Ray)**: Distributed engines such as Apache Spark [@zaharia2016apache] and Ray [@moritz2018ray] are optimized for tabular relational joins, row-level transformations, and distributed machine learning. However, they lack native zero-copy integration with high-performance BLAS/CuPy tensor contractions, introduce substantial JVM-Python serialization overhead when transferring large dense spectral arrays, and lack direct chunked streaming from Zarr without POSIX filesystem mounts.
-3. **In-Memory Array Processing (NumPy, SciPy)**: Standard scientific Python workflows [@harris2020array] rely on allocating monolithic arrays in RAM. Storing high-resolution spectra ($W \approx 4,000 - 10,000$ wavelength bins) for $10^8$ galaxies requires hundreds of terabytes of memory, inevitably triggering out-of-memory (OOM) crashes or exhausting local scratch disks.
-4. **Differentiable & Neural Emulator Frameworks (DSPS, SPECULATOR)**: Differentiable SPS frameworks such as `DSPS` [@hearin2023dsps] provide GPU auto-differentiation for parameter inference, while neural network emulators like `SPECULATOR` [@alsing2020speculator] achieve millisecond spectral approximation. However, differentiable codes remain constrained to in-memory GPU buffers without out-of-core cloud streaming, while deep-learning emulators introduce surrogate approximation errors and require expensive retraining whenever stellar evolution libraries, IMFs, or dust models are modified. `specsynth` instead provides an exact, first-principles physical pipeline that streams directly out-of-core to billion-galaxy survey volumes.
+1. **Standalone SPS Wrappers (e.g., FSPS + MPI or Dask Bags)**: Codes such as FSPS [@conroy2009propagation] and BC03 [@bruzual2003stellar] were designed for single-galaxy precision. Wrapping them in parallel loops (e.g., via `mpi4py` or `dask.bag.map`) requires shipping complex C/Fortran state to worker processes. Because these integrators re-evaluate stellar evolutionary tracks and interpolate isochrones per galaxy, they incur worker initialization latency, high per-worker memory footprints, and redundant computations.
+2. **General-Purpose Big Data Engines (Apache Spark, Ray)**: Distributed engines such as Apache Spark [@zaharia2016apache] and Ray [@moritz2018ray] are optimized for tabular relational joins, row-level transformations, and distributed machine learning. However, they lack native zero-copy integration with high-performance BLAS/CuPy tensor contractions, introduce JVM-Python serialization overhead when transferring large dense spectral arrays, and lack direct chunked streaming from Zarr without POSIX filesystem mounts.
+3. **In-Memory Array Processing (NumPy, SciPy)**: Standard scientific Python workflows [@harris2020array] rely on allocating monolithic arrays in RAM. Storing high-resolution spectra ($W \approx 4,000 - 10,000$ wavelength bins) for millions of galaxies requires substantial memory, triggering out-of-memory (OOM) crashes or exhausting local scratch disks.
+4. **Differentiable & Neural Emulator Frameworks (DSPS, SPECULATOR)**: Differentiable SPS frameworks such as `DSPS` [@hearin2023dsps] provide GPU auto-differentiation for parameter inference, while neural network emulators like `SPECULATOR` [@alsing2020speculator] achieve millisecond spectral approximation. However, differentiable codes remain constrained to in-memory GPU buffers without out-of-core cloud streaming, while deep-learning emulators introduce surrogate approximation errors and require retraining whenever stellar evolution libraries, IMFs, or dust models are modified. `specsynth` instead provides an exact, first-principles physical pipeline that streams directly out-of-core to survey volumes.
 
 `specsynth` resolves these challenges by reformulating stellar population synthesis as a **cloud-native, linear matrix-streaming pipeline**:
 
@@ -43,9 +43,9 @@ Exploring statistical galaxy populations across gigaparsec cosmological volumes 
 | **Storage Architecture** | POSIX filesystem (NFS / Lustre) | Host / GPU VRAM allocation | HDFS / Object store (JVM partitioned) | **Cloud object storage (`s3://`, `gs://`, `abfs://`) via Zarr/fsspec** |
 | **Memory Footprint** | Large (stateful models per core) | Bounded by GPU memory (OOM risk) | High (JVM serialization & shuffle) | **Bounded strictly to one chunk ($O(N_{\text{chunk}})$)** |
 | **In-Flight Filter Projection** | No (Must write or retain spectra) | Custom tensor operations | Partial (Requires custom pipeline stages) | **Yes (Streams spectra in L3 cache/VRAM, writes only photometry)** |
-| **GPU Tensor Cores** | No (CPU only) | Yes (JAX / PyTorch) | Partial (Requires specialized plugins) | **Yes (CuPy GEMM with transparent CPU BLAS fallback)** |
+| **GPU Acceleration** | No (CPU only) | Yes (JAX / PyTorch) | Partial (Requires specialized plugins) | **Yes (CuPy BLAS with transparent CPU fallback)** |
 
-By overcoming these bottlenecks, `specsynth` transforms billion-object synthesis from an intractable supercomputing allocation into a reproducible cloud workflow—enabling full-volume LSST mock universes, Roman survey mocks, Euclid photometric calibration universes, and billion-object statistical color distributions previously beyond reach.
+By decoupling offline template construction from online streaming contractions, `specsynth` provides a memory-bounded architecture that scales galaxy synthesis from local workstations to distributed cloud environments without intermediate storage bloat.
 
 # Astrophysical Framework
 
@@ -61,11 +61,11 @@ $$D_g(\lambda) = \exp\left(-\tau_{\text{diffuse}} \cdot \left(\frac{\lambda}{550
 
 $$B_g(\lambda) = \exp\left(-\tau_{\text{birth}} \cdot \left(\frac{\lambda}{5500\text{ \AA}}\right)^{\alpha_{\text{birth}}}\right)$$
 
-For cosmological simulations at redshift $z > 0$, `specsynth` shifts wavelengths according to $\lambda_{\text{obs}} = \lambda_{\text{rest}}(1+z)$, applies $(1+z)^{-1}$ flux dimming, and integrates photoelectric absorption through the intergalactic neutral hydrogen medium via the Madau (1995) transmission function $T_{\text{IGM}}(\lambda, z)$ [@madau1995radiative]:
+For cosmological snapshot simulations at redshift $z > 0$, `specsynth` shifts rest-frame wavelengths according to $\lambda_{\text{obs}} = \lambda_{\text{rest}}(1+z)$, applies $(1+z)^{-1}$ bandpass energy compression, and integrates photoelectric absorption through the intergalactic neutral hydrogen medium via the Madau (1995) transmission function $T_{\text{IGM}}(\lambda, z)$ [@madau1995radiative]:
 
 $$T_{\text{IGM}}(\lambda, z) = \exp\left( -\tau_{\text{lines}}(\lambda, z) - \tau_{\text{continuum}}(\lambda, z) \right)$$
 
-integrating the resonant Lyman series transitions shortward of Ly$\alpha$ ($1215.67\text{ \AA}$) down to the Lyman limit ($911.75\text{ \AA}$).
+integrating the resonant Lyman series transitions shortward of Ly$\alpha$ ($1215.67\text{ \AA}$) down to the Lyman limit ($911.75\text{ \AA}$). Observer-frame flux scaling using luminosity distance ($F_\lambda = L_{\lambda / (1+z)} / [4\pi D_L^2 (1+z)]$) is provided via `specsynth.cosmology.FlatLambdaCDM`.
 
 # Architecture and Engineering Implementation
 
@@ -73,7 +73,7 @@ The core execution path is designed around dense matrix multiplication (GEMM) ov
 
 ![Figure 1: Streaming worker execution pipeline with in-flight filter projection.](figures/fig1_pipeline.png)
 
-1. **Pluggable Model Adapters**: Standardized adapters convert raw spectral libraries into immutable Zarr basis matrices ($K \times W$), supporting Bruzual & Charlot (2003) `.ised` binary/ASCII tables [@bruzual2003stellar], E-MILES FITS headers [@vazdekis2016uv], FSPS grids [@conroy2009propagation], binary stellar population models such as BPASS [@eldridge2017binary], and generic multi-dimensional FITS/HDF5/NPZ datasets.
+1. **Pluggable Model Adapters**: Standardized adapters convert raw spectral libraries into immutable Zarr basis matrices ($K \times W$), supporting Bruzual & Charlot (2003) `.ised` binary/ASCII tables [@bruzual2003stellar], E-MILES FITS headers [@vazdekis2016uv], FSPS grids [@conroy2009propagation], and generic multi-dimensional FITS/HDF5/NPZ datasets.
 2. **In-Flight Filter Projection**: When broadband photometry is requested (`--filters` or `--bands`), the intermediate spectrum $\mathbf{F}_{\text{chunk}}$ is projected in-flight into $B$ photometric bands:
    $$\mathbf{Phot} = \mathbf{F}_{\text{chunk}} \times \mathbf{M}_{\text{filter}}$$
    Full spectra are streamed through worker cache/VRAM and discarded, reducing persistent cloud storage by **$>99.9\%$** ($3.2\text{ GB}$ vs. $3.2\text{ TB}$ for $10^8$ galaxies).
@@ -170,7 +170,7 @@ Figure 6 displays the resulting Color-Magnitude Diagram (`F200W - F444W` vs. `F2
 
 # Limitations
 
-Current empirical evaluation validates numerical correctness, out-of-core memory boundedness, and hardware acceleration across individual CPU workstations and cloud NVIDIA Tesla T4 GPU hosts. Multi-node cluster throughput and billion-object scaling behavior remain analytically modeled based on single-node baselines and parallel scaling assumptions, and will be empirically validated across distributed Kubernetes Dask deployments in future work. Furthermore, `specsynth` is scoped to population-scale forward modeling of composite stellar continua and broadband photometry, omitting radiative transfer photoionization modeling, stellar velocity dispersion kinematics, and active galactic nucleus emission.
+Current empirical evaluation validates numerical correctness, out-of-core memory boundedness, and hardware acceleration across individual CPU workstations and cloud NVIDIA Tesla T4 GPU hosts. Multi-node cluster throughput and billion-object scaling behavior remain analytically modeled based on single-node baselines and parallel scaling assumptions, and will be empirically validated across distributed Kubernetes Dask deployments in future work. Furthermore, `specsynth` includes bundled calibrated instrument throughput curves for JWST NIRCam, HST, and SDSS, while retaining analytical super-Gaussian approximations (`_approx`) for rapid offline exploration and allowing users to import custom empirical throughput tables for survey comparison. Cosmological processing supports both uniform snapshot simulation time-slices and lightcone forward-modeling with per-galaxy redshift transformations and luminosity distance flux dimming. Finally, `specsynth` is scoped to population-scale forward modeling of composite stellar continua and broadband photometry, omitting radiative transfer photoionization modeling, stellar velocity dispersion kinematics, and active galactic nucleus emission.
 
 # Appendix: Benchmark Provenance and Reproducibility Manifests
 
@@ -183,12 +183,12 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **Software Stack**: Python 3.13.1, Dask 2026.8.0, Zarr 3.4.2, Astropy 8.0.2
 - **Host 2 — Cloud GPU Node** (`paper/benchmark_manifest_gpu_t4.json`):
   - **Operating System**: `Linux-6.18.55+-x86_64-with-glibc2.39`
-  - **GPU Device**: `NVIDIA Tesla T4` (14.56 GB VRAM, CUDA Driver 13.0, CuPy 14.x)
+  - **GPU Device**: `NVIDIA Tesla T4` (14.56 GB VRAM, CUDA 12.2, CuPy 13.3.0)
   - **CPU & Memory**: `x86_64` (2 cores, 4 threads), 31.35 GB RAM | **BLAS**: `scipy-openblas`
   - **Timestamp**: `2026-11-11T18:14:36Z`
 - **Full Reproduction Commands**:
   ```bash
-  # Run automated 92-test scientific verification suite (>80% coverage)
+  # Run automated 143-test scientific verification suite (88% coverage)
   pytest -v --cov=specsynth
 
   # Generate reproducible hardware & GPU benchmark manifest

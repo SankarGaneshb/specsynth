@@ -172,6 +172,42 @@ def test_write_many_with_mock_client(monkeypatch):
     assert mock_grp.attrs["created_by"] == "test"
 
 
+@pytest.mark.integration
+def test_write_many_batched_with_mock_client(monkeypatch):
+    import dask.array as da
+    from unittest.mock import MagicMock
+    from specsynth.core import write_many_batched
+
+    store_path = "mock_write_many_batched.zarr"
+    # Array with 4 chunk blocks of size 5
+    main_arr = da.from_array(np.ones(20, dtype=np.float32), chunks=5)
+    wave_arr = da.from_array(np.arange(10, dtype=np.float32), chunks=10)
+
+    mock_client = MagicMock()
+    mock_client.compute.return_value = ["fut"]
+
+    class MockGroup:
+        def __init__(self):
+            self.attrs = {}
+
+    mock_grp = MockGroup()
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: mock_grp)
+    monkeypatch.setattr("dask.array.to_zarr", lambda *args, **kwargs: MagicMock(blocks=["b0", "b1", "b2", "b3"]))
+
+    # 4 blocks, batch_chunks=2 -> should trigger 1 static write + 2 batch writes = 3 compute calls
+    write_many_batched(
+        mock_client,
+        store_path,
+        static_arrays={"wave": wave_arr},
+        main_name="photometry",
+        main_array=main_arr,
+        batch_chunks=2,
+        metadata={"batch_pipelined": True},
+    )
+    assert mock_client.compute.call_count == 3
+    assert mock_grp.attrs["batch_pipelined"] is True
+
+
 @pytest.mark.critical
 def test_gen_params_with_block_info():
     from specsynth.core import _gen_params
