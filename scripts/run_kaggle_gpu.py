@@ -60,10 +60,25 @@ print("=" * 60)
 print("[*] SPECSYNTH KAGGLE TESLA T4 GPU BENCHMARK WORKER")
 print("=" * 60)
 
-# Step 1: Ensure cupy matching Kaggle CUDA 13.0 environment
-print("\\n[*] Step 1: Aligning CuPy with CUDA 13.0 driver...")
-subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "cupy-cuda12x", "cupy-cuda13x"], check=False)
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "cupy-cuda13x"], check=True)
+# Step 1: Ensure CuPy is functional with the environment's CUDA driver
+print("\\n[*] Step 1: Checking CuPy and CUDA driver compatibility...")
+try:
+    import cupy as cp
+    _ = cp.zeros(1) + 1.0
+    print(f"  [+] Active CuPy {{cp.__version__}} detected and functional.")
+except Exception as e:
+    print(f"  [*] CuPy probe failed ({{e}}). Installing matching CuPy package...")
+    target_pkg = "cupy-cuda12x"
+    try:
+        smi = subprocess.check_output(["nvidia-smi"], text=True)
+        if "CUDA Version: 11" in smi:
+            target_pkg = "cupy-cuda11x"
+        elif "CUDA Version: 13" in smi:
+            target_pkg = "cupy-cuda13x"
+    except Exception:
+        pass
+    print(f"  [*] Installing {{target_pkg}}...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", target_pkg], check=False)
 
 # Step 2: Install latest specsynth directly from GitHub
 print("\\n[*] Step 2: Installing specsynth from GitHub (main)...")
