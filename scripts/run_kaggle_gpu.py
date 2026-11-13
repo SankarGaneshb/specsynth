@@ -23,7 +23,7 @@ from pathlib import Path
 def get_kaggle_credentials() -> tuple[str | None, str | None]:
     """Retrieve Kaggle credentials from environment or ~/.kaggle/kaggle.json."""
     user = os.environ.get("KAGGLE_USERNAME")
-    key = os.environ.get("KAGGLE_KEY")
+    key = os.environ.get("KAGGLE_KEY") or os.environ.get("KAGGLE_API_TOKEN")
     if user and key:
         return user, key
 
@@ -32,7 +32,9 @@ def get_kaggle_credentials() -> tuple[str | None, str | None]:
         try:
             with open(cfg_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return data.get("username"), data.get("key")
+                u = data.get("username")
+                k = data.get("key") or data.get("api_token")
+                return u or user, k or key
         except Exception:
             pass
 
