@@ -561,6 +561,60 @@ def cmd_clean_catalog(a, client: Client | None = None):
 
 
 # --------------------------------------------------------------------------
+# sentry-agent : autonomous Scientific Sentry investigation & auto-remediation
+# --------------------------------------------------------------------------
+def cmd_sentry_agent(a, client: Client | None = None):
+    from specsynth.agent import SentryAgent
+
+    print(f"\n====================== Sentry AI Autonomous Agent ======================")
+    print(f"  * Target Base Storage : {a.base}")
+    print(f"  * Sample Size         : {a.sample:,} galaxies")
+    print(f"  * Auto-Remediate      : {a.auto_remediate}")
+    print(f"  * Output Clean Path   : {a.clean_output}")
+    print(f"  * Executive Memo Path : {a.output_memo}")
+    print(f"------------------------------------------------------------------------")
+
+    agent = SentryAgent(
+        base=a.base,
+        sample_size=a.sample,
+        max_anomaly_rate=a.max_anomaly_rate,
+        auto_remediate=a.auto_remediate,
+        raw_catalog_path=getattr(a, "raw_catalog", None),
+        clean_output_path=a.clean_output,
+        output_memo_path=a.output_memo,
+    )
+
+    result = agent.run()
+
+    print(f"\nAgent Investigation Summary:")
+    print(f"  * Status              : {result.status}")
+    print(f"  * Evaluated Galaxies  : {result.total_evaluated:,}")
+    print(f"  * Nominal Galaxies    : {result.passed_count:,} ({result.pass_rate_pct:.3f}%)")
+    print(f"  * Flagged Anomalies   : {result.flagged_count:,}")
+    if result.retention_rate_pct is not None:
+        print(f"  * Dataset Retention   : {result.retention_rate_pct:.3f}%")
+    if result.clean_catalog_path:
+        print(f"  * Clean Catalog Saved : {result.clean_catalog_path}")
+    print(f"  * Scientific Memo     : {result.memo_path}")
+
+    if result.clusters:
+        print(f"\nDiscovered Anomaly Clusters ({len(result.clusters)} failure modes):")
+        for idx, c in enumerate(result.clusters, 1):
+            print(f"  [{idx}] {c.category} ({c.metric_name}) - {c.count} objects")
+            print(f"      Hypothesis : {c.primary_hypothesis}")
+            print(f"      Action     : {c.recommended_action}")
+
+    print(f"========================================================================\n")
+
+    if result.status == "CRITICAL_REJECTED":
+        sys.exit(2)
+    elif result.status == "INVESTIGATION_FLAGGED":
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
+
+# --------------------------------------------------------------------------
 # CLI Parser
 # --------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
@@ -676,6 +730,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--input-table", help="Optional original raw table path to filter directly")
     s.set_defaults(fn=cmd_clean_catalog)
 
+    # sentry-agent
+    s = sub.add_parser("sentry-agent", help="Launch autonomous Scientific Sentry agent for root-cause diagnosis & remediation")
+    s.add_argument("--sample", type=int, default=50_000, help="Number of galaxies to evaluate (default: 50000)")
+    s.add_argument("--auto-remediate", action=argparse.BooleanOptionalAction, default=True, help="Automatically clean catalog and quarantine bad rows (default: True)")
+    s.add_argument("--clean-output", default="clean_catalog.parquet", help="Path to export sanitized clean catalog (default: clean_catalog.parquet)")
+    s.add_argument("--output-memo", default="sentry_agent_memo.md", help="Path to save executive scientific markdown memo (default: sentry_agent_memo.md)")
+    s.add_argument("--raw-catalog", help="Optional original raw table path to filter directly")
+    s.add_argument("--max-anomaly-rate", type=float, default=0.001, help="Max acceptable anomaly rate before CRITICAL_REJECTED (default: 0.001)")
+    s.set_defaults(fn=cmd_sentry_agent)
+
     # synth and verify
     for name, fn in (("synth", cmd_synth), ("verify", cmd_verify)):
         s = sub.add_parser(name)
@@ -733,8 +797,8 @@ def main():
     ap = build_parser()
     a = ap.parse_args()
 
-    # For benchmark, sentry, and clean-catalog commands, run directly on host without spawning distributed cluster
-    if a.cmd in ("benchmark", "sentry", "clean-catalog"):
+    # For benchmark, sentry, clean-catalog, and sentry-agent commands, run directly on host without spawning distributed cluster
+    if a.cmd in ("benchmark", "sentry", "clean-catalog", "sentry-agent"):
         a.fn(a, None)
         return
 

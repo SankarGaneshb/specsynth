@@ -40,6 +40,7 @@ from specsynth.sentry import (
     measure_uv_slope,
     run_sentry_audit,
 )
+from specsynth.agent import AgentInvestigationResult, RootCauseCluster, SentryAgent
 from specsynth.tools import (
     tool_clean_catalog,
     tool_get_anomaly_details,
@@ -95,4 +96,7 @@ __all__ = [
     "tool_clean_catalog",
     "tool_get_system_info",
     "tool_list_available_filters",
+    "SentryAgent",
+    "AgentInvestigationResult",
+    "RootCauseCluster",
 ]

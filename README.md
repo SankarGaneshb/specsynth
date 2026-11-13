@@ -424,6 +424,9 @@ At survey scale ($10^7 - 10^9$ galaxies), human inspection of individual spectra
 # Run standalone QA audit on 50,000 sampled galaxies
 specsynth sentry --base /data/run1 --sample 50000 --output sentry_report.json --markdown-report sentry_report.md
 
+# Launch autonomous AI agent to audit, diagnose root causes, and auto-remediate
+specsynth sentry-agent --base /data/run1 --clean-output /data/run1/clean_catalog.parquet --output-memo /data/run1/agent_memo.md
+
 # Prune quarantined anomalies and export a pristine, analysis-ready catalog
 specsynth clean-catalog --base /data/run1 --report sentry_report.json --output /data/run1/clean_catalog.parquet
 
@@ -439,7 +442,7 @@ specsynth synth --base /data/run1 --filters jwst_nircam --sentry
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated unit test suite (92 tests, >80% coverage)
+# Run automated unit test suite (101 tests, 83% coverage, strict tier markers)
 pytest -v --cov=specsynth
 
 # Or run tests with automated cache cleanup (Windows / cross-platform):

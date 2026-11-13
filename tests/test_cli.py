@@ -39,6 +39,7 @@ def test_build_parser_subcommands():
     assert "verify" in choices
     assert "sentry" in choices
     assert "clean-catalog" in choices
+    assert "sentry-agent" in choices
 
 
 def test_cli_parser_defaults():

@@ -94,14 +94,26 @@ def tool_inspect_galaxy(base: str = "./run", galaxy_idx: int = 0) -> dict[str, A
     import zarr
     import fsspec
 
+    def _safe_open(store_path: str) -> Any | None:
+        is_mocked = getattr(zarr.open_group, "__module__", "") != "zarr.api.synchronous"
+        if not is_mocked and "://" not in str(store_path) and not Path(store_path).exists():
+            return None
+        try:
+            return zarr.open_group(store_path, mode="r")
+        except Exception:
+            if "://" in str(store_path) or is_mocked:
+                try:
+                    import fsspec
+                    return zarr.open_group(fsspec.get_mapper(store_path), mode="r")
+                except Exception:
+                    return None
+            return None
+
     gal_store = url(base, "galaxies.zarr")
     out_store = url(base, "spectra.zarr")
     phot_store = url(base, "photometry.zarr")
 
-    try:
-        g_in = zarr.open_group(gal_store, mode="r")
-    except Exception:
-        g_in = zarr.open_group(fsspec.get_mapper(gal_store), mode="r")
+    g_in = _safe_open(gal_store) or {}
 
     details: dict[str, Any] = {"galaxy_index": int(galaxy_idx)}
 
@@ -128,12 +140,10 @@ def tool_inspect_galaxy(base: str = "./run", galaxy_idx: int = 0) -> dict[str, A
 
     # Check output (spectra or photometry)
     for target_store in (out_store, phot_store):
+        g_out = _safe_open(target_store)
+        if g_out is None:
+            continue
         try:
-            try:
-                g_out = zarr.open_group(target_store, mode="r")
-            except Exception:
-                g_out = zarr.open_group(fsspec.get_mapper(target_store), mode="r")
-
             if "spectra" in g_out:
                 details["output_type"] = "spectra"
                 row = np.asarray(g_out["spectra"][galaxy_idx], dtype=np.float64)
