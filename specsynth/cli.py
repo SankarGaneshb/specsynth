@@ -303,6 +303,20 @@ def cmd_synth(a, client: Client):
         f"===================================================================\n"
     )
 
+    if getattr(a, "sentry", False):
+        from specsynth.sentry import run_sentry_audit
+        print(f"[*] Running inline Scientific Sentry audit...")
+        sample_n = getattr(a, "sample", 50_000)
+        report = run_sentry_audit(base=a.base, sample_size=sample_n, attach_is_valid=True)
+        print(
+            f"  * Sentry Status      : {report.status}\n"
+            f"  * Evaluated Galaxies : {report.total_galaxies_evaluated:,}\n"
+            f"  * Valid Objects      : {report.passed_count:,} ({report.pass_rate_pct:.3f}%)\n"
+            f"  * Quarantined/Flagged: {report.flagged_count:,}\n"
+        )
+        if getattr(a, "fail_on_anomaly", False) and report.status == "CRITICAL_FAILURE":
+            raise RuntimeError(f"Sentry audit detected critical anomalies: status={report.status}")
+
 
 # --------------------------------------------------------------------------
 # import-catalog : ingest external simulation catalogs (FITS, HDF5, CSV, Parquet)
@@ -518,6 +532,35 @@ def cmd_sentry(a, client: Client | None = None):
 
 
 # --------------------------------------------------------------------------
+# clean-catalog : prune quarantined anomalies and export clean dataset
+# --------------------------------------------------------------------------
+def cmd_clean_catalog(a, client: Client | None = None):
+    from specsynth.catalog import clean_catalog
+
+    print(f"\n====================== Catalog Quarantine & Clean ======================")
+    print(f"  * Base Storage       : {a.base}")
+    print(f"  * Sentry Report      : {a.report}")
+    print(f"  * Clean Output       : {a.output}")
+    print(f"------------------------------------------------------------------------")
+
+    res = clean_catalog(
+        base=a.base,
+        sentry_report_path=a.report,
+        output_path=a.output,
+        source_table_path=getattr(a, "input_table", None),
+    )
+
+    print(
+        f"Clean Summary:\n"
+        f"  * Total Galaxies     : {res['total_galaxies']:,}\n"
+        f"  * Valid Galaxies     : {res['valid_galaxies']:,} ({res['retention_rate_pct']:.3f}%)\n"
+        f"  * Quarantined/Pruned : {res['quarantined_count']:,}\n"
+        f"  * Saved Cleaned File : {res['output_path']}\n"
+        f"========================================================================\n"
+    )
+
+
+# --------------------------------------------------------------------------
 # CLI Parser
 # --------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
@@ -626,6 +669,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--quarantine-dir", help="Directory to dump quarantined input parameters for failing objects")
     s.set_defaults(fn=cmd_sentry)
 
+    # clean-catalog
+    s = sub.add_parser("clean-catalog", help="Filter quarantined anomalies out of a catalog, creating a pristine export")
+    s.add_argument("--report", default="sentry_report.json", help="Path to sentry_report.json containing flagged anomalies")
+    s.add_argument("--output", "-o", default="clean_catalog.parquet", help="Path to export pristine catalog (parquet, fits, csv, npz)")
+    s.add_argument("--input-table", help="Optional original raw table path to filter directly")
+    s.set_defaults(fn=cmd_clean_catalog)
+
     # synth and verify
     for name, fn in (("synth", cmd_synth), ("verify", cmd_verify)):
         s = sub.add_parser(name)
@@ -662,6 +712,16 @@ def build_parser() -> argparse.ArgumentParser:
                 action="store_true",
                 help="Enable CuPy GPU acceleration for matrix contractions (falls back to CPU if no GPU)",
             )
+            s.add_argument(
+                "--sentry",
+                action="store_true",
+                help="Run inline Scientific Sentry audit upon synthesis completion and write is_valid mask",
+            )
+            s.add_argument(
+                "--fail-on-anomaly",
+                action="store_true",
+                help="Halt with error if Sentry audit detects critical anomalies during synthesis",
+            )
         else:
             s.add_argument("--sample", type=int, default=200, help="Sample size to verify against float64 reference")
         s.set_defaults(fn=fn)
@@ -673,8 +733,8 @@ def main():
     ap = build_parser()
     a = ap.parse_args()
 
-    # For benchmark and sentry commands, run directly on host without spawning distributed cluster
-    if a.cmd in ("benchmark", "sentry"):
+    # For benchmark, sentry, and clean-catalog commands, run directly on host without spawning distributed cluster
+    if a.cmd in ("benchmark", "sentry", "clean-catalog"):
         a.fn(a, None)
         return
 

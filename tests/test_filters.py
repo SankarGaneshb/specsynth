@@ -72,3 +72,36 @@ def test_ab_magnitude_conversion():
     # 10x fainter = +2.5 magnitudes
     mag_faint = flux_to_ab_mag(np.array([f_nu_zero / 10.0]))
     assert np.isclose(mag_faint[0], 2.5, atol=1e-2)
+
+
+def test_filter_curve_validation_and_zero_denom():
+    # Mismatched length
+    with pytest.raises(ValueError, match="same length"):
+        FilterCurve(name="bad", wave=np.array([1.0, 2.0]), transmission=np.array([1.0]))
+
+    # Non-monotonic
+    with pytest.raises(ValueError, match="strictly monotonically increasing"):
+        FilterCurve(name="bad", wave=np.array([2.0, 1.0]), transmission=np.array([1.0, 1.0]))
+
+    # Zero transmission
+    flt_zero = FilterCurve(name="zero", wave=np.array([1000.0, 2000.0]), transmission=np.array([0.0, 0.0]))
+    assert flt_zero.effective_wavelength == 1500.0
+    assert flt_zero.pivot_wavelength == 1500.0
+
+
+def test_get_filter_custom_file_and_f_lambda_conversion(tmp_path):
+    flt_file = tmp_path / "custom_filter.txt"
+    data = np.column_stack([np.linspace(4000, 5000, 20), np.ones(20)])
+    np.savetxt(str(flt_file), data)
+
+    flt = get_filter(str(flt_file))
+    assert flt.name == "custom_filter"
+    assert len(flt.wave) == 20
+
+    # Test f_lambda_to_f_nu
+    f_lam = np.array([1e-15, 2e-15])
+    piv = 5500.0
+    f_nu = f_lambda_to_f_nu(f_lam, piv)
+    assert f_nu.shape == (2,)
+    assert np.all(f_nu > 0)
+

@@ -113,3 +113,60 @@ def test_wave_chunking_contract():
     combined = np.hstack([chunk1_spec, chunk2_spec])
 
     assert np.allclose(full_spec, combined)
+
+
+def test_small_and_read_small(monkeypatch):
+    import dask.array as da
+    from specsynth.core import small, read_small
+
+    arr = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
+    darr = small(arr)
+    assert isinstance(darr, da.Array)
+    assert darr.shape == (4,)
+
+    mock_grp = {"test_comp": arr}
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: mock_grp)
+
+    read_back = read_small("mock_store.zarr", "test_comp")
+    assert np.allclose(arr, read_back)
+
+
+def test_write_many_with_mock_client(monkeypatch):
+    import dask.array as da
+    from unittest.mock import MagicMock
+    from specsynth.core import write_many
+
+    store_path = "mock_write_many.zarr"
+    a1 = da.from_array(np.ones(10, dtype=np.float32), chunks=5)
+    a2 = da.from_array(np.zeros(10, dtype=np.float32), chunks=5)
+
+    mock_client = MagicMock()
+    mock_client.compute.return_value = ["fut1", "fut2"]
+
+    class MockGroup:
+        def __init__(self):
+            self.attrs = {}
+
+    mock_grp = MockGroup()
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: mock_grp)
+    monkeypatch.setattr("dask.array.to_zarr", lambda *args, **kwargs: "delayed_task")
+
+    write_many(
+        mock_client,
+        store_path,
+        {"a1": a1, "a2": a2},
+        metadata={"created_by": "test", "version": "1.0"},
+    )
+    mock_client.compute.assert_called_once()
+    mock_client.gather.assert_called_once_with(["fut1", "fut2"])
+    assert mock_grp.attrs["created_by"] == "test"
+
+
+def test_gen_params_with_block_info():
+    from specsynth.core import _gen_params
+
+    dummy = np.zeros((5, 6), dtype=np.float32)
+    binfo = {None: {"chunk-location": (2,), "chunk-shape": (5,)}}
+    p = _gen_params(dummy, seed=42, block_info=binfo)
+    assert p.shape == (5, 6)
+    assert np.all(np.isfinite(p))

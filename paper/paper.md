@@ -188,8 +188,8 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **Timestamp**: `2026-11-11T18:14:36Z`
 - **Full Reproduction Commands**:
   ```bash
-  # Run automated 51-test scientific verification suite
-  pytest -v
+  # Run automated 92-test scientific verification suite (>80% coverage)
+  pytest -v --cov=specsynth
 
   # Generate reproducible hardware & GPU benchmark manifest
   python specsynth.py benchmark --n-gal 50000 --n-runs 5 --gpu --output paper/benchmark_manifest_gpu_t4.json

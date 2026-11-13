@@ -32,6 +32,26 @@ def test_ssp_data_validation():
     with pytest.raises(ValueError, match="shape mismatch"):
         SSPData(ages=ages, mets=mets, wave=wave, ssp=ssp[:3])
 
+    # Test empty or invalid dims
+    with pytest.raises(ValueError, match="ages must be a non-empty 1D array"):
+        SSPData(ages=np.array([]), mets=mets, wave=wave, ssp=np.empty((0, 4)))
+
+    with pytest.raises(ValueError, match="mets must be a non-empty 1D array"):
+        SSPData(ages=ages, mets=np.array([]), wave=wave, ssp=np.empty((0, 4)))
+
+    with pytest.raises(ValueError, match="wave must be a non-empty 1D array"):
+        SSPData(ages=ages, mets=mets, wave=np.array([]), ssp=np.empty((6, 0)))
+
+    # Non-monotonic wave
+    with pytest.raises(ValueError, match="wave must be strictly monotonically increasing"):
+        SSPData(ages=ages, mets=mets, wave=np.array([2000.0, 1000.0, 3000.0, 4000.0]), ssp=ssp)
+
+    # Non-finite ssp
+    bad_ssp = np.copy(ssp)
+    bad_ssp[0, 0] = np.nan
+    with pytest.raises(ValueError, match="ssp contains non-finite values"):
+        SSPData(ages=ages, mets=mets, wave=wave, ssp=bad_ssp)
+
 
 def test_ssp_data_from_3d_grid():
     ages = np.array([1e8, 1e7])  # unsorted
@@ -62,6 +82,10 @@ def test_ssp_data_resample_wavelength():
     assert np.isclose(resampled.ssp[0, 0], 1.5)  # halfway between 1.0 and 2.0
     assert np.isclose(resampled.ssp[1, 1], 5.0)  # halfway between 4.0 and 6.0
 
+    # Non-monotonic target_wave
+    with pytest.raises(ValueError, match="target_wave must be strictly monotonically increasing"):
+        data.resample_wavelength(np.array([2500.0, 1500.0]))
+
 
 def test_toy_adapter():
     adapter = ToyAdapter(n_age=5, n_met=2, n_wave=50)
@@ -78,8 +102,29 @@ def test_get_adapter_factory():
     toy = get_adapter("toy", n_age=10, n_met=3, n_wave=100)
     assert isinstance(toy, ToyAdapter)
 
+    bc03 = get_adapter("bc03", path="mock.spec")
+    assert isinstance(bc03, BC03Adapter)
+
+    emiles = get_adapter("emiles", path="mock_dir")
+    assert isinstance(emiles, EMILESAdapter)
+
+    fits = get_adapter("fits", filepath="mock.fits")
+    assert isinstance(fits, FITSGridAdapter)
+
+    fsps = get_adapter("fsps", filepath="mock.fsps")
+    assert isinstance(fsps, FSPSAdapter)
+
     with pytest.raises(ValueError, match="Unknown adapter"):
         get_adapter("nonexistent_model")
+
+
+def test_ssp_data_from_3d_grid_shape_mismatch():
+    ages = np.array([1e7, 1e8])
+    mets = np.array([0.02])
+    wave = np.array([1000.0, 2000.0])
+    bad_grid = np.zeros((3, 1, 2), dtype=np.float32)  # 3 != 2 ages
+    with pytest.raises(ValueError, match="grid_3d shape"):
+        SSPData.from_3d_grid(ages=ages, mets=mets, wave=wave, grid_3d=bad_grid)
 
 
 def test_bc03_adapter_ascii(tmp_path):

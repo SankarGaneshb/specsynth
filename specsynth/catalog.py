@@ -282,3 +282,119 @@ def import_catalog(
         da.compute(*tasks)
 
     return metadata
+
+
+def clean_catalog(
+    base: str | None = None,
+    sentry_report_path: str | Path | None = None,
+    output_path: str | Path | None = None,
+    source_table_path: str | Path | None = None,
+    anomalous_indices: list[int] | set[int] | None = None,
+) -> dict[str, Any]:
+    """
+    Filters quarantined/anomalous galaxies out of a catalog, exporting a pristine dataset.
+    Supports reading from base/galaxies.zarr or an input source table, and writes to
+    Parquet, CSV, FITS, HDF5, NPZ, or Zarr.
+    """
+    import json
+
+    bad_idx_set: set[int] = set()
+    if anomalous_indices is not None:
+        bad_idx_set.update(int(i) for i in anomalous_indices)
+
+    if sentry_report_path is not None and os.path.exists(sentry_report_path):
+        with open(sentry_report_path, "r", encoding="utf-8") as f:
+            rep_data = json.load(f)
+            for anom in rep_data.get("anomalies", []):
+                bad_idx_set.add(int(anom["galaxy_index"]))
+
+    if source_table_path is not None:
+        raw_dict = load_raw_table(source_table_path)
+        first_col = next(iter(raw_dict.values()))
+        n_total = len(first_col)
+    elif base is not None:
+        import zarr
+        import fsspec
+        gal_store = url(base, "galaxies.zarr")
+        try:
+            g_in = zarr.open_group(gal_store, mode="r")
+        except Exception:
+            g_in = zarr.open_group(fsspec.get_mapper(gal_store), mode="r")
+
+        raw_dict = {}
+        if "params" in g_in:
+            raw_dict["params"] = np.asarray(g_in["params"][:])
+            n_total = len(raw_dict["params"])
+        elif "sfh" in g_in:
+            raw_dict["sfh"] = np.asarray(g_in["sfh"][:])
+            n_total = len(raw_dict["sfh"])
+        else:
+            raise ValueError(f"No recognizable catalog datasets in {gal_store}")
+
+        for k in ("tau_diffuse", "tau_birth", "redshift"):
+            if k in g_in:
+                raw_dict[k] = np.asarray(g_in[k][:])
+    else:
+        raise ValueError("Must provide either 'base' or 'source_table_path'")
+
+    is_valid = np.ones(n_total, dtype=bool)
+    for b_idx in bad_idx_set:
+        if 0 <= b_idx < n_total:
+            is_valid[b_idx] = False
+
+    clean_dict = {k: v[is_valid] for k, v in raw_dict.items()}
+    n_clean = int(np.sum(is_valid))
+    n_quarantined = n_total - n_clean
+
+    if output_path is not None:
+        out_p = Path(output_path)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        ext = out_p.suffix.lower()
+
+        if ext == ".npz":
+            np.savez_compressed(out_p, **clean_dict)
+        elif ext in (".csv", ".tsv"):
+            sep = "\t" if ext == ".tsv" else ","
+            # Flatten 2D arrays if needed or select scalar columns
+            flat_dict = {k: v for k, v in clean_dict.items() if v.ndim == 1}
+            import csv
+            with open(out_p, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f, delimiter=sep)
+                headers = list(flat_dict.keys())
+                writer.writerow(headers)
+                for i in range(n_clean):
+                    writer.writerow([flat_dict[h][i] for h in headers])
+        elif ext in (".fits", ".fit"):
+            from astropy.table import Table
+            flat_dict = {k: v for k, v in clean_dict.items() if v.ndim <= 2}
+            tbl = Table(flat_dict)
+            tbl.write(str(out_p), overwrite=True)
+        elif ext in (".h5", ".hdf5"):
+            import h5py
+            with h5py.File(str(out_p), "w") as hf:
+                for k, v in clean_dict.items():
+                    hf.create_dataset(k, data=v)
+        elif ext == ".parquet":
+            try:
+                import pyarrow as pa
+                import pyarrow.parquet as pq
+                flat_dict = {k: v for k, v in clean_dict.items() if v.ndim == 1}
+                table = pa.Table.from_pydict(flat_dict)
+                pq.write_table(table, str(out_p))
+            except ImportError:
+                # Fallback to npz if pyarrow not installed
+                fallback_path = out_p.with_suffix(".npz")
+                np.savez_compressed(fallback_path, **clean_dict)
+                output_path = str(fallback_path)
+        else:
+            # Default to NPZ
+            np.savez_compressed(out_p.with_suffix(".npz"), **clean_dict)
+
+    return {
+        "total_galaxies": n_total,
+        "valid_galaxies": n_clean,
+        "quarantined_count": n_quarantined,
+        "retention_rate_pct": round((n_clean / max(1, n_total)) * 100.0, 3),
+        "output_path": str(output_path) if output_path else None,
+    }
+

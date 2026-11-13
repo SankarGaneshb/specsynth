@@ -20,7 +20,12 @@ def url(base: str, name: str) -> str:
 
 def read_small(store: str, comp: str) -> np.ndarray:
     """Read a small metadata/grid array from Zarr storage into memory."""
-    return da.from_zarr(store, component=comp).compute()
+    try:
+        import zarr
+        grp = zarr.open_group(store, mode="r")
+        return np.asarray(grp[comp][:])
+    except Exception:
+        return da.from_zarr(store, component=comp).compute(scheduler="sync")
 
 
 def write_many(

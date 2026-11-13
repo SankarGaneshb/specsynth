@@ -128,3 +128,137 @@ def test_load_raw_table_npz(tmp_path):
     assert "mass" in loaded
     assert "met" in loaded
     assert np.allclose(loaded["mass"], [10.1, 10.9])
+
+
+def test_load_raw_table_npy_2d_and_structured(tmp_path):
+    # 2D matrix (N, 6)
+    npy_2d = tmp_path / "gal_2d.npy"
+    mat = np.array([
+        [10.0, 5.0, 1.5, -1.8, 0.3, 0.7],
+        [11.0, 6.0, 2.0, -1.5, 0.4, 0.9],
+    ], dtype=np.float32)
+    np.save(str(npy_2d), mat)
+
+    loaded_2d = load_raw_table(npy_2d)
+    assert "mass" in loaded_2d
+    assert "onset" in loaded_2d
+    assert len(loaded_2d["mass"]) == 2
+
+    # Structured array
+    npy_struct = tmp_path / "gal_struct.npy"
+    dt = np.dtype([("MSTAR", np.float32), ("REDSHIFT", np.float32)])
+    s_arr = np.array([(1e10, 0.5), (2e10, 1.2)], dtype=dt)
+    np.save(str(npy_struct), s_arr)
+
+    loaded_s = load_raw_table(npy_struct)
+    assert "mstar" in loaded_s
+    assert "redshift" in loaded_s
+
+
+def test_load_raw_table_tsv_and_invalid(tmp_path):
+    tsv_file = tmp_path / "galaxies.tsv"
+    tsv_file.write_text("m_star\tz\n1e10\t0.5\n", encoding="utf-8")
+    loaded_tsv = load_raw_table(tsv_file)
+    assert "m_star" in loaded_tsv
+
+    bad_ext = tmp_path / "galaxies.unknown"
+    bad_ext.write_text("random", encoding="utf-8")
+    with pytest.raises(ValueError, match="Unsupported catalog file extension"):
+        load_raw_table(bad_ext)
+
+
+def test_clean_catalog_base_mode_and_formats(tmp_path, monkeypatch):
+    from specsynth.catalog import clean_catalog
+
+    class MockZGroup(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {}
+
+    params_arr = np.array([
+        [10.0, 5.0, 1.5, -1.8, 0.3, 0.7],
+        [11.0, 6.0, 2.0, -1.5, 0.4, 0.9],
+        [9.5, 3.0, 0.8, -2.0, 0.1, 0.3],
+    ], dtype=np.float32)
+
+    mock_group = MockZGroup({
+        "params": params_arr,
+        "tau_diffuse": np.array([0.3, 0.4, 0.1], dtype=np.float32),
+        "tau_birth": np.array([0.7, 0.9, 0.3], dtype=np.float32),
+        "redshift": np.array([0.5, 1.0, 1.5], dtype=np.float32),
+    })
+
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: mock_group)
+
+    # Clean catalog from base with quarantined index 1
+    # Test FITS export
+    fits_out = str(tmp_path / "clean.fits")
+    res_fits = clean_catalog(
+        base=str(tmp_path),
+        anomalous_indices=[1],
+        output_path=fits_out,
+    )
+    assert res_fits["valid_galaxies"] == 2
+    assert res_fits["quarantined_count"] == 1
+    assert os.path.exists(fits_out)
+
+    # Test HDF5 export
+    h5_out = str(tmp_path / "clean.h5")
+    res_h5 = clean_catalog(
+        base=str(tmp_path),
+        anomalous_indices=[1],
+        output_path=h5_out,
+    )
+    assert res_h5["valid_galaxies"] == 2
+    assert os.path.exists(h5_out)
+
+    # Test TSV export
+    tsv_out = str(tmp_path / "clean.tsv")
+    res_tsv = clean_catalog(
+        base=str(tmp_path),
+        anomalous_indices=[1],
+        output_path=tsv_out,
+    )
+    assert res_tsv["valid_galaxies"] == 2
+    assert os.path.exists(tsv_out)
+
+    # Test Parquet export
+    pq_out = str(tmp_path / "clean.parquet")
+    res_pq = clean_catalog(
+        base=str(tmp_path),
+        anomalous_indices=[1],
+        output_path=pq_out,
+    )
+    assert res_pq["valid_galaxies"] == 2
+
+
+def test_import_catalog_with_mock_client(tmp_path, monkeypatch):
+    from unittest.mock import MagicMock
+    import dask.array as da
+    from specsynth.catalog import import_catalog
+
+    # Raw file
+    csv_file = tmp_path / "catalog_input.csv"
+    tbl = Table({
+        "m_star": [1e10, 2e10],
+        "z": [0.5, 1.2],
+        "tau": [1.0, 2.0],
+    })
+    tbl.write(str(csv_file), format="ascii.csv")
+
+    monkeypatch.setattr("specsynth.catalog.da.from_zarr", lambda s, component: da.from_array(np.array([1e7, 1e8])))
+    mock_write_many = MagicMock()
+    monkeypatch.setattr("specsynth.catalog.write_many", mock_write_many)
+
+    mock_client = MagicMock()
+    meta = import_catalog(
+        catalog_path=csv_file,
+        output_zarr="mock_out.zarr",
+        ssp_store="mock_ssp.zarr",
+        chunk_size=10,
+        client=mock_client,
+    )
+
+    assert meta["n_galaxies"] == 2
+    mock_write_many.assert_called_once()
+

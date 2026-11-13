@@ -423,6 +423,12 @@ At survey scale ($10^7 - 10^9$ galaxies), human inspection of individual spectra
 ```bash
 # Run standalone QA audit on 50,000 sampled galaxies
 specsynth sentry --base /data/run1 --sample 50000 --output sentry_report.json --markdown-report sentry_report.md
+
+# Prune quarantined anomalies and export a pristine, analysis-ready catalog
+specsynth clean-catalog --base /data/run1 --report sentry_report.json --output /data/run1/clean_catalog.parquet
+
+# Or run Sentry inline during synthesis, writing an is_valid mask array directly to storage:
+specsynth synth --base /data/run1 --filters jwst_nircam --sentry
 ```
 
 ---
@@ -433,8 +439,8 @@ specsynth sentry --base /data/run1 --sample 50000 --output sentry_report.json --
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated unit test suite (51 tests)
-pytest -v
+# Run automated unit test suite (92 tests, >80% coverage)
+pytest -v --cov=specsynth
 
 # Or run tests with automated cache cleanup (Windows / cross-platform):
 .\test.ps1             # PowerShell

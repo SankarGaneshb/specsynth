@@ -19,7 +19,7 @@ from specsynth.core import (
     write_many,
 )
 from specsynth.benchmark import get_system_hardware_info, run_benchmark_suite
-from specsynth.catalog import import_catalog, load_raw_table, resolve_catalog_columns
+from specsynth.catalog import clean_catalog, import_catalog, load_raw_table, resolve_catalog_columns
 from specsynth.cosmology import DEFAULT_COSMOLOGY, FlatLambdaCDM, redshift_flux
 from specsynth.filters import (
     FilterCurve,
@@ -39,6 +39,14 @@ from specsynth.sentry import (
     measure_d4000_break,
     measure_uv_slope,
     run_sentry_audit,
+)
+from specsynth.tools import (
+    tool_clean_catalog,
+    tool_get_anomaly_details,
+    tool_get_system_info,
+    tool_inspect_galaxy,
+    tool_list_available_filters,
+    tool_run_sentry_audit,
 )
 
 __all__ = [
@@ -67,6 +75,7 @@ __all__ = [
     "synth_block_gpu",
     "madau_transmission",
     "import_catalog",
+    "clean_catalog",
     "load_raw_table",
     "resolve_catalog_columns",
     "run_benchmark_suite",
@@ -80,4 +89,10 @@ __all__ = [
     "check_magnitude_bounds",
     "check_population_bimodality",
     "run_sentry_audit",
+    "tool_run_sentry_audit",
+    "tool_get_anomaly_details",
+    "tool_inspect_galaxy",
+    "tool_clean_catalog",
+    "tool_get_system_info",
+    "tool_list_available_filters",
 ]

@@ -279,3 +279,292 @@ def test_run_sentry_audit_with_mocked_store(monkeypatch):
     assert rep.flagged_count == 0
     assert rep.pass_rate_pct == 100.0
 
+
+def test_clean_catalog_npz(tmp_path):
+    from specsynth.catalog import clean_catalog
+
+    # Create dummy source table
+    n_gal = 100
+    src_npz = tmp_path / "raw_catalog.npz"
+    clean_npz = tmp_path / "clean_catalog.npz"
+
+    np.savez_compressed(
+        src_npz,
+        mstar=np.linspace(1e8, 1e11, n_gal),
+        redshift=np.linspace(0.1, 3.0, n_gal),
+        tau_v=np.full(n_gal, 0.5),
+    )
+
+    # Prune galaxies 10, 20, 30
+    res = clean_catalog(
+        source_table_path=src_npz,
+        output_path=clean_npz,
+        anomalous_indices=[10, 20, 30],
+    )
+
+    assert res["total_galaxies"] == 100
+    assert res["valid_galaxies"] == 97
+    assert res["quarantined_count"] == 3
+    assert res["retention_rate_pct"] == 97.0
+    assert os.path.exists(clean_npz)
+
+    with np.load(clean_npz) as data:
+        assert len(data["mstar"]) == 97
+        assert len(data["redshift"]) == 97
+
+
+def test_clean_catalog_from_sentry_report(tmp_path):
+    from specsynth.catalog import clean_catalog
+
+    # Create dummy sentry report JSON
+    rep_json = tmp_path / "sentry_report.json"
+    rep_content = {
+        "anomalies": [
+            {"anomaly_id": "ANOM-1", "galaxy_index": 5},
+            {"anomaly_id": "ANOM-2", "galaxy_index": 15},
+        ]
+    }
+    with open(rep_json, "w", encoding="utf-8") as f:
+        json.dump(rep_content, f)
+
+    src_csv = tmp_path / "raw_catalog.csv"
+    clean_csv = tmp_path / "clean_catalog.csv"
+
+    # Write dummy CSV
+    with open(src_csv, "w", encoding="utf-8") as f:
+        f.write("id,mass,z\n")
+        for i in range(20):
+            f.write(f"{i},{10.0 + i*0.1},{0.5 + i*0.05}\n")
+
+    res = clean_catalog(
+        source_table_path=src_csv,
+        sentry_report_path=rep_json,
+        output_path=clean_csv,
+    )
+    assert res["total_galaxies"] == 20
+    assert res["valid_galaxies"] == 18
+    assert res["quarantined_count"] == 2
+    assert os.path.exists(clean_csv)
+
+
+def test_tools_system_info_and_filters():
+    from specsynth.tools import tool_get_system_info, tool_list_available_filters
+
+    info = tool_get_system_info()
+    assert "cpu_processor" in info
+    assert "total_ram_gb" in info
+
+    filt = tool_list_available_filters()
+    assert "jwst_nircam" in filt["filter_sets"]
+    assert "rubin" in filt["filter_sets"]
+    assert filt["individual_filters_count"] > 10
+
+
+def test_sentry_input_context_recorded():
+    # Verify input_parameters field is correctly captured in AnomalyRecord
+    anom = AnomalyRecord(
+        anomaly_id="TEST-CTX",
+        tier=2,
+        category="PHYSICAL_ANOMALY",
+        severity="WARNING",
+        galaxy_index=123,
+        metric_name="d4000_break",
+        observed_value=0.72,
+        expected_range=[0.95, 2.50],
+        input_parameters={
+            "total_stellar_mass_msun": 1e10,
+            "young_stellar_fraction": 0.99,
+            "tau_diffuse": 0.0,
+            "tau_birth": 0.0,
+        },
+        root_cause="Zero dust in young burst",
+    )
+    assert anom.input_parameters["young_stellar_fraction"] == 0.99
+    assert anom.input_parameters["tau_diffuse"] == 0.0
+
+
+def test_run_sentry_audit_with_anomalies_and_attach_is_valid(monkeypatch, tmp_path):
+    class MockStore(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {}
+        def create_dataset(self, name, data, overwrite=True):
+            self[name] = data
+
+    wave = np.linspace(1000, 10000, 50)
+    # 5 galaxies:
+    # 0: valid
+    # 1: NaN flux (NUMERICAL_FAULT)
+    # 2: negative flux (NUMERICAL_FAULT)
+    # 3: unphysical flat flux
+    # 4: valid
+    spec_data = np.ones((5, 50), dtype=np.float32) * 1e-18
+    spec_data[1, 10] = np.nan
+    spec_data[2, 10] = -1.0
+
+    mock_ssp = MockStore({
+        "wave": wave,
+        "ages": np.array([1e6, 1e8, 1e10]),
+        "mets": np.array([0.02]),
+        "ssp": np.ones((3, 50), dtype=np.float32),
+    })
+    mock_gal = MockStore({
+        "sfh": np.ones((5, 3), dtype=np.float32) * 1e9,
+        "tau_diffuse": np.array([0.1, 0.2, 0.3, 0.4, 0.5], dtype=np.float32),
+        "tau_birth": np.array([0.5, 0.6, 0.7, 0.8, 0.9], dtype=np.float32),
+        "params": np.array([[10.0, 1.0, 2.0, -1.9, 0.1, 0.5]] * 5, dtype=np.float32),
+    })
+    mock_out = MockStore({
+        "spectra": spec_data,
+        "wave": wave,
+    })
+    mock_out.attrs["redshift"] = 1.0
+
+    def mock_open(store, mode="r"):
+        if "ssp.zarr" in store: return mock_ssp
+        if "galaxies.zarr" in store: return mock_gal
+        return mock_out
+
+    monkeypatch.setattr("zarr.open_group", mock_open)
+
+    report = run_sentry_audit(
+        base=str(tmp_path),
+        sample_size=5,
+        attach_is_valid=True,
+    )
+
+    assert report.status == "CRITICAL_FAILURE"
+    assert report.flagged_count >= 2
+    assert "is_valid" in mock_out
+    assert mock_out["is_valid"][1] == False
+    assert mock_out["is_valid"][2] == False
+    assert mock_out["is_valid"][0] == True
+
+    # Check input context captured on numerical fault
+    anom_1 = next(a for a in report.anomalies if a.galaxy_index == 1)
+    assert anom_1.input_parameters is not None
+    assert "tau_diffuse" in anom_1.input_parameters
+    assert np.isclose(anom_1.input_parameters["tau_diffuse"], 0.2, atol=1e-5)
+
+
+def test_run_sentry_audit_photometry_magnitude_faults(monkeypatch, tmp_path):
+    class MockStore(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {}
+
+    phot_data = np.array([
+        [20.0, 21.0, 22.0],  # Valid
+        [5.0, 6.0, 7.0],     # Too bright (< min_mag=10)
+        [38.0, 39.0, 40.0],  # Too faint (> max_mag=35)
+    ], dtype=np.float32)
+
+    mock_ssp = MockStore({
+        "wave": np.linspace(1000, 10000, 10),
+        "ages": np.array([1e7]),
+        "mets": np.array([0.02]),
+        "ssp": np.ones((1, 10), dtype=np.float32),
+    })
+    mock_gal = MockStore({
+        "sfh": np.ones((3, 1), dtype=np.float32),
+    })
+    mock_out = MockStore({
+        "photometry": phot_data,
+    })
+
+    def mock_open(store, mode="r"):
+        if "ssp.zarr" in store: return mock_ssp
+        if "galaxies.zarr" in store: return mock_gal
+        return mock_out
+
+    monkeypatch.setattr("zarr.open_group", mock_open)
+
+    report = run_sentry_audit(
+        base=str(tmp_path),
+        sample_size=3,
+        min_mag=10.0,
+        max_mag=35.0,
+    )
+    assert report.status in ("WARNING", "CRITICAL_FAILURE")
+    mag_anoms = [a for a in report.anomalies if a.metric_name == "ab_magnitude_range"]
+    assert len(mag_anoms) == 2
+
+
+def test_run_sentry_audit_quarantine_unknown_exception(monkeypatch, tmp_path):
+    class MockStore(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {}
+
+    def broken_getitem(self, key):
+        if key == "spectra":
+            raise RuntimeError("Corrupt block header in Zarr!")
+        return super().__getitem__(key)
+
+    mock_ssp = MockStore({
+        "wave": np.linspace(1000, 10000, 10),
+        "ages": np.array([1e7]),
+        "mets": np.array([0.02]),
+        "ssp": np.ones((1, 10), dtype=np.float32),
+    })
+    mock_gal = MockStore({
+        "sfh": np.ones((2, 1), dtype=np.float32),
+    })
+    mock_out = MockStore()
+    mock_out.__getitem__ = broken_getitem.__get__(mock_out)
+    mock_out["wave"] = np.linspace(1000, 10000, 10)
+
+    def mock_open(store, mode="r"):
+        if "ssp.zarr" in store: return mock_ssp
+        if "galaxies.zarr" in store: return mock_gal
+        return mock_out
+
+    monkeypatch.setattr("zarr.open_group", mock_open)
+
+    q_dir = str(tmp_path / "custom_quarantine")
+    report = run_sentry_audit(
+        base=str(tmp_path),
+        sample_size=2,
+        quarantine_dir=q_dir,
+    )
+
+    assert report.status == "CRITICAL_FAILURE"
+    assert len(report.quarantined_files) == 1
+    assert os.path.exists(report.quarantined_files[0])
+    unk = [a for a in report.anomalies if a.category == "UNKNOWN_EXCEPTION"]
+    assert len(unk) == 1
+
+
+def test_sentry_report_to_markdown_truncation(tmp_path):
+    # Test > 25 anomalies produces truncation notice in markdown report
+    anoms = [
+        AnomalyRecord(
+            anomaly_id=f"ANOM-{i}",
+            tier=2,
+            category="PHYSICAL_ANOMALY",
+            severity="WARNING",
+            galaxy_index=i,
+            metric_name="d4000_break",
+            observed_value=0.5,
+            expected_range=[0.9, 2.5],
+            root_cause="Test anomaly",
+        )
+        for i in range(30)
+    ]
+    report = SentryReport(
+        timestamp="2026-11-13T00:00:00Z",
+        provenance="Test",
+        total_galaxies_evaluated=100,
+        passed_count=70,
+        flagged_count=30,
+        pass_rate_pct=70.0,
+        status="WARNING",
+        anomalies=anoms,
+    )
+    md_file = tmp_path / "long_report.md"
+    report.to_markdown(str(md_file))
+
+    content = md_file.read_text(encoding="utf-8")
+    assert "and 5 more anomalies logged" in content
+
+

@@ -291,6 +291,7 @@ def run_sentry_audit(
     max_mag: float = 35.0,
     max_anomaly_rate: float = 0.001,
     quarantine_dir: str | None = None,
+    attach_is_valid: bool = False,
     seed: int = 42,
 ) -> SentryReport:
     """
@@ -381,6 +382,42 @@ def run_sentry_audit(
             else:
                 batch_out = np.asarray(g_out["photometry"][:][batch_sample_idx] if total_galaxies <= 50_000 else np.stack([g_out["photometry"][i] for i in batch_sample_idx]))
 
+            def _extract_galaxy_context(local_i: int) -> dict[str, float]:
+                ctx: dict[str, float] = {}
+                global_i = int(batch_sample_idx[local_i])
+                if "tau_diffuse" in g_in:
+                    try:
+                        ctx["tau_diffuse"] = float(g_in["tau_diffuse"][global_i])
+                    except Exception:
+                        pass
+                if "tau_birth" in g_in:
+                    try:
+                        ctx["tau_birth"] = float(g_in["tau_birth"][global_i])
+                    except Exception:
+                        pass
+                if "sfh" in g_in:
+                    try:
+                        sfh_row = np.asarray(g_in["sfh"][global_i], dtype=np.float64)
+                        tot_mass = float(np.sum(sfh_row))
+                        young_mass = float(np.sum(sfh_row[:ny])) if ny > 0 else 0.0
+                        ctx["total_stellar_mass_msun"] = tot_mass
+                        ctx["young_stellar_fraction"] = young_mass / max(tot_mass, 1e-35)
+                    except Exception:
+                        pass
+                if "params" in g_in:
+                    try:
+                        p_row = np.asarray(g_in["params"][global_i], dtype=np.float64)
+                        if len(p_row) >= 6:
+                            ctx["log_stellar_mass"] = float(p_row[0])
+                            ctx["t_onset_gyr"] = float(p_row[1])
+                            ctx["sfh_tau_gyr"] = float(p_row[2])
+                            ctx["log_metallicity"] = float(p_row[3])
+                    except Exception:
+                        pass
+                if redshift > 0.0:
+                    ctx["redshift"] = float(redshift)
+                return ctx
+
             # Tier 1: Numerical checks on outputs
             valid_num, bad_num = check_finite_positive(batch_out)
             for bad_i in bad_num:
@@ -395,6 +432,7 @@ def run_sentry_audit(
                     metric_name="finite_positive_flux",
                     observed_value=float(np.nanmin(batch_out[bad_i])) if np.any(np.isnan(batch_out[bad_i])) else float(np.min(batch_out[bad_i])),
                     expected_range=[1e-35, 1e30],
+                    input_parameters=_extract_galaxy_context(bad_i),
                     root_cause="Flux contains NaN, Inf, or non-positive value.",
                     remediation="Inspect input parameters for negative masses or unphysical zeros.",
                 ))
@@ -420,6 +458,7 @@ def run_sentry_audit(
                         metric_name="energy_conservation_ratio",
                         observed_value=float(ratios[bad_e]),
                         expected_range=[0.0, 1.0],
+                        input_parameters=_extract_galaxy_context(bad_e),
                         root_cause="Attenuated flux exceeds intrinsic flux (negative dust optical depth).",
                         remediation="Clamp tau_diffuse and tau_birth to non-negative values.",
                     ))
@@ -439,6 +478,7 @@ def run_sentry_audit(
                         metric_name="d4000_break",
                         observed_value=float(d4000[bad_d]),
                         expected_range=[0.95, 2.80],
+                        input_parameters=_extract_galaxy_context(bad_d),
                         root_cause="Inverted or extreme D_n(4000) break.",
                         remediation="Check old-to-young stellar age ratio in SFH grid.",
                     ))
@@ -458,6 +498,7 @@ def run_sentry_audit(
                         metric_name="uv_slope_beta",
                         observed_value=float(uv_slope[bad_u]),
                         expected_range=[-2.80, 1.80],
+                        input_parameters=_extract_galaxy_context(bad_u),
                         root_cause="Unphysical UV continuum slope (super-Rayleigh-Jeans or over-reddened).",
                         remediation="Review dust extinction curve index and burst fraction.",
                     ))
@@ -477,6 +518,7 @@ def run_sentry_audit(
                         metric_name="ab_magnitude_range",
                         observed_value=float(np.min(batch_out[bad_m])),
                         expected_range=[min_mag, max_mag],
+                        input_parameters=_extract_galaxy_context(bad_m),
                         root_cause="Magnitude falls outside standard survey limits.",
                         remediation="Verify cosmological distance modulus and normalization.",
                     ))
@@ -530,6 +572,21 @@ def run_sentry_audit(
         "tier2_physical": category_counts["PHYSICAL_ANOMALY"],
         "tier3_population": category_counts["POPULATION_DRIFT"],
     }
+
+    if attach_is_valid:
+        try:
+            bad_global_indices = set(a.galaxy_index for a in anomalies)
+            is_valid_mask = np.ones(total_galaxies, dtype=bool)
+            for b_idx in bad_global_indices:
+                if 0 <= b_idx < total_galaxies:
+                    is_valid_mask[b_idx] = False
+            try:
+                g_out_w = zarr.open_group(out_store, mode="a")
+            except Exception:
+                g_out_w = zarr.open_group(fsspec.get_mapper(out_store), mode="a")
+            g_out_w.create_dataset("is_valid", data=is_valid_mask, overwrite=True)
+        except Exception:
+            pass
 
     return SentryReport(
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
