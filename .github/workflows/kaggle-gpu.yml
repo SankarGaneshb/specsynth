@@ -1,0 +1,59 @@
+name: Kaggle Tesla T4 GPU Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      n_galaxies:
+        description: 'Number of galaxies to benchmark'
+        required: false
+        default: '50000'
+      n_runs:
+        description: 'Number of benchmark runs'
+        required: false
+        default: '5'
+
+jobs:
+  kaggle-gpu-test:
+    name: Run Tesla T4 GPU Benchmark on Kaggle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Kaggle CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install kaggle
+
+      - name: Configure Kaggle API credentials
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          mkdir -p ~/.kaggle
+          echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: Dispatch and Monitor Kaggle GPU Kernel
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          python scripts/run_kaggle_gpu.py \
+            --username "${{ secrets.KAGGLE_USERNAME }}" \
+            --n-gal ${{ github.event.inputs.n_galaxies }} \
+            --n-runs ${{ github.event.inputs.n_runs }}
+
+      - name: Upload GPU Benchmark Manifest Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaggle-t4-gpu-manifest
+          path: paper/benchmark_manifest_gpu_t4.json
+          if-no-files-found: error
