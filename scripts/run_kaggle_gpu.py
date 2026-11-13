@@ -49,14 +49,15 @@ def get_kaggle_credentials() -> tuple[str | None, str | None]:
     return user, key
 
 
-def generate_worker_script(n_gal: int, n_runs: int) -> str:
+def generate_worker_script(n_gal: int, n_runs: int, commit_sha: str = "") -> str:
     """Generate the self-contained benchmark worker script to run on Kaggle."""
+    commit_injection = f'os.environ["SPECSYNTH_GIT_COMMIT"] = "{commit_sha}"\n' if commit_sha else ""
     return f'''#!/usr/bin/env python3
 import os
 import subprocess
 import sys
 
-print("=" * 60)
+{commit_injection}print("=" * 60)
 print("[*] SPECSYNTH KAGGLE TESLA T4 GPU BENCHMARK WORKER")
 print("=" * 60)
 
@@ -191,9 +192,18 @@ def main() -> int:
     # Prepare staging directory
     staging_dir = Path(tempfile.mkdtemp(prefix="specsynth_kaggle_"))
     try:
+        # Resolve current commit sha if available
+        commit_sha = ""
+        try:
+            res = run_command(["git", "rev-parse", "HEAD"], check=False)
+            if res.returncode == 0:
+                commit_sha = res.stdout.strip()
+        except Exception:
+            pass
+
         # Write worker script
         worker_file = staging_dir / "benchmark_worker.py"
-        worker_file.write_text(generate_worker_script(args.n_gal, args.n_runs), encoding="utf-8")
+        worker_file.write_text(generate_worker_script(args.n_gal, args.n_runs, commit_sha), encoding="utf-8")
 
         # Write kernel metadata
         metadata = {

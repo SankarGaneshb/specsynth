@@ -52,10 +52,22 @@ def get_device_info() -> dict[str, Any]:
     free_gb = mem_info[0] / (1024**3)
     total_gb = mem_info[1] / (1024**3)
     name = cp.cuda.runtime.getDeviceProperties(dev.id)["name"].decode("utf-8")
+
+    cupy_ver = getattr(cp, "__version__", "unknown")
+    try:
+        rt_ver = cp.cuda.runtime.runtimeGetVersion()
+        cuda_ver = f"{rt_ver // 1000}.{(rt_ver % 1000) // 10}"
+    except Exception:
+        cuda_ver = "unknown"
+
     return {
         "gpu_available": True,
         "device_id": dev.id,
         "device_name": name,
+        "gpu_cupy_version": cupy_ver,
+        "gpu_cuda_version": cuda_ver,
+        "cupy_version": cupy_ver,
+        "cuda_version": cuda_ver,
         "free_memory_gb": round(free_gb, 2),
         "total_memory_gb": round(total_gb, 2),
     }

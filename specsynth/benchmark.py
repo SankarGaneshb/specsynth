@@ -29,13 +29,15 @@ def get_system_hardware_info() -> dict[str, Any]:
     }
 
     # Git commit provenance
-    try:
-        git_hash = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
-        ).strip()
-        info["git_commit"] = git_hash
-    except Exception:
-        info["git_commit"] = "unknown"
+    git_hash = os.environ.get("SPECSYNTH_GIT_COMMIT", "").strip()
+    if not git_hash:
+        try:
+            git_hash = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
+            ).strip()
+        except Exception:
+            git_hash = "unknown"
+    info["git_commit"] = git_hash or "unknown"
 
     # BLAS / NumPy backend info
     try:
@@ -49,8 +51,8 @@ def get_system_hardware_info() -> dict[str, Any]:
     info["gpu_available"] = gpu_info["gpu_available"]
     if gpu_info["gpu_available"]:
         info["gpu_device_name"] = gpu_info.get("device_name", "Unknown GPU")
-        info["gpu_cupy_version"] = gpu_info.get("cupy_version", "unknown")
-        info["gpu_cuda_version"] = gpu_info.get("cuda_version", "unknown")
+        info["gpu_cupy_version"] = gpu_info.get("gpu_cupy_version") or gpu_info.get("cupy_version", "unknown")
+        info["gpu_cuda_version"] = gpu_info.get("gpu_cuda_version") or gpu_info.get("cuda_version", "unknown")
         info["gpu_total_memory_gb"] = gpu_info.get("total_memory_gb", 0.0)
 
     return info
