@@ -124,6 +124,7 @@ This document provides a thorough audit of the engineering and scientific review
 * **Implemented Solution**:
   * Added `[Analytical Projection]` badges to all strong/weak scaling tables in `README.md` and `paper/paper.md`.
   * Added an explicit provenance note clarifying that single-node baselines are measured empirically, while multi-node scaling is analytically modeled based on parallel efficiency assumptions.
+  * **Empirical Multi-Node Cloud Verification**: Executed live distributed benchmarks on a 3-node Oracle Cloud OKE cluster (`VM.Standard.E3.Flex`, AMD EPYC), achieving **53,814 galaxies/s** (100,000 galaxies in 1.86s, 51.7 GFLOPS, max relative error $8.16 \times 10^{-7}$). Stored in `paper/benchmark_manifest_oci_oke_3node.json`.
 
 ---
 

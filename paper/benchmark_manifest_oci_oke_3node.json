@@ -1,0 +1,58 @@
+{
+  "timestamp": "2026-11-15T01:26:51+05:30",
+  "provenance_type": "Empirical Cloud Multi-Node Benchmark",
+  "provenance": {
+    "correctness": "Measured Empirical",
+    "cloud_provider": "Oracle Cloud Infrastructure (OCI)",
+    "orchestration": "Oracle Container Engine for Kubernetes (OKE)",
+    "container_runtime": "cri-o 1.36.3",
+    "dask_operator": "dask-kubernetes-operator 2026.3.0",
+    "image": "docker.io/bsankarganesh/specsynth:latest",
+    "image_digest": "sha256:fb6d2bbd33218ce590db96e2228966f03359f676c71027eda80412dcb617c39d"
+  },
+  "cluster_topology": {
+    "node_count": 3,
+    "nodes": [
+      { "name": "10.0.10.15", "role": "worker", "shape": "VM.Standard.E3.Flex", "arch": "amd64", "os": "Oracle Linux Server 8.10" },
+      { "name": "10.0.10.142", "role": "worker+scheduler", "shape": "VM.Standard.E3.Flex", "arch": "amd64", "os": "Oracle Linux Server 8.10" },
+      { "name": "10.0.10.181", "role": "worker+nfs", "shape": "VM.Standard.E3.Flex", "arch": "amd64", "os": "Oracle Linux Server 8.10" }
+    ],
+    "storage_backend": "In-Cluster Shared NFS over VCN (10.96.140.121:2049)"
+  },
+  "workload": {
+    "n_galaxies": 100000,
+    "chunk_size": 20000,
+    "n_row_blocks": 5,
+    "ssp_grid_k": 120,
+    "n_ages": 30,
+    "n_metallicities": 4,
+    "n_wavelengths": 2000,
+    "cosmology": {
+      "redshift": 2.0,
+      "igm_attenuation": "Madau (1995)",
+      "filter_set": "JWST NIRCam (7 bands: F090W, F115W, F150W, F200W, F277W, F356W, F444W)"
+    }
+  },
+  "performance": {
+    "elapsed_seconds": 1.86,
+    "throughput_galaxies_per_sec": 53814,
+    "processing_rate_gb_s": 0.03,
+    "compute_gflops": 51.7,
+    "workers_active": 3,
+    "worker_distribution": "Distributed across 3 distinct physical VM nodes",
+    "estimated_cloud_cost_usd": 0.000017
+  },
+  "numerical_verification": {
+    "reference_engine": "Serial Independent Float64 NumPy",
+    "production_engine": "Distributed Float32 (Dask / Zarr on 3 OKE Nodes)",
+    "sample_size": 200,
+    "max_relative_error": 8.16e-07,
+    "max_relative_tolerance": 5.0e-04,
+    "mean_relative_error": 1.82e-07,
+    "mean_relative_tolerance": 1.0e-05,
+    "median_relative_error": 1.53e-07,
+    "median_relative_tolerance": 1.0e-05,
+    "root_mean_square_error": 4.22e-03,
+    "status": "PASS (Scientifically Validated)"
+  }
+}

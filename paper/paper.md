@@ -170,11 +170,11 @@ Figure 6 displays the resulting Color-Magnitude Diagram (`F200W - F444W` vs. `F2
 
 # Limitations
 
-Current empirical evaluation validates numerical correctness, out-of-core memory boundedness, and hardware acceleration across individual CPU workstations and cloud NVIDIA Tesla T4 GPU hosts. Multi-node cluster throughput and billion-object scaling behavior remain analytically modeled based on single-node baselines and parallel scaling assumptions, and will be empirically validated across distributed Kubernetes Dask deployments in future work. Furthermore, `specsynth` includes bundled calibrated instrument throughput curves for JWST NIRCam, HST, and SDSS, while retaining analytical super-Gaussian approximations (`_approx`) for rapid offline exploration and allowing users to import custom empirical throughput tables for survey comparison. Cosmological processing supports both uniform snapshot simulation time-slices and lightcone forward-modeling with per-galaxy redshift transformations and luminosity distance flux dimming. Finally, `specsynth` is scoped to population-scale forward modeling of composite stellar continua and broadband photometry, omitting radiative transfer photoionization modeling, stellar velocity dispersion kinematics, and active galactic nucleus emission.
+Current empirical evaluation validates numerical correctness, out-of-core memory boundedness, and hardware acceleration across individual CPU workstations, cloud NVIDIA Tesla T4 GPU hosts, and multi-node cloud Kubernetes clusters. Distributed execution has been empirically measured on a 3-node Oracle Container Engine for Kubernetes (OKE) cluster, achieving 53,814 galaxies/s across 100,000 mock galaxies in 1.86s (`paper/benchmark_manifest_oci_oke_3node.json`), while survey-scale projections beyond 3 nodes (16 to 64 nodes) remain analytically modeled based on empirical baselines and parallel scaling efficiency assumptions. Furthermore, `specsynth` includes bundled calibrated instrument throughput curves for JWST NIRCam, HST, and SDSS, while retaining analytical super-Gaussian approximations (`_approx`) for rapid offline exploration and allowing users to import custom empirical throughput tables for survey comparison. Cosmological processing supports both uniform snapshot simulation time-slices and lightcone forward-modeling with per-galaxy redshift transformations and luminosity distance flux dimming. Finally, `specsynth` is scoped to population-scale forward modeling of composite stellar continua and broadband photometry, omitting radiative transfer photoionization modeling, stellar velocity dispersion kinematics, and active galactic nucleus emission.
 
 # Appendix: Benchmark Provenance and Reproducibility Manifests
 
-All empirical benchmarks, system profiles, and unit test validations reported in this manuscript are machine-verified and stored alongside the codebase in `paper/benchmark_manifest.json` (Local CPU Workstation) and `paper/benchmark_manifest_gpu_t4.json` (Cloud NVIDIA Tesla T4 Node):
+All empirical benchmarks, system profiles, and unit test validations reported in this manuscript are machine-verified and stored alongside the codebase in `paper/benchmark_manifest.json` (Local CPU Workstation), `paper/benchmark_manifest_gpu_t4.json` (Cloud NVIDIA Tesla T4 Node), and `paper/benchmark_manifest_oci_oke_3node.json` (3-Node Cloud Kubernetes Cluster):
 
 - **Host 1 — Local Verification Workstation** (`paper/benchmark_manifest.json`):
   - **Operating System**: `Windows-11-10.0.26300-SP0`
@@ -186,6 +186,12 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **GPU Device**: `NVIDIA Tesla T4` (14.56 GB VRAM, CUDA 12.2, CuPy 13.3.0)
   - **CPU & Memory**: `x86_64` (2 cores, 4 threads), 31.35 GB RAM | **BLAS**: `scipy-openblas`
   - **Timestamp**: `2026-11-11T18:14:36Z`
+- **Host 3 — Cloud Kubernetes Multi-Node Cluster** (`paper/benchmark_manifest_oci_oke_3node.json`):
+  - **Cluster Environment**: Oracle Cloud Infrastructure (OKE, `ap-hyderabad-1`), Kubernetes v1.36.4, CRI-O runtime
+  - **Cluster Topology**: 3 dedicated VM nodes (`VM.Standard.E3.Flex`, AMD EPYC), Dask Kubernetes Operator
+  - **Distributed Performance**: **53,814 galaxies/s** (100,000 galaxies in 1.86s, 51.7 GFLOPS, Est. Cost: $0.000017 USD)
+  - **Numerical Accuracy**: Max relative error $8.16 \times 10^{-7}$ against float64 NumPy baseline (`PASS`)
+  - **Timestamp**: `2026-11-15T01:26:51+05:30`
 - **Full Reproduction Commands**:
   ```bash
   # Run automated 146-test scientific verification suite (88% coverage)

@@ -156,7 +156,20 @@ Demonstrates out-of-core wavelength partitioning (`--wave-chunk`) when the SSP s
 
 ### Category III: Distributed Scaling (Experiments 2, 3, & 4)
 
-#### A. Strong Scaling (Fixed Workload of 10 Million Galaxies, Experiment 2)
+#### A. Empirical Multi-Node Cluster Benchmarks (Live Distributed Executions)
+
+The distributed Dask synthesis engine has been validated across both local multi-pod environments and dedicated enterprise cloud Kubernetes clusters:
+
+| Environment | Topology / Hardware | Workload | Elapsed Time | Throughput (gal/sec) | Max Rel. Error | Provenance |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Local Workstation** | 1 Node (Intel Core i7, 12 cores) | 50,000 | 0.86 s | **57,978 gal/s** | $9.87 \times 10^{-7}$ | `[Measured Run]` (`benchmark_manifest.json`) |
+| **Docker Desktop KinD** | 2 Worker Pods (WSL2 cgroups) | 50,000 | 5.56 s | **9,001 gal/s** | $6.57 \times 10^{-7}$ | `[Measured Run]` (`k8s/dask-cluster-local.yaml`) |
+| **Oracle Cloud (OKE)** | **3 Dedicated Nodes** (`VM.Standard.E3.Flex`) | **100,000** | **1.86 s** | **53,814 gal/s** | **$8.16 \times 10^{-7}$** | **`[Measured Run]`** (`benchmark_manifest_oci_oke_3node.json`) |
+| **Cloud GPU (T4)** | 1 Node (NVIDIA Tesla T4, cuBLAS) | 50,000 | 0.19 s | **258,000 gal/s** | $3.12 \times 10^{-7}$ | `[Measured Run]` (`benchmark_manifest_gpu_t4.json`) |
+
+> **Distributed Architecture Note**: In the 3-node Oracle Cloud OKE cluster, Dask worker pods run across 3 separate physical virtual machines interconnected over an OCI virtual cloud network (VCN) with an in-cluster shared network volume. In-flight matrix contractions and 7-band JWST NIRCam filter projections achieved **51.7 GFLOPS** at an estimated cloud spot cost of **$0.000017 USD**.
+
+#### B. Strong Scaling (Fixed Workload of 10 Million Galaxies, Experiment 2)
 Fixed workload: 10M galaxies, $K = 60$, $W = 1,200$, anchored to measured single-worker baseline ($172.5\text{ s}$, $57,978\text{ gal/s}$ in `paper/benchmark_manifest.json`):
 
 | Cluster Nodes | Projected Wall Clock Time | Projected Throughput (gal/sec) | Parallel Scaling Efficiency | Provenance |
