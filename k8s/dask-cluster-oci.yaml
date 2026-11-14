@@ -14,7 +14,7 @@ spec:
             path: "/"
       containers:
         - name: worker
-          image: bsankarganesh/specsynth:latest
+          image: docker.io/bsankarganesh/specsynth:latest
           imagePullPolicy: Always
           command: ["dask", "worker"]
           args: ["tcp://synth-scheduler:8786", "--name", "$(DASK_WORKER_NAME)", "--nthreads", "1", "--memory-limit", "3GiB"]
@@ -33,7 +33,7 @@ spec:
             path: "/"
       containers:
         - name: scheduler
-          image: bsankarganesh/specsynth:latest
+          image: docker.io/bsankarganesh/specsynth:latest
           imagePullPolicy: Always
           command: ["dask", "scheduler"]
           ports:

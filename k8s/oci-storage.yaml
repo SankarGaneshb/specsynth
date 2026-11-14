@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: nfs-server
-          image: itsthenetwork/nfs-server-alpine:latest
+          image: docker.io/itsthenetwork/nfs-server-alpine:latest
           securityContext:
             privileged: true
           env:
