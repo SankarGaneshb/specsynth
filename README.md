@@ -538,6 +538,18 @@ To enable independent verification, algorithmic benchmarking, and reproduction o
 
 ### Download & Quickstart
 
+#### Option A: 1-Line Hugging Face `datasets` Stream
+
+```python
+from datasets import load_dataset
+
+# Stream or load canonical 100,000 galaxy reference benchmark catalog
+dataset = load_dataset("sreeganesh/specsynth-benchmark-100k", split="train")
+print(f"Loaded {len(dataset):,} galaxies!")
+```
+
+#### Option B: Direct Release Download
+
 Download the archive directly from [GitHub Release v1.0.0](https://github.com/SankarGaneshb/specsynth/releases/download/v1.0.0/specsynth_reference_catalog_100k.tar.gz):
 
 ```bash

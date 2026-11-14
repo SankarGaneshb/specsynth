@@ -3,7 +3,7 @@
 Upload the specsynth Canonical Reference Benchmark Dataset to Hugging Face Hub.
 
 Usage:
-    python scripts/upload_to_huggingface.py --repo-id SankarGaneshb/specsynth-benchmark-100k [--token YOUR_HF_TOKEN]
+    python scripts/upload_to_huggingface.py --repo-id sreeganesh/specsynth-benchmark-100k [--token YOUR_HF_TOKEN]
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ def main():
     parser.add_argument(
         "--repo-id",
         type=str,
-        default="SankarGaneshb/specsynth-benchmark-100k",
+        default="sreeganesh/specsynth-benchmark-100k",
         help="Target Hugging Face dataset repository identifier (username/dataset-name)",
     )
     parser.add_argument(
