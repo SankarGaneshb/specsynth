@@ -11,7 +11,7 @@ spec:
       volumes:
         - name: shared-data
           nfs:
-            server: nfs-service.default.svc.cluster.local
+            server: 10.96.140.121
             path: "/"
       containers:
         - name: client

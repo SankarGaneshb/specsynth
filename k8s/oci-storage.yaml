@@ -37,6 +37,7 @@ metadata:
   name: nfs-service
   namespace: default
 spec:
+  clusterIP: 10.96.140.121
   ports:
     - name: nfs
       port: 2049
