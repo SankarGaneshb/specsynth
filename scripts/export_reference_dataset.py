@@ -327,7 +327,7 @@ def generate_documentation(out_dir: Path, n_gal: int, filter_names: list[str], p
     """Generate README_DATASET.md and dataset_card.json for Zenodo and Hugging Face."""
     readme_content = f"""# `specsynth` Canonical Reference Benchmark Dataset (100,000 Galaxies)
 
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.specsynth-blue.svg)](https://github.com/SankarGaneshb/specsynth)
+[![DOI](https://img.shields.io/badge/DOI-10.57967%2Fhf%2F11635-blue.svg)](https://doi.org/10.57967/hf/11635)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 This package contains the **canonical, frozen scientific benchmark dataset** for the [`specsynth`](https://github.com/SankarGaneshb/specsynth) stellar population synthesis (SPS) framework.
@@ -390,6 +390,15 @@ sha256sum -c SHA256SUMS.txt
 ## 4. Citation
 If you use this benchmark dataset or `specsynth` in your research:
 ```bibtex
+@misc{{sankar_ganesh_bala_krishnan_2026,
+  author       = {{ Sankar Ganesh Bala Krishnan }},
+  title        = {{ specsynth-benchmark-100k (Revision 1ae60aa) }},
+  year         = {{ 2026 }},
+  url          = {{ https://huggingface.co/datasets/Sreeganesh/specsynth-benchmark-100k }},
+  doi          = {{ 10.57967/hf/11635 }},
+  publisher    = {{ Hugging Face }}
+}}
+
 @article{{specsynth2026,
   title={{specsynth: Cloud-Native Distributed Infrastructure for Survey-Scale Astrophysical Spectral Synthesis}},
   author={{Ganesh, Sankar}},

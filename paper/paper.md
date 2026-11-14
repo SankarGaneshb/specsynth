@@ -188,7 +188,7 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **Timestamp**: `2026-11-11T18:14:36Z`
 - **Full Reproduction Commands**:
   ```bash
-  # Run automated 143-test scientific verification suite (88% coverage)
+  # Run automated 146-test scientific verification suite (88% coverage)
   pytest -v --cov=specsynth
 
   # Generate reproducible hardware & GPU benchmark manifest
@@ -197,6 +197,10 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   # Reproduce all 6 figures directly from measured runs and manifest
   python scripts/generate_paper_figures.py
   ```
+
+# Data and Code Availability
+
+`specsynth` is developed openly under the permissive MIT license at [https://github.com/SankarGaneshb/specsynth](https://github.com/SankarGaneshb/specsynth). To facilitate community benchmarking and independent replication of published photometric scaling without generating mock catalogs from scratch, a canonical reference benchmark dataset of 100,000 forward-modeled mock galaxies is publicly distributed in columnar Parquet and chunked Zarr formats [@sankar_ganesh_bala_krishnan_2026], archived with permanent DOI [`10.57967/hf/11635`](https://doi.org/10.57967/hf/11635). Complete software environments, release archives, and automated reproduction scripts are provided in the repository.
 
 # Acknowledgements
 

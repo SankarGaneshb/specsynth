@@ -3,6 +3,7 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SankarGaneshb/specsynth/blob/main/notebooks/quickstart.ipynb)
 [![Kaggle GPU Benchmark](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/bsankarganesh/specsynth-gpu-benchmark)
 [![Hugging Face Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Benchmark%20Dataset-yellow.svg)](https://huggingface.co/datasets/sreeganesh/specsynth-benchmark-100k)
+[![DOI: 10.57967/hf/11635](https://img.shields.io/badge/DOI-10.57967%2Fhf%2F11635-blue.svg)](https://doi.org/10.57967/hf/11635)
 [![CI](https://github.com/SankarGaneshb/specsynth/actions/workflows/ci.yml/badge.svg)](https://github.com/SankarGaneshb/specsynth/actions)
 [![codecov](https://codecov.io/gh/SankarGaneshb/specsynth/branch/main/graph/badge.svg)](https://codecov.io/gh/SankarGaneshb/specsynth)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -536,6 +537,7 @@ To enable independent verification, algorithmic benchmarking, and reproduction o
 - **Physical Mock Parameters**: Redshifts $z \in [0.05, 3.8]$ (lightcone survey distribution), stellar masses $\log_{10}(M_*/M_\odot) \in [8.2, 11.8]$, star formation rates, dust extinction $A_V$, and optical depths $\tau_V = A_V / 1.086$.
 - **Ground-Truth Reference Photometry**: Pre-computed in full **float64 double precision** using Planck 2018 cosmology, cosmological distance dimming $1/(4\pi D_L^2)$, Madau (1995) IGM attenuation, and 16 calibrated STScI instrument bandpasses (JWST NIRCam, HST ACS/WFC3, and SDSS).
 - **Dual Formats**: Available in both columnar **Parquet** (`specsynth_benchmark_100k.parquet`) and chunked **Zarr** (`specsynth_benchmark_100k.zarr`) with cryptographic SHA-256 verification.
+- **Permanent DOI**: [![DOI: 10.57967/hf/11635](https://img.shields.io/badge/DOI-10.57967%2Fhf%2F11635-blue.svg)](https://doi.org/10.57967/hf/11635) (`10.57967/hf/11635`)
 
 ### Download & Quickstart
 
@@ -588,6 +590,19 @@ If you use `specsynth` in your research or survey pipeline, please cite our JOSS
   journal={Journal of Open Source Software},
   year={2026},
   note={Submitted}
+}
+```
+
+If you use the canonical 100k reference benchmark catalog:
+
+```bibtex
+@misc{sankar_ganesh_bala_krishnan_2026,
+  author       = { Sankar Ganesh Bala Krishnan },
+  title        = { specsynth-benchmark-100k (Revision 1ae60aa) },
+  year         = 2026,
+  url          = { https://huggingface.co/datasets/Sreeganesh/specsynth-benchmark-100k },
+  doi          = { 10.57967/hf/11635 },
+  publisher    = { Hugging Face }
 }
 ```
 

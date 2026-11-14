@@ -176,6 +176,7 @@ This document provides a thorough audit of the engineering and scientific review
 
 * **Status**: **✅ COMPLETED & RELEASED**
 * **Distribution Asset**: `specsynth_reference_catalog_100k.tar.gz` (124.8 MB) attached directly to [GitHub Release v1.0.0](https://github.com/SankarGaneshb/specsynth/releases/tag/v1.0.0).
+* **Hugging Face Hub**: [`sreeganesh/specsynth-benchmark-100k`](https://huggingface.co/datasets/Sreeganesh/specsynth-benchmark-100k) with permanent DOI [`10.57967/hf/11635`](https://doi.org/10.57967/hf/11635).
 * **Generator Script**: `scripts/export_reference_dataset.py` (deterministic `seed=42`).
 * **Catalog Scale**: 100,000 mock galaxies across $z \in [0.05, 3.8]$ with lightcone distribution.
 * **Ground Truth**: Float64 reference photometry for 16 calibrated STScI filter curves (JWST NIRCam, HST, SDSS) with Planck 2018 cosmology, distance dimming, and Madau IGM attenuation.
