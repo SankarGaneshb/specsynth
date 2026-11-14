@@ -1,0 +1,37 @@
+{
+  "title": "specsynth: Cloud-Native Distributed Infrastructure for Survey-Scale Astrophysical Spectral Synthesis (v1.0.0 Reference Catalog)",
+  "description": "Standard canonical reference benchmark dataset for specsynth: an open-source, cloud-native distributed stellar population synthesis (SPS) framework. Contains 100,000 mock galaxies across a cosmological lightcone distribution (z in [0.05, 3.8]), stellar masses, star formation histories, and double-precision float64 ground-truth photometry across 16 calibrated STScI instrument bandpasses (JWST NIRCam, HST ACS/WFC3, and SDSS) with Planck 2018 FlatLambdaCDM cosmology, distance dimming, and Madau (1995) IGM attenuation.",
+  "creators": [
+    {
+      "name": "Ganesh, Sankar",
+      "affiliation": "Independent Researcher",
+      "orcid": "0009-0006-1590-1356"
+    }
+  ],
+  "access_right": "open",
+  "license": "MIT",
+  "version": "1.0.0",
+  "keywords": [
+    "astronomy",
+    "astrophysics",
+    "galaxies",
+    "stellar-population-synthesis",
+    "synthetic-photometry",
+    "jwst",
+    "hst",
+    "sdss",
+    "cosmology",
+    "distributed-computing",
+    "dask",
+    "zarr",
+    "cupy"
+  ],
+  "upload_type": "dataset",
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "https://github.com/SankarGaneshb/specsynth",
+      "scheme": "url"
+    }
+  ]
+}
