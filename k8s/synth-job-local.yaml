@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: specsynth-run
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/hostname: desktop-worker
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /tmp/specsynth-shared
+            type: DirectoryOrCreate
+      containers:
+        - name: client
+          image: specsynth:latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              BASE=/data/run1
+              rm -rf $BASE && mkdir -p $BASE
+              S="python /app/specsynth.py --base $BASE --scheduler tcp://synth-scheduler:8786"
+              echo "[*] Step 1: Generating SSP (20 ages x 4 metallicities x 1000 wave)..."
+              $S make-ssp --adapter toy --n-age 20 --n-met 4 --n-wave 1000
+              echo "[*] Step 2: Generating SFH for 50,000 galaxies across K8s cluster..."
+              $S make-sfh --n-gal 50000 --chunk 10000
+              echo "[*] Step 3: Running Distributed Synthesis across 2 Dask worker pods..."
+              $S synth --filters jwst_nircam --redshift 2.0 --igm
+              echo "[*] Step 4: Verifying synthesized Zarr output stores..."
+              $S verify
+              echo "[+] Distributed K8s Synthesis Job Completed Successfully!"
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits:   { cpu: "1", memory: "2Gi" }

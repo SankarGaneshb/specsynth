@@ -515,16 +515,44 @@ serves as a blueprint for any survey-scale scientific forward model, including:
 
 ## 15. Kubernetes Cluster Deployment
 
-Deploy on any Kubernetes cluster using the Dask Kubernetes Operator:
+`specsynth` is cloud-native and supports multi-node deployment via the [Dask Kubernetes Operator](https://kubernetes.dask.org/en/latest/operator.html).
+
+### A. Local Multi-Node Verification (Docker Desktop KinD)
+
+You can run and test multi-node distributed synthesis locally on your laptop without cloud infrastructure using Docker Desktop's built-in multi-node Kubernetes (`kind`):
 
 ```bash
-# 1. Build and push container image
-docker build -t YOUR_REGISTRY/specsynth:latest . && docker push YOUR_REGISTRY/specsynth:latest
+# 1. Build the lightweight multi-stage container image (~109 MB)
+docker build -t specsynth:latest .
 
-# 2. Deploy Dask Cluster
+# 2. Install Dask Kubernetes Operator (if not already installed)
+helm install dask-operator dask/dask-kubernetes-operator \
+    --namespace dask-operator --create-namespace
+
+# 3. Deploy local 2-worker Dask cluster (hostPath storage mounted at /data)
+kubectl apply -f k8s/dask-cluster-local.yaml
+
+# 4. Submit distributed synthesis job (50,000 galaxies across workers)
+kubectl apply -f k8s/synth-job-local.yaml
+
+# 5. Stream job execution logs and verify numerical accuracy
+kubectl logs -f job/specsynth-run
+```
+
+### B. Production Cloud Deployment (GKE / EKS / AKS)
+
+For large-scale production clusters accessing cloud object storage (`s3://`, `gs://`, or `abfs://`):
+
+```bash
+# 1. Build container with cloud storage drivers and push to your container registry
+docker build --build-arg STORAGE_DRIVERS="s3fs gcsfs adlfs" \
+    -t YOUR_REGISTRY/specsynth:latest .
+docker push YOUR_REGISTRY/specsynth:latest
+
+# 2. Deploy Dask Cluster to your cloud namespace
 kubectl apply -f k8s/dask-cluster.yaml
 
-# 3. Submit Synthesis Job
+# 3. Submit production synthesis job
 kubectl apply -f k8s/synth-job.yaml
 ```
 

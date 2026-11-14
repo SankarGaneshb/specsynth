@@ -1,0 +1,55 @@
+apiVersion: kubernetes.dask.org/v1
+kind: DaskCluster
+metadata:
+  name: synth
+spec:
+  worker:
+    replicas: 2
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: desktop-worker
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /tmp/specsynth-shared
+            type: DirectoryOrCreate
+      containers:
+        - name: worker
+          image: specsynth:latest
+          imagePullPolicy: IfNotPresent
+          command: ["dask", "worker"]
+          args: ["tcp://synth-scheduler:8786", "--name", "$(DASK_WORKER_NAME)", "--nthreads", "1", "--memory-limit", "1.5GiB"]
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits:   { cpu: "1", memory: "2Gi" }
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data
+  scheduler:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: desktop-worker
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /tmp/specsynth-shared
+            type: DirectoryOrCreate
+      containers:
+        - name: scheduler
+          image: specsynth:latest
+          imagePullPolicy: IfNotPresent
+          command: ["dask", "scheduler"]
+          ports:
+            - { name: tcp-comm, containerPort: 8786 }
+            - { name: http-dashboard, containerPort: 8787 }
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data
+    service:
+      type: ClusterIP
+      selector:
+        dask.org/cluster-name: synth
+        dask.org/component: scheduler
+      ports:
+        - { name: tcp-comm, port: 8786, targetPort: tcp-comm }
+        - { name: http-dashboard, port: 8787, targetPort: http-dashboard }
