@@ -1,0 +1,55 @@
+name: Sync Dataset to Hugging Face Hub
+
+on:
+  workflow_dispatch:
+    inputs:
+      n_gal:
+        description: 'Number of benchmark galaxies to generate'
+        required: true
+        default: '100000'
+      make_private:
+        description: 'Make dataset private on Hugging Face'
+        type: boolean
+        default: false
+  release:
+    types: [published]
+
+jobs:
+  sync-hf:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[test,astro]"
+        pip install huggingface_hub pyarrow
+
+    - name: Generate Reference Benchmark Catalog
+      run: |
+        python scripts/export_reference_dataset.py \
+          --n-gal ${{ inputs.n_gal || 100000 }} \
+          --seed 42 \
+          --output-dir benchmark_data/specsynth_reference_100k \
+          --archive specsynth_reference_catalog_100k.tar.gz
+
+    - name: Run Integrity & Quality Tests
+      run: |
+        pytest -v tests/test_reference_dataset.py
+
+    - name: Upload to Hugging Face Hub
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: |
+        python scripts/upload_to_huggingface.py \
+          --repo-id "SankarGaneshb/specsynth-benchmark-100k" \
+          --data-dir "benchmark_data/specsynth_reference_100k" \
+          ${{ inputs.make_private && '--private' || '' }}
