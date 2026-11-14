@@ -2,7 +2,7 @@
 specsynth: Distributed, out-of-core stellar population synthesis (SPS).
 """
 
-__version__ = "0.3.0"
+__version__ = "1.0.0"
 
 from specsynth.adapters.toy import build_toy_ssp, planck
 from specsynth.core import (
