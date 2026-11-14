@@ -38,6 +38,7 @@ storage = [
 astro = [
     "astropy>=5.0",
     "h5py>=3.8",
+    "pyarrow>=10.0",
 ]
 gpu = [
     "cupy-cuda12x>=13.0",

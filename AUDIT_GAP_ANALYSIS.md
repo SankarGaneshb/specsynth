@@ -153,7 +153,7 @@ This document provides a thorough audit of the engineering and scientific review
 
 ## 3. Verified Metrics Summary
 
-* **Automated Tests**: **143 passed in 11.9s** across 13 test modules:
+* **Automated Tests**: **146 passed in 14.8s** across 14 test modules:
   * `tests/test_adapters.py`: 22 passed
   * `tests/test_agent.py`: 6 passed
   * `tests/test_benchmark.py`: 3 passed
@@ -163,8 +163,20 @@ This document provides a thorough audit of the engineering and scientific review
   * `tests/test_filters.py`: 7 passed
   * `tests/test_gpu.py`: 4 passed
   * `tests/test_igm.py`: 2 passed
+  * `tests/test_reference_dataset.py`: 3 passed
   * `tests/test_sentry.py`: 20 passed
   * `tests/test_specsynth.py`: 12 passed
   * `tests/test_tools.py`: 10 passed
   * `tests/test_validation_external.py`: 20 passed
 * **Code Coverage**: **88%** (2,251 of 2,564 statements covered).
+
+---
+
+## 4. Canonical Benchmark Reference Catalog Release (Roadmap Item 2)
+
+* **Status**: **✅ COMPLETED & RELEASED**
+* **Distribution Asset**: `specsynth_reference_catalog_100k.tar.gz` (124.8 MB) attached directly to [GitHub Release v1.0.0](https://github.com/SankarGaneshb/specsynth/releases/tag/v1.0.0).
+* **Generator Script**: `scripts/export_reference_dataset.py` (deterministic `seed=42`).
+* **Catalog Scale**: 100,000 mock galaxies across $z \in [0.05, 3.8]$ with lightcone distribution.
+* **Ground Truth**: Float64 reference photometry for 16 calibrated STScI filter curves (JWST NIRCam, HST, SDSS) with Planck 2018 cosmology, distance dimming, and Madau IGM attenuation.
+* **Integrity & Verification**: Verified via `SHA256SUMS.txt` and automated regression tests in `tests/test_reference_dataset.py`.

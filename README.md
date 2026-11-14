@@ -528,6 +528,42 @@ kubectl apply -f k8s/synth-job.yaml
 
 ---
 
+## 16. Canonical Benchmark Reference Catalog (100,000 Galaxies)
+
+To enable independent verification, algorithmic benchmarking, and reproduction of published claims without generating mock catalogs from scratch, `specsynth` distributes a **canonical reference benchmark catalog** of **100,000 galaxies**:
+
+- **Physical Mock Parameters**: Redshifts $z \in [0.05, 3.8]$ (lightcone survey distribution), stellar masses $\log_{10}(M_*/M_\odot) \in [8.2, 11.8]$, star formation rates, dust extinction $A_V$, and optical depths $\tau_V = A_V / 1.086$.
+- **Ground-Truth Reference Photometry**: Pre-computed in full **float64 double precision** using Planck 2018 cosmology, cosmological distance dimming $1/(4\pi D_L^2)$, Madau (1995) IGM attenuation, and 16 calibrated STScI instrument bandpasses (JWST NIRCam, HST ACS/WFC3, and SDSS).
+- **Dual Formats**: Available in both columnar **Parquet** (`specsynth_benchmark_100k.parquet`) and chunked **Zarr** (`specsynth_benchmark_100k.zarr`) with cryptographic SHA-256 verification.
+
+### Download & Quickstart
+
+Download the archive directly from [GitHub Release v1.0.0](https://github.com/SankarGaneshb/specsynth/releases/download/v1.0.0/specsynth_reference_catalog_100k.tar.gz):
+
+```bash
+# 1. Download and extract canonical benchmark catalog
+curl -L -O https://github.com/SankarGaneshb/specsynth/releases/download/v1.0.0/specsynth_reference_catalog_100k.tar.gz
+tar -xzf specsynth_reference_catalog_100k.tar.gz
+cd specsynth_reference_100k
+
+# 2. Verify SHA-256 checksums
+sha256sum -c SHA256SUMS.txt
+```
+
+```python
+import pyarrow.parquet as pq
+
+# Load reference Parquet catalog
+table = pq.read_table("specsynth_benchmark_100k.parquet")
+print(f"Loaded {table.num_rows:,} galaxies across {table.num_columns} columns")
+
+# Inspect ground-truth calibrated JWST NIRCam F200W and F444W magnitudes
+df = table.select(["galaxy_id", "redshift", "log_mstar", "mag_ab_jwst_f200w", "mag_ab_jwst_f444w"]).to_pandas()
+print(df.head())
+```
+
+---
+
 ## Citation
 
 If you use `specsynth` in your research or survey pipeline, please cite our JOSS paper (`paper/paper.md`):

@@ -49,4 +49,6 @@ sentry_quarantine/
 run/
 demo_run/
 clean_catalog.*
+benchmark_data/
+*.tar.gz
 
