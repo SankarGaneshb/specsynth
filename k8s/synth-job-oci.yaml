@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: specsynth-run
+  namespace: default
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      volumes:
+        - name: shared-data
+          nfs:
+            server: nfs-service.default.svc.cluster.local
+            path: "/"
+      containers:
+        - name: client
+          image: bsankarganesh/specsynth:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              BASE=/data/run1
+              rm -rf $BASE && mkdir -p $BASE
+              S="python /app/specsynth.py --base $BASE --scheduler tcp://synth-scheduler:8786"
+              echo "[*] Step 1: Generating SSP library (30 ages x 4 metallicities x 2000 wave)..."
+              $S make-ssp --adapter toy --n-age 30 --n-met 4 --n-wave 2000
+              echo "[*] Step 2: Generating SFH for 100,000 galaxies across 3 OCI nodes..."
+              $S make-sfh --n-gal 100000 --chunk 20000
+              echo "[*] Step 3: Running Distributed In-Flight Synthesis across 3 Dask workers..."
+              $S synth --filters jwst_nircam --redshift 2.0 --igm
+              echo "[*] Step 4: Verifying numerical accuracy against double-precision NumPy baseline..."
+              $S verify
+              echo "[+] 3-Node Oracle Cloud OKE Synthesis Run Completed Successfully!"
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits:   { cpu: "1", memory: "2Gi" }
