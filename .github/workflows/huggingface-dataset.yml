@@ -50,6 +50,6 @@ jobs:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python scripts/upload_to_huggingface.py \
-          --repo-id "SankarGaneshb/specsynth-benchmark-100k" \
+          --repo-id "sreeganesh/specsynth-benchmark-100k" \
           --data-dir "benchmark_data/specsynth_reference_100k" \
           ${{ inputs.make_private && '--private' || '' }}
