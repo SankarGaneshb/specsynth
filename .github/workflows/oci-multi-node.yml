@@ -1,0 +1,60 @@
+name: OCI Multi-Node Cloud Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      nodes:
+        description: 'Number of worker nodes to spin up'
+        required: true
+        default: '3'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '6'
+          - '8'
+      n_galaxies:
+        description: 'Number of mock galaxies to synthesize'
+        required: true
+        default: '100000'
+        type: string
+
+jobs:
+  run-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure OCI CLI
+        uses: oracle-actions/setup-oci-cli@v1.3.2
+        with:
+          user: ${{ secrets.OCI_USER_OCID }}
+          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          key: ${{ secrets.OCI_PRIVATE_KEY }}
+          tenancy: ${{ secrets.OCI_TENANCY_OCID }}
+          region: ${{ secrets.OCI_REGION || 'ap-hyderabad-1' }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.36.1'
+
+      - name: Configure Cluster Kubeconfig
+        run: |
+          oci ce cluster create-kubeconfig \
+            --cluster-id ${{ secrets.OCI_CLUSTER_OCID }} \
+            --file $HOME/.kube/config \
+            --region ${{ secrets.OCI_REGION || 'ap-hyderabad-1' }} \
+            --token-version 2.0.0 \
+            --kube-endpoint PUBLIC_ENDPOINT
+
+      - name: Run Ephemeral Multi-Node Benchmark
+        env:
+          OCI_CLUSTER_OCID: ${{ secrets.OCI_CLUSTER_OCID }}
+          OCI_REGION: ${{ secrets.OCI_REGION || 'ap-hyderabad-1' }}
+        run: |
+          chmod +x scripts/run_oci_benchmark.sh
+          ./scripts/run_oci_benchmark.sh "${{ inputs.nodes }}" "${{ inputs.n_galaxies }}"
