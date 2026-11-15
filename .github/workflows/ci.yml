@@ -32,6 +32,10 @@ jobs:
       run: |
         pytest -v --cov=specsynth --cov-report=xml --cov-report=term
 
+    - name: End-to-End Multi-Format & SPS Adapter Validation (Phases 2-4)
+      run: |
+        python scripts/test_end_to_end_validation.py
+    
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
       with:
