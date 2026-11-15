@@ -28,14 +28,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure OCI CLI
-        uses: oracle-actions/setup-oci-cli@v1.3.2
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          user: ${{ secrets.OCI_USER_OCID }}
-          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-          key: ${{ secrets.OCI_PRIVATE_KEY }}
-          tenancy: ${{ secrets.OCI_TENANCY_OCID }}
-          region: ${{ secrets.OCI_REGION || 'ap-hyderabad-1' }}
+          python-version: '3.12'
+
+      - name: Install & Configure OCI CLI
+        run: |
+          pip install --no-cache-dir oci-cli
+          mkdir -p ~/.oci
+          cat << 'EOF' > ~/.oci/oci_api_key.pem
+          ${{ secrets.OCI_PRIVATE_KEY }}
+          EOF
+          chmod 600 ~/.oci/oci_api_key.pem
+
+          cat << EOF > ~/.oci/config
+          [DEFAULT]
+          user=${{ secrets.OCI_USER_OCID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          key_file=/home/runner/.oci/oci_api_key.pem
+          tenancy=${{ secrets.OCI_TENANCY_OCID }}
+          region=${{ secrets.OCI_REGION || 'ap-hyderabad-1' }}
+          EOF
+          chmod 600 ~/.oci/config
+          oci --version
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
