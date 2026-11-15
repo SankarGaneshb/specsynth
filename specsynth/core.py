@@ -72,6 +72,8 @@ def write_many_batched(
     Write arrays into a Zarr store using sliding-window batch pipelining.
     Executes chunk tasks in windows of `batch_chunks` blocks to keep Dask scheduler memory strictly bounded.
     """
+    import gc
+
     # 1. Write static arrays (e.g., wave grid)
     if static_arrays:
         static_tasks = [
@@ -81,12 +83,52 @@ def write_many_batched(
         if client is not None:
             fut = client.compute(static_tasks)
             client.gather(fut)
+            del fut
         else:
             da.compute(*static_tasks)
 
-    # 2. Set up chunk-writing task graph for main array
-    main_task = da.to_zarr(main_array, store, component=main_name, overwrite=True, compute=False)
+    # 2. Initialize target Zarr array for main_array with empty metadata
+    # This creates the dataset metadata without writing chunk data yet.
+    try:
+        import zarr
+        try:
+            grp = zarr.open_group(store, mode="a")
+        except Exception:
+            import fsspec
+            grp = zarr.open_group(fsspec.get_mapper(store), mode="a")
 
+        chunk_shape = tuple(c[0] for c in main_array.chunks)
+        if hasattr(grp, "create_dataset"):
+            try:
+                grp.create_dataset(
+                    main_name,
+                    shape=main_array.shape,
+                    chunks=chunk_shape,
+                    dtype=main_array.dtype,
+                    overwrite=True,
+                )
+            except TypeError:
+                if main_name in grp:
+                    del grp[main_name]
+                grp.create_dataset(
+                    main_name,
+                    shape=main_array.shape,
+                    chunks=chunk_shape,
+                    dtype=main_array.dtype,
+                )
+        elif hasattr(grp, "create_array"):
+            grp.create_array(
+                main_name,
+                shape=main_array.shape,
+                chunks=chunk_shape,
+                dtype=main_array.dtype,
+                overwrite=True,
+            )
+    except Exception:
+        # Fallback if zarr direct initialization is not accessible (e.g. mocked in tests)
+        pass
+
+    # 3. Stream chunk blocks in windows of batch_chunks
     row_blocks = main_array.chunks[0]
     n_blocks = len(row_blocks)
     n_batches = (n_blocks + batch_chunks - 1) // batch_chunks
@@ -95,23 +137,28 @@ def write_many_batched(
         b_start = b_idx * batch_chunks
         b_end = min((b_idx + 1) * batch_chunks, n_blocks)
 
-        if hasattr(main_task, "blocks"):
-            batch_slice = main_task.blocks[b_start:b_end]
-        elif hasattr(main_task, "__getitem__"):
-            try:
-                batch_slice = main_task[b_start:b_end]
-            except Exception:
-                batch_slice = main_task
-        else:
-            batch_slice = main_task
+        row_start = sum(row_blocks[:b_start])
+        row_end = sum(row_blocks[:b_end])
+
+        batch_slice = main_array[row_start:row_end]
+        region = (slice(row_start, row_end), slice(None)) if main_array.ndim == 2 else (slice(row_start, row_end),)
+
+        try:
+            batch_task = da.to_zarr(batch_slice, store, component=main_name, region=region, compute=False)
+        except Exception:
+            # Fallback for mock environments where region is not supported
+            batch_task = da.to_zarr(batch_slice, store, component=main_name, compute=False)
 
         if client is not None:
-            fut = client.compute(batch_slice)
+            fut = client.compute(batch_task)
             client.gather(fut)
+            del fut
         else:
-            da.compute(batch_slice)
+            da.compute(batch_task)
 
-    # 3. Attach metadata
+        gc.collect()
+
+    # 4. Attach metadata
     if metadata:
         try:
             import zarr

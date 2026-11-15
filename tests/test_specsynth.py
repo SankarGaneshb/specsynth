@@ -209,6 +209,100 @@ def test_write_many_batched_with_mock_client(monkeypatch):
 
 
 @pytest.mark.critical
+def test_write_many_batched_bounded_scheduler_verification(monkeypatch):
+    """
+    Regression test verifying write_many_batched enforces strict bounded scheduler windows.
+    Verifies that:
+    1. Dask task graph is partitioned into slices of size batch_chunks, not submitted all at once.
+    2. Exact region slices (slice(start, end), slice(None)) are provided to to_zarr.
+    3. client.gather is called on each window before proceeding to the next.
+    """
+    import dask.array as da
+    from unittest.mock import MagicMock
+    from specsynth.core import write_many_batched
+
+    store_path = "mock_bounded_pipeline.zarr"
+    # 6 chunk blocks of 10 rows each = 60 rows total
+    np_data = np.ones((60, 5), dtype=np.float32)
+    main_da = da.from_array(np_data, chunks=(10, 5))
+    wave_da = da.from_array(np.arange(10, dtype=np.float32), chunks=10)
+
+    to_zarr_calls = []
+
+    def mock_to_zarr(arr, store, component=None, region=None, compute=False, **kwargs):
+        to_zarr_calls.append({
+            "component": component,
+            "shape": arr.shape,
+            "region": region,
+            "chunks": arr.chunks,
+        })
+        return f"task_{component}_{len(to_zarr_calls)}"
+
+    monkeypatch.setattr("dask.array.to_zarr", mock_to_zarr)
+
+    class MockGroup:
+        def __init__(self):
+            self.attrs = {}
+        def create_dataset(self, *args, **kwargs):
+            pass
+
+    mock_grp = MockGroup()
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: mock_grp)
+
+    compute_events = []
+    gather_events = []
+
+    mock_client = MagicMock()
+    def mock_compute(task):
+        compute_events.append(task)
+        return ["fut"]
+    def mock_gather(fut):
+        gather_events.append(fut)
+
+    mock_client.compute = mock_compute
+    mock_client.gather = mock_gather
+
+    # Run with batch_chunks = 2 (6 blocks -> 3 windows of 2 blocks each)
+    write_many_batched(
+        mock_client,
+        store_path,
+        static_arrays={"wave": wave_da},
+        main_name="photometry",
+        main_array=main_da,
+        batch_chunks=2,
+        metadata={"bounded_test": True},
+    )
+
+    # 1 static write + 3 batch writes = 4 to_zarr calls
+    assert len(to_zarr_calls) == 4
+
+    # Check static array call
+    assert to_zarr_calls[0]["component"] == "wave"
+    assert to_zarr_calls[0]["shape"] == (10,)
+
+    # Check windowed batch calls: each batch MUST have shape (20, 5) and NOT (60, 5)!
+    # Batch 0: rows 0..20 (2 blocks of 10)
+    assert to_zarr_calls[1]["component"] == "photometry"
+    assert to_zarr_calls[1]["shape"] == (20, 5)
+    assert to_zarr_calls[1]["region"] == (slice(0, 20), slice(None))
+
+    # Batch 1: rows 20..40 (2 blocks of 10)
+    assert to_zarr_calls[2]["component"] == "photometry"
+    assert to_zarr_calls[2]["shape"] == (20, 5)
+    assert to_zarr_calls[2]["region"] == (slice(20, 40), slice(None))
+
+    # Batch 2: rows 40..60 (2 blocks of 10)
+    assert to_zarr_calls[3]["component"] == "photometry"
+    assert to_zarr_calls[3]["shape"] == (20, 5)
+    assert to_zarr_calls[3]["region"] == (slice(40, 60), slice(None))
+
+    # Verify synchronous compute -> gather pacing: exactly 4 compute calls, 4 gather calls
+    assert len(compute_events) == 4
+    assert len(gather_events) == 4
+    assert mock_grp.attrs["bounded_test"] is True
+
+
+@pytest.mark.critical
 def test_gen_params_with_block_info():
     from specsynth.core import _gen_params
 

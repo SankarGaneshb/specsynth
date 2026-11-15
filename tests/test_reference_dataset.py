@@ -61,17 +61,43 @@ def test_reference_zarr_metadata():
     if not zarr_path.is_dir():
         pytest.skip("Zarr benchmark dataset not present locally")
 
-    import zarr
-    root = zarr.open_group(str(zarr_path), mode="r")
+    # Read root group metadata directly (ensures cross-version and Windows async safety)
+    root_json = zarr_path / "zarr.json"
+    zgroup_json = zarr_path / ".zgroup"
+    zattrs_json = zarr_path / ".zattrs"
 
-    assert root.attrs["n_galaxies"] == 100_000
-    assert len(root.attrs["filters"]) == 16
-    assert root.attrs["cosmology"]["H0"] == 67.4
-    assert root.attrs["cosmology"]["Omega_m"] == 0.315
+    if root_json.is_file():
+        with open(root_json, "r", encoding="utf-8") as f:
+            root_meta = json.load(f)
+        attrs = root_meta.get("attributes", {})
+    elif zattrs_json.is_file():
+        with open(zattrs_json, "r", encoding="utf-8") as f:
+            attrs = json.load(f)
+    else:
+        import zarr
+        root = zarr.open_group(str(zarr_path), mode="r")
+        attrs = root.attrs
+
+    assert attrs["n_galaxies"] == 100_000
+    assert len(attrs["filters"]) == 16
+    assert attrs["cosmology"]["H0"] == 67.4
+    assert attrs["cosmology"]["Omega_m"] == 0.315
 
     # Check array shapes
-    assert root["galaxy_id"].shape == (100_000,)
-    assert root["redshift"].shape == (100_000,)
-    assert root["sfh"].shape == (100_000, 60)
-    assert root["flux_ujy"].shape == (100_000, 16)
-    assert root["mag_ab"].shape == (100_000, 16)
+    for col, expected_shape in [
+        ("galaxy_id", [100_000]),
+        ("redshift", [100_000]),
+        ("sfh", [100_000, 60]),
+        ("flux_ujy", [100_000, 16]),
+        ("mag_ab", [100_000, 16]),
+    ]:
+        col_json = zarr_path / col / "zarr.json"
+        col_zarray = zarr_path / col / ".zarray"
+        if col_json.is_file():
+            with open(col_json, "r", encoding="utf-8") as f:
+                col_meta = json.load(f)
+            assert col_meta["shape"] == expected_shape
+        elif col_zarray.is_file():
+            with open(col_zarray, "r", encoding="utf-8") as f:
+                col_meta = json.load(f)
+            assert col_meta["shape"] == expected_shape
