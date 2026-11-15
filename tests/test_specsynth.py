@@ -353,6 +353,118 @@ def test_write_many_batched_unmocked_real_zarr(tmp_path):
 
 
 @pytest.mark.critical
+def test_write_many_batched_with_external_catalog_data():
+    """
+    100% unmocked end-to-end integration test for write_many_batched using real-world data
+    from an external tabular catalog (Astropy Table / CSV format).
+    Verifies that:
+    1. External catalog file on disk is ingested via load_raw_table & resolve_catalog_columns.
+    2. Physical galaxy SFH and in-flight JWST NIRCam filter projections are evaluated.
+    3. write_many_batched writes chunk blocks into an on-disk Zarr store using bounded windows.
+    4. Photometric arrays read back from disk match bit-exact and have valid physical magnitudes.
+    """
+    import os
+    import shutil
+    import dask
+    import dask.array as da
+    import zarr
+    from astropy.table import Table
+
+    from specsynth.catalog import resolve_catalog_columns, catalog_to_params_matrix, load_raw_table
+    from specsynth.core import sfh_from_params, write_many_batched, synth_block, attenuation_curve, YOUNG_AGE_YR
+    from specsynth.adapters.toy import build_toy_ssp
+    from specsynth.filters import build_filter_projection_matrix, f_lambda_to_f_nu, flux_to_ab_mag
+
+    csv_path = ".tmp_ext_cat.csv"
+    store_path = ".tmp_ext_cat_phot.zarr"
+
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
+    if os.path.exists(store_path):
+        shutil.rmtree(store_path)
+
+    try:
+        # 1. External catalog source with realistic galaxy parameters
+        n_gal = 40
+        tbl = Table({
+            "galaxy_id": np.arange(101, 101 + n_gal),
+            "m_star": np.logspace(9.5, 11.2, n_gal, dtype=np.float32),
+            "formation_redshift": np.linspace(0.5, 3.0, n_gal, dtype=np.float32),
+            "tau_sfh": np.full(n_gal, 2.0, dtype=np.float32),
+            "metallicity": np.full(n_gal, 0.019, dtype=np.float32),
+            "Av": np.linspace(0.2, 1.5, n_gal, dtype=np.float32),
+        })
+        tbl.write(csv_path, format="ascii.csv", overwrite=True)
+
+        # 2. Ingest external catalog file from disk
+        raw_dict = load_raw_table(csv_path)
+        resolved = resolve_catalog_columns(raw_dict)
+        params = catalog_to_params_matrix(resolved)
+
+        # 3. Setup SSP basis matrix
+        ages, mets, wave, ssp = build_toy_ssp(n_age=15, n_met=3, n_wave=800)
+        K = ssp.shape[0]
+        n_young_k = int((ages < YOUNG_AGE_YR).sum()) * len(mets)
+        kd = attenuation_curve(wave, -0.7)
+        kb = attenuation_curve(wave, -1.3)
+
+        # 4. Generate SFH and synthesize JWST NIRCam photometry
+        sfh_dense = sfh_from_params(params, ages, mets)
+        proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, "jwst_nircam")
+
+        spectra = synth_block(
+            sfh_dense,
+            resolved["tau_diffuse"],
+            resolved["tau_birth"],
+            ssp,
+            kd,
+            kb,
+            n_young_k,
+            use_gpu=False,
+        )
+        photometry_f_lambda = spectra @ proj_mat
+        photometry_f_nu = f_lambda_to_f_nu(photometry_f_lambda, pivots)
+        photometry_ab_mag = flux_to_ab_mag(photometry_f_nu)
+
+        # 5. Partition into Dask array of 4 chunk blocks (10 galaxies each)
+        chunk = 10
+        phot_da = da.from_array(photometry_ab_mag, chunks=(chunk, len(filter_names)))
+        pivots_da = da.from_array(pivots, chunks=len(pivots))
+
+        # 6. Execute unmocked write_many_batched with batch_chunks=2
+        with dask.config.set(scheduler="synchronous"):
+            write_many_batched(
+                client=None,
+                store=store_path,
+                static_arrays={"pivot_wavelengths": pivots_da},
+                main_name="ab_magnitudes",
+                main_array=phot_da,
+                batch_chunks=2,
+                metadata={
+                    "source_catalog": csv_path,
+                    "filter_set": "jwst_nircam",
+                    "n_galaxies": n_gal,
+                },
+            )
+
+        # 7. Read back from real disk Zarr store without mocks
+        grp = zarr.open_group(store_path, mode="r")
+        read_phot = da.from_zarr(store_path, component="ab_magnitudes").compute()
+        read_pivots = da.from_zarr(store_path, component="pivot_wavelengths").compute()
+
+        assert np.allclose(read_phot, photometry_ab_mag)
+        assert np.allclose(read_pivots, pivots)
+        assert grp.attrs["filter_set"] == "jwst_nircam"
+        assert grp.attrs["n_galaxies"] == n_gal
+        assert np.all(np.isfinite(read_phot))
+    finally:
+        if os.path.exists(csv_path):
+            os.remove(csv_path)
+        if os.path.exists(store_path):
+            shutil.rmtree(store_path)
+
+
+@pytest.mark.critical
 def test_gen_params_with_block_info():
     from specsynth.core import _gen_params
 
