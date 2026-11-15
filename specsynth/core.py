@@ -94,7 +94,7 @@ def write_many(
 ):
     """Write several dask arrays into one Zarr store in a single graph, with optional metadata."""
     tasks = [
-        da.to_zarr(a, store, component=name, mode="a", compute=False)
+        da.to_zarr(a, store, component=name, overwrite=True, compute=False)
         for name, a in arrays.items()
     ]
     if client is not None:
@@ -138,7 +138,7 @@ def write_many_batched(
     # 1. Write static arrays (e.g., wave grid)
     if static_arrays:
         static_tasks = [
-            da.to_zarr(a, store, component=name, mode="a", compute=False)
+            da.to_zarr(a, store, component=name, overwrite=True, compute=False)
             for name, a in static_arrays.items()
         ]
         if client is not None:

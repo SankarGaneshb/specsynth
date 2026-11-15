@@ -7,7 +7,7 @@ from typing import Any, Mapping
 import dask.array as da
 import numpy as np
 
-from specsynth.core import N_PARAM, sfh_from_params, small, url, write_many
+from specsynth.core import N_PARAM, read_small, sfh_from_params, small, url, write_many
 
 
 # Standard column aliases for cosmological catalogs
@@ -301,8 +301,14 @@ def import_catalog(
     ext = os.path.splitext(path_str)[1].lower()
 
     # Load SSP age/metallicity grid to construct SFH
-    ages = da.from_zarr(ssp_store, component="ages").compute()
-    mets = da.from_zarr(ssp_store, component="mets").compute()
+    try:
+        ages = da.from_zarr(ssp_store, component="ages").compute(scheduler="sync")
+        mets = da.from_zarr(ssp_store, component="mets").compute(scheduler="sync")
+    except Exception as err:
+        raise FileNotFoundError(
+            f"SSP library not found at '{ssp_store}'. "
+            f"Run 'specsynth make-ssp' first to compile an SSP grid, or pass --ssp-store <path>."
+        ) from err
     K = len(ages) * len(mets)
 
     if streaming and ext in (".parquet", ".pq", ".h5", ".hdf5", ".csv", ".tsv"):
@@ -421,7 +427,7 @@ def import_catalog(
     else:
         # In-process write for non-distributed workflows
         tasks = [
-            da.to_zarr(a, output_zarr, component=name, mode="a", compute=False)
+            da.to_zarr(a, output_zarr, component=name, overwrite=True, compute=False)
             for name, a in arrays_to_write.items()
         ]
         da.compute(*tasks)

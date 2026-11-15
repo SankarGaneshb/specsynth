@@ -17,9 +17,12 @@ env/
 
 # Zarr / data artifacts
 *.zarr/
+.tmp*/
 run1/
 /data/
 sample_data/
+sample_catalogs/
+sample_models/
 tmp/
 
 # Testing & coverage
