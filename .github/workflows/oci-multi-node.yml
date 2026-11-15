@@ -24,6 +24,13 @@ on:
 jobs:
   run-benchmark:
     runs-on: ubuntu-latest
+    env:
+      OCI_CLI_USER: ${{ secrets.OCI_USER_OCID }}
+      OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
+      OCI_CLI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+      OCI_CLI_KEY_FILE: /home/runner/.oci/oci_api_key.pem
+      OCI_CLI_REGION: ${{ secrets.OCI_REGION || 'ap-hyderabad-1' }}
+      OCI_CLUSTER_OCID: ${{ secrets.OCI_CLUSTER_OCID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,24 +40,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install & Configure OCI CLI
+      - name: Install OCI CLI & Save Private Key
         run: |
           pip install --no-cache-dir oci-cli
           mkdir -p ~/.oci
-          cat << 'EOF' > ~/.oci/oci_api_key.pem
-          ${{ secrets.OCI_PRIVATE_KEY }}
-          EOF
+          printf "%s\n" "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
-
-          cat << EOF > ~/.oci/config
-          [DEFAULT]
-          user=${{ secrets.OCI_USER_OCID }}
-          fingerprint=${{ secrets.OCI_FINGERPRINT }}
-          key_file=/home/runner/.oci/oci_api_key.pem
-          tenancy=${{ secrets.OCI_TENANCY_OCID }}
-          region=${{ secrets.OCI_REGION || 'ap-hyderabad-1' }}
-          EOF
-          chmod 600 ~/.oci/config
           oci --version
 
       - name: Set up kubectl
@@ -68,9 +63,6 @@ jobs:
             --kube-endpoint PUBLIC_ENDPOINT
 
       - name: Run Ephemeral Multi-Node Benchmark
-        env:
-          OCI_CLUSTER_OCID: ${{ secrets.OCI_CLUSTER_OCID }}
-          OCI_REGION: ${{ secrets.OCI_REGION || 'ap-hyderabad-1' }}
         run: |
           chmod +x scripts/run_oci_benchmark.sh
           ./scripts/run_oci_benchmark.sh "${{ inputs.nodes }}" "${{ inputs.n_galaxies }}"
