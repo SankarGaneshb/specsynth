@@ -1,0 +1,65 @@
+apiVersion: kubernetes.dask.org/v1
+kind: DaskCluster
+metadata:
+  name: synth-s3
+  namespace: default
+  labels:
+    app.kubernetes.io/name: specsynth
+    app.kubernetes.io/component: object-store-cluster
+spec:
+  worker:
+    replicas: 3
+    spec:
+      containers:
+        - name: worker
+          image: docker.io/bsankarganesh/specsynth:latest
+          imagePullPolicy: IfNotPresent
+          command: ["dask", "worker"]
+          args: [
+            "tcp://synth-s3-scheduler:8786",
+            "--name", "$(DASK_WORKER_NAME)",
+            "--nthreads", "1",
+            "--memory-limit", "3GiB"
+          ]
+          env:
+            - name: AWS_ENDPOINT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: specsynth-s3-config
+                  key: endpoint-url
+                  optional: true
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: specsynth-s3-credentials
+                  key: access-key-id
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: specsynth-s3-credentials
+                  key: secret-access-key
+                  optional: true
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits:   { cpu: "1", memory: "3Gi" }
+  scheduler:
+    spec:
+      containers:
+        - name: scheduler
+          image: docker.io/bsankarganesh/specsynth:latest
+          imagePullPolicy: IfNotPresent
+          command: ["dask", "scheduler"]
+          ports:
+            - { name: tcp-comm, containerPort: 8786 }
+            - { name: http-dashboard, containerPort: 8787 }
+    service:
+      type: ClusterIP
+      selector:
+        dask.org/cluster-name: synth-s3
+        dask.org/component: scheduler
+      ports:
+        - { name: tcp-comm, port: 8786, targetPort: tcp-comm }
+        - { name: http-dashboard, port: 8787, targetPort: http-dashboard }
