@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-11-15T16:40:16.745375+00:00",
+  "benchmark_type": "Empirical Multi-Worker Cluster Scaling",
+  "provenance": {
+    "git_commit_sha": "f47fc2b369d5cb666f30496df91692b0ad38e548",
+    "image_digest": "sha256:fb6d2bbd33218ce590db96e2228966f03359f676c71027eda80412dcb617c39d",
+    "python_version": "3.13.1",
+    "package_versions": {
+      "python": "3.13.1",
+      "numpy": "2.5.4",
+      "dask": "2026.8.0",
+      "zarr": "3.4.2",
+      "fsspec": "2026.9.0",
+      "astropy": "8.0.2",
+      "distributed": "2026.8.0"
+    },
+    "host_os": "Windows-11-10.0.26300-SP0",
+    "cpu_arch": "AMD64",
+    "cpu_physical_cores": 12,
+    "cpu_logical_cores": 14,
+    "total_ram_gb": 15.49
+  },
+  "workload": {
+    "n_galaxies": 60000,
+    "chunk_size": 20000,
+    "n_row_blocks": 3,
+    "ssp_grid": "30 ages x 4 metallicities x 2000 wavelengths",
+    "cosmology": {
+      "redshift": 2.0,
+      "igm_attenuation": "Madau (1995)",
+      "filter_set": "JWST NIRCam (7 bands)"
+    }
+  },
+  "strong_scaling_comparison": [
+    {
+      "workers": 1,
+      "mean_elapsed_seconds": 10.142,
+      "std_elapsed_seconds": 0.13,
+      "raw_run_times_seconds": [
+        10.012,
+        10.271
+      ],
+      "throughput_galaxies_per_sec": 5916.3,
+      "speedup_vs_1_worker": 1.0,
+      "parallel_efficiency": 1.0,
+      "raw_sample_output": [
+        "",
+        "====================== Performance Telemetry ======================",
+        "  * Elapsed Time       : 7.17s",
+        "  * Throughput         : 8,363 galaxies/s",
+        "  * Processing Rate    : 0.00 GB/s (8.0 GFLOPS)",
+        "  * Workers Active     : 1 (CPU BLAS)",
+        "  * Est. Cloud Cost    : $0.000022 USD",
+        "  * Output Destination : C:\\Users\\bsank\\specsynth\\.tmp_scaling_benchmark/spectra.zarr",
+        "==================================================================="
+      ]
+    },
+    {
+      "workers": 2,
+      "mean_elapsed_seconds": 8.986,
+      "std_elapsed_seconds": 0.006,
+      "raw_run_times_seconds": [
+        8.992,
+        8.981
+      ],
+      "throughput_galaxies_per_sec": 6676.7,
+      "speedup_vs_1_worker": 1.13,
+      "parallel_efficiency": 0.56,
+      "raw_sample_output": [
+        "",
+        "====================== Performance Telemetry ======================",
+        "  * Elapsed Time       : 5.72s",
+        "  * Throughput         : 10,483 galaxies/s",
+        "  * Processing Rate    : 0.01 GB/s (10.1 GFLOPS)",
+        "  * Workers Active     : 2 (CPU BLAS)",
+        "  * Est. Cloud Cost    : $0.000035 USD",
+        "  * Output Destination : C:\\Users\\bsank\\specsynth\\.tmp_scaling_benchmark/spectra.zarr",
+        "==================================================================="
+      ]
+    },
+    {
+      "workers": 3,
+      "mean_elapsed_seconds": 8.977,
+      "std_elapsed_seconds": 0.029,
+      "raw_run_times_seconds": [
+        8.948,
+        9.005
+      ],
+      "throughput_galaxies_per_sec": 6684.1,
+      "speedup_vs_1_worker": 1.13,
+      "parallel_efficiency": 0.38,
+      "raw_sample_output": [
+        "",
+        "====================== Performance Telemetry ======================",
+        "  * Elapsed Time       : 5.46s",
+        "  * Throughput         : 10,991 galaxies/s",
+        "  * Processing Rate    : 0.01 GB/s (10.6 GFLOPS)",
+        "  * Workers Active     : 3 (CPU BLAS)",
+        "  * Est. Cloud Cost    : $0.000050 USD",
+        "  * Output Destination : C:\\Users\\bsank\\specsynth\\.tmp_scaling_benchmark/spectra.zarr",
+        "==================================================================="
+      ]
+    }
+  ],
+  "verification": {
+    "reference": "Serial Float64 NumPy Baseline",
+    "status": "PASS (Scientifically Validated)"
+  }
+}

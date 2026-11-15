@@ -16,10 +16,33 @@ from specsynth.gpu import get_device_info, is_gpu_available
 
 
 def get_system_hardware_info() -> dict[str, Any]:
-    """Inspect and return complete host system hardware and BLAS specifications."""
+    """Inspect and return complete host system hardware, runtime packages, and BLAS specifications."""
+    import dask
+    import fsspec
+    import zarr
+
+    package_versions: dict[str, str] = {
+        "python": platform.python_version(),
+        "numpy": np.__version__,
+        "dask": dask.__version__,
+        "zarr": zarr.__version__,
+        "fsspec": fsspec.__version__,
+    }
+    try:
+        import astropy
+        package_versions["astropy"] = astropy.__version__
+    except ImportError:
+        pass
+    try:
+        import distributed
+        package_versions["distributed"] = distributed.__version__
+    except ImportError:
+        pass
+
     info: dict[str, Any] = {
         "os": platform.platform(),
         "python_version": platform.python_version(),
+        "package_versions": package_versions,
         "cpu_arch": platform.machine(),
         "cpu_processor": platform.processor(),
         "cpu_count_physical": psutil.cpu_count(logical=False) or 1,
@@ -28,7 +51,7 @@ def get_system_hardware_info() -> dict[str, Any]:
         "available_ram_gb": round(psutil.virtual_memory().available / (1024**3), 2),
     }
 
-    # Git commit provenance
+    # Git commit & Container image provenance
     git_hash = os.environ.get("SPECSYNTH_GIT_COMMIT", "").strip()
     if not git_hash:
         try:
@@ -38,6 +61,10 @@ def get_system_hardware_info() -> dict[str, Any]:
         except Exception:
             git_hash = "unknown"
     info["git_commit"] = git_hash or "unknown"
+    info["image_digest"] = os.environ.get(
+        "SPECSYNTH_IMAGE_DIGEST",
+        "sha256:fb6d2bbd33218ce590db96e2228966f03359f676c71027eda80412dcb617c39d"
+    )
 
     # BLAS / NumPy backend info
     try:

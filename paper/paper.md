@@ -192,10 +192,18 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **Distributed Performance**: **53,814 galaxies/s** (100,000 galaxies in 1.86s, 51.7 GFLOPS, Est. Cost: $0.000017 USD)
   - **Numerical Accuracy**: Max relative error $8.16 \times 10^{-7}$ against float64 NumPy baseline (`PASS`)
   - **Timestamp**: `2026-11-15T01:26:51+05:30`
+- **Host 4 — Multi-Worker Cluster Strong Scaling** (`paper/benchmark_manifest_cluster_scaling.json`):
+  - **Workload & Setup**: Reproducible 1-, 2-, and 3-worker empirical comparison on 60,000 galaxies (chunk size: 20,000, 3 row-blocks)
+  - **Full Provenance**: Exact Git commit SHA, container image digest, runtime package versions (Python, NumPy, Dask, Distributed, Zarr, fsspec, Astropy), and raw per-run execution logs
+  - **Empirical Strong Scaling**: Demonstrates bounded scheduler memory and reproducible multi-worker speedup
+  - **Numerical Accuracy**: Max relative error $9.26 \times 10^{-7}$, RMSE $1.86 \times 10^{-3}$ (`PASS`)
 - **Full Reproduction Commands**:
   ```bash
-  # Run automated 146-test scientific verification suite (88% coverage)
+  # Run automated 148-test scientific verification suite (88% coverage)
   pytest -v --cov=specsynth
+
+  # Generate reproducible 1-, 2-, and 3-worker scaling benchmark manifest
+  python scripts/run_cluster_scaling_benchmark.py --workers 1 2 3 --n-gal 60000 --chunk 20000
 
   # Generate reproducible hardware & GPU benchmark manifest
   python specsynth.py benchmark --n-gal 50000 --n-runs 5 --gpu --output paper/benchmark_manifest_gpu_t4.json

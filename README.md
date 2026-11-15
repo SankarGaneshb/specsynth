@@ -163,6 +163,7 @@ The distributed Dask synthesis engine has been validated across both local multi
 | Environment | Topology / Hardware | Workload | Elapsed Time | Throughput (gal/sec) | Max Rel. Error | Provenance |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Local Workstation** | 1 Node (Intel Core i7, 12 cores) | 50,000 | 0.86 s | **57,978 gal/s** | $9.87 \times 10^{-7}$ | `[Measured Run]` (`benchmark_manifest.json`) |
+| **Cluster Scaling (1-3W)**| **1, 2, 3 Local Workers** (Bounded Graph) | **60,000** | **8.98 s (3W)**| **6,684 gal/s** | **$9.26 \times 10^{-7}$**| **`[Measured Run]`** (`benchmark_manifest_cluster_scaling.json`) |
 | **Docker Desktop KinD** | 2 Worker Pods (WSL2 cgroups) | 50,000 | 5.56 s | **9,001 gal/s** | $6.57 \times 10^{-7}$ | `[Measured Run]` (`k8s/dask-cluster-local.yaml`) |
 | **Oracle Cloud (OKE)** | **3 Dedicated Nodes** (`VM.Standard.E3.Flex`) | **100,000** | **1.86 s** | **53,814 gal/s** | **$8.16 \times 10^{-7}$** | **`[Measured Run]`** (`benchmark_manifest_oci_oke_3node.json`) |
 | **Cloud GPU (T4)** | 1 Node (NVIDIA Tesla T4, cuBLAS) | 50,000 | 0.19 s | **258,000 gal/s** | $3.12 \times 10^{-7}$ | `[Measured Run]` (`benchmark_manifest_gpu_t4.json`) |
