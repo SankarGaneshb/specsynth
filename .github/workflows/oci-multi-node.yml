@@ -41,10 +41,12 @@ jobs:
           python-version: '3.12'
 
       - name: Install OCI CLI & Save Private Key
+        env:
+          KEY_DATA: ${{ secrets.OCI_PRIVATE_KEY }}
         run: |
           pip install --no-cache-dir oci-cli
           mkdir -p ~/.oci
-          printf "%s\n" "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
+          echo "$KEY_DATA" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
           oci --version
 
