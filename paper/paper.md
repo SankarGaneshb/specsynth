@@ -199,7 +199,7 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **Numerical Accuracy**: Max relative error $9.26 \times 10^{-7}$, RMSE $1.86 \times 10^{-3}$ (`PASS`)
 - **Full Reproduction Commands**:
   ```bash
-  # Run automated 148-test scientific verification suite (88% coverage)
+  # Run automated 154-test scientific verification suite (88% coverage)
   pytest -v --cov=specsynth
 
   # Generate reproducible 1-, 2-, and 3-worker scaling benchmark manifest

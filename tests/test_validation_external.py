@@ -165,3 +165,93 @@ def test_calibrated_vs_approx_pivot_wavelengths():
         # Pivot wavelengths should agree to within 3% between calibrated and approximate profiles
         rel_diff = abs(flt_cal.pivot_wavelength - flt_approx.pivot_wavelength) / flt_cal.pivot_wavelength
         assert rel_diff < 0.03, f"{fname} pivot mismatch: cal={flt_cal.pivot_wavelength}, approx={flt_approx.pivot_wavelength}"
+
+
+# -----------------------------------------------------------------------------
+# 4. External Astronomical Standards & Physical Conservation
+# -----------------------------------------------------------------------------
+
+def test_physical_constants_against_astropy():
+    """
+    Verify core cosmological physical constants match CODATA/Astropy definitions:
+    1. Speed of light (c) in km/s.
+    2. Solar luminosity (L_sun) in erg/s.
+    3. Megaparsec to centimeter conversion (Mpc -> cm).
+    """
+    import astropy.constants as const
+    import astropy.units as u
+
+    c_astropy = const.c.to(u.km / u.s).value
+    lsun_astropy = const.L_sun.to(u.erg / u.s).value
+    mpc_astropy = (1.0 * u.Mpc).to(u.cm).value
+
+    assert np.isclose(C_KM_S, c_astropy, rtol=1e-6)
+    assert np.isclose(L_SUN_ERG_S, lsun_astropy, rtol=1e-4)
+    assert np.isclose(MPC_TO_CM, mpc_astropy, rtol=1e-6)
+
+
+def test_ab_magnitude_zero_point_against_astropy_flux_density():
+    """
+    Cross-validate AB magnitude zero point directly with Astropy Unit definition:
+    3631 Jy converted to erg/s/cm^2/Hz must yield m_AB = 0.0000 mag (< 1e-4 mag precision).
+    """
+    import astropy.units as u
+
+    f_nu_3631 = (3631.0 * u.Jy).to(u.erg / u.s / u.cm**2 / u.Hz).value
+    mag = flux_to_ab_mag(f_nu_3631)
+    assert abs(mag) < 1e-4, f"AB zero point mismatch: {mag:.6f} mag"
+
+
+def test_dust_attenuation_energy_conservation():
+    """
+    Physical law: Dust attenuation can only absorb/scatter stellar photons, never create them.
+    Integrated flux of dust-attenuated spectra must be strictly <= intrinsic unattenuated flux:
+    integral(F_attenuated d_lambda) <= integral(F_intrinsic d_lambda)
+    """
+    from specsynth.core import attenuation_curve, synth_block
+
+    wave = np.linspace(1000.0, 10000.0, 500, dtype=np.float32)
+    kd = attenuation_curve(wave, -0.7)
+    kb = attenuation_curve(wave, -1.3)
+
+    sfh = np.random.uniform(1e7, 1e10, (10, 15)).astype(np.float32)
+    ssp = np.random.uniform(1e-5, 1e-3, (15, 500)).astype(np.float32)
+    tau_d = np.random.uniform(0.1, 2.5, 10).astype(np.float32)
+    tau_b = 1.5 * tau_d
+
+    spec_atten = synth_block(sfh, tau_d, tau_b, ssp, kd, kb, n_young_k=4, use_gpu=False)
+    spec_intrinsic = synth_block(
+        sfh, np.zeros_like(tau_d), np.zeros_like(tau_b), ssp, kd, kb, n_young_k=4, use_gpu=False
+    )
+
+    trapz_fn = getattr(np, "trapezoid", None)
+    if trapz_fn is not None:
+        int_atten = trapz_fn(spec_atten, wave, axis=1)
+        int_intrinsic = trapz_fn(spec_intrinsic, wave, axis=1)
+    else:
+        # Standard trapezoidal numerical integration
+        dw = np.diff(wave)
+        int_atten = np.sum(0.5 * (spec_atten[:, 1:] + spec_atten[:, :-1]) * dw, axis=1)
+        int_intrinsic = np.sum(0.5 * (spec_intrinsic[:, 1:] + spec_intrinsic[:, :-1]) * dw, axis=1)
+
+    assert np.all(int_atten <= int_intrinsic + 1e-6)
+    # With non-zero optical depth, attenuated flux must be strictly less than intrinsic
+    assert np.all(int_atten < int_intrinsic)
+
+
+def test_dust_power_law_scaling_limits():
+    """
+    Verify Charlot & Fall (2000) / Calzetti dust curve boundary conditions:
+    1. At lambda = 5500 A (V-band), optical depth scale k(lambda) = 1.000.
+    2. At UV wavelengths (1500 A), attenuation is strongly enhanced (k ~ 2.48).
+    3. At near-IR wavelengths (22,000 A), attenuation is strongly diminished (k ~ 0.38).
+    """
+    from specsynth.core import attenuation_curve
+
+    wave_test = np.array([1500.0, 5500.0, 22000.0], dtype=np.float32)
+    kd = attenuation_curve(wave_test, -0.7)
+
+    assert np.isclose(kd[1], 1.0, atol=1e-5), "V-band (5500 A) dust scale must be 1.000"
+    assert np.isclose(kd[0], (1500.0 / 5500.0) ** -0.7, rtol=1e-4)
+    assert np.isclose(kd[2], (22000.0 / 5500.0) ** -0.7, rtol=1e-4)
+    assert kd[0] > kd[1] > kd[2], "Dust extinction must decrease monotonically with wavelength"

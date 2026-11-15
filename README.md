@@ -480,7 +480,7 @@ specsynth synth --base /data/run1 --filters jwst_nircam --sentry
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated unit test suite (143 tests, 88% coverage, strict tier markers)
+# Run automated test suite (154 tests, 88% coverage, strict tier markers)
 pytest -v --cov=specsynth
 
 # Or run tests with automated cache cleanup (Windows / cross-platform):

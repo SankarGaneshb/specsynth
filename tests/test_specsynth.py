@@ -465,6 +465,54 @@ def test_write_many_batched_with_external_catalog_data():
 
 
 @pytest.mark.critical
+def test_full_pipeline_cloud_object_store_uri():
+    """
+    Validates end-to-end execution of the complete pipeline (make-ssp, make-sfh, synth, verify)
+    using pure non-POSIX cloud object store URIs via fsspec (memory:// protocol).
+    Ensures zero reliance on local filesystem paths or NFS mounts.
+    """
+    import argparse
+    import dask
+    from specsynth.cli import cmd_make_ssp, cmd_make_sfh, cmd_synth, cmd_verify
+
+    base_uri = "memory://cloud_object_store_pipeline"
+
+    with dask.config.set(scheduler="synchronous"):
+        # 1. make-ssp
+        a_ssp = argparse.Namespace(
+            base=base_uri, adapter="toy", n_age=10, n_met=2, n_wave=500,
+            resample_wave=None, input_path=None, input_file=None
+        )
+        cmd_make_ssp(a_ssp, None)
+
+        # 2. make-sfh
+        a_sfh = argparse.Namespace(
+            base=base_uri, n_gal=100, chunk=25, seed=42, redshift_range=None
+        )
+        cmd_make_sfh(a_sfh, None)
+
+        # 3. synth
+        a_synth = argparse.Namespace(
+            base=base_uri, diffuse_index=-0.7, birth_index=-1.3,
+            redshift=1.5, per_galaxy_z=False, distance_dimming=False,
+            input_units="lsun", igm=True, filters="jwst_nircam",
+            chunk=25, wave_chunk=0, bands=0, no_persist_ssp=True,
+            batch_chunks=2, gpu=False, sample=50, output=None,
+            fail_on_anomaly=False
+        )
+        cmd_synth(a_synth, None)
+
+        # 4. verify (cmd_verify calls sys.exit(0) on success)
+        a_verify = argparse.Namespace(
+            base=base_uri, sample=25, tolerance_max=5e-4, tolerance_mean=1e-5,
+            diffuse_index=-0.7, birth_index=-1.3
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            cmd_verify(a_verify, None)
+        assert exc_info.value.code == 0
+
+
+@pytest.mark.critical
 def test_gen_params_with_block_info():
     from specsynth.core import _gen_params
 

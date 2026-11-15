@@ -29,7 +29,7 @@ def read_small(store: str, comp: str) -> np.ndarray:
 
 
 def write_many(
-    client: Client,
+    client: Client | None,
     store: str,
     arrays: dict[str, da.Array],
     metadata: dict[str, Any] | None = None,
@@ -39,11 +39,14 @@ def write_many(
         da.to_zarr(a, store, component=name, overwrite=True, compute=False)
         for name, a in arrays.items()
     ]
-    fut = client.compute(tasks)
-    if sys.stdout.isatty():  # progress bars only make sense on a terminal
-        progress(fut, notebook=False)
-        print()
-    client.gather(fut)
+    if client is not None:
+        fut = client.compute(tasks)
+        if sys.stdout.isatty():  # progress bars only make sense on a terminal
+            progress(fut, notebook=False)
+            print()
+        client.gather(fut)
+    else:
+        da.compute(*tasks)
 
     if metadata:
         try:

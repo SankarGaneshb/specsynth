@@ -203,7 +203,7 @@ def cmd_synth(a, client: Client):
     ssp = da.from_zarr(ssp_store, component="ssp")
     K, W = ssp.shape
     ssp = ssp.rechunk((K, a.wave_chunk or W))  # contraction axis must be 1 chunk
-    if not a.no_persist_ssp:
+    if not a.no_persist_ssp and client is not None:
         # read once from the object store, replicate peer-to-peer between workers
         ssp = client.persist(ssp)
         wait(ssp)
@@ -439,7 +439,7 @@ def cmd_synth(a, client: Client):
     data_rate_gb_s = (data_bytes / 1e9) / dt
 
     # Estimated cloud cost based on standard Spot pricing ($0.088/hr per 8 vCPUs)
-    n_workers = len(client.scheduler_info().get("workers", {})) or 1
+    n_workers = len(client.scheduler_info().get("workers", {})) if client is not None else 1
     hourly_rate = n_workers * (0.088 / 8.0)
     est_cost = (dt / 3600.0) * hourly_rate
 

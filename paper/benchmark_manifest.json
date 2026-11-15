@@ -25,6 +25,15 @@
     "total_ram_gb": 15.49,
     "available_ram_gb": 1.78,
     "git_commit": "a718e9e48d543a1fd8b6366e4884a19d33036655",
+    "image_digest": "sha256:fb6d2bbd33218ce590db96e2228966f03359f676c71027eda80412dcb617c39d",
+    "package_versions": {
+      "python": "3.13.1",
+      "numpy": "2.5.4",
+      "dask": "2026.8.0",
+      "zarr": "3.4.2",
+      "fsspec": "2026.9.0",
+      "astropy": "8.0.2"
+    },
     "blas_backend": "scipy-openblas",
     "gpu_available": false
   },
