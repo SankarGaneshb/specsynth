@@ -303,6 +303,56 @@ def test_write_many_batched_bounded_scheduler_verification(monkeypatch):
 
 
 @pytest.mark.critical
+def test_write_many_batched_unmocked_real_zarr(tmp_path):
+    """
+    100% unmocked end-to-end integration test for write_many_batched.
+    Writes real Dask arrays in bounded chunks to a real on-disk Zarr store,
+    reads the data back directly from disk, and asserts bit-exact equality.
+    """
+    import os
+    import shutil
+    import dask
+    import dask.array as da
+    import zarr
+    from specsynth.core import write_many_batched
+
+    # Use workspace-relative temporary folder to remain robust across platforms
+    test_dir = ".tmp_unmocked_test.zarr"
+    if os.path.exists(test_dir):
+        shutil.rmtree(test_dir)
+
+    try:
+        with dask.config.set(scheduler="synchronous"):
+            # 6 blocks of 10 rows each = 60 rows total
+            data = np.arange(300, dtype=np.float32).reshape(60, 5)
+            main_da = da.from_array(data, chunks=(10, 5))
+            wave_da = da.from_array(np.linspace(1000, 10000, 20, dtype=np.float32), chunks=10)
+
+            write_many_batched(
+                client=None,
+                store=test_dir,
+                static_arrays={"wave": wave_da},
+                main_name="photometry",
+                main_array=main_da,
+                batch_chunks=2,
+                metadata={"test_unmocked": True, "n_galaxies": 60},
+            )
+
+            # Read back directly from Zarr without mocks
+            grp = zarr.open_group(test_dir, mode="r")
+            read_phot = da.from_zarr(test_dir, component="photometry").compute()
+            read_wave = da.from_zarr(test_dir, component="wave").compute()
+
+            assert np.allclose(read_phot, data)
+            assert np.allclose(read_wave, wave_da.compute())
+            assert grp.attrs["test_unmocked"] is True
+            assert grp.attrs["n_galaxies"] == 60
+    finally:
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir)
+
+
+@pytest.mark.critical
 def test_gen_params_with_block_info():
     from specsynth.core import _gen_params
 

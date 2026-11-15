@@ -89,6 +89,7 @@ def write_many_batched(
 
     # 2. Initialize target Zarr array for main_array with empty metadata
     # This creates the dataset metadata without writing chunk data yet.
+    target_zarr_arr = None
     try:
         import zarr
         try:
@@ -100,7 +101,7 @@ def write_many_batched(
         chunk_shape = tuple(c[0] for c in main_array.chunks)
         if hasattr(grp, "create_dataset"):
             try:
-                grp.create_dataset(
+                target_zarr_arr = grp.create_dataset(
                     main_name,
                     shape=main_array.shape,
                     chunks=chunk_shape,
@@ -110,20 +111,35 @@ def write_many_batched(
             except TypeError:
                 if main_name in grp:
                     del grp[main_name]
-                grp.create_dataset(
+                target_zarr_arr = grp.create_dataset(
                     main_name,
                     shape=main_array.shape,
                     chunks=chunk_shape,
                     dtype=main_array.dtype,
                 )
         elif hasattr(grp, "create_array"):
-            grp.create_array(
-                main_name,
-                shape=main_array.shape,
-                chunks=chunk_shape,
-                dtype=main_array.dtype,
-                overwrite=True,
-            )
+            try:
+                target_zarr_arr = grp.create_array(
+                    main_name,
+                    shape=main_array.shape,
+                    chunks=chunk_shape,
+                    dtype=main_array.dtype,
+                    overwrite=True,
+                )
+            except TypeError:
+                if main_name in grp:
+                    del grp[main_name]
+                target_zarr_arr = grp.create_array(
+                    main_name,
+                    shape=main_array.shape,
+                    chunks=chunk_shape,
+                    dtype=main_array.dtype,
+                )
+        if target_zarr_arr is None and hasattr(grp, "__getitem__"):
+            try:
+                target_zarr_arr = grp[main_name]
+            except Exception:
+                pass
     except Exception:
         # Fallback if zarr direct initialization is not accessible (e.g. mocked in tests)
         pass
@@ -142,12 +158,15 @@ def write_many_batched(
 
         batch_slice = main_array[row_start:row_end]
         region = (slice(row_start, row_end), slice(None)) if main_array.ndim == 2 else (slice(row_start, row_end),)
+        target = target_zarr_arr if target_zarr_arr is not None else store
 
         try:
-            batch_task = da.to_zarr(batch_slice, store, component=main_name, region=region, compute=False)
+            batch_task = da.to_zarr(batch_slice, target, component=main_name, region=region, compute=False)
         except Exception:
-            # Fallback for mock environments where region is not supported
-            batch_task = da.to_zarr(batch_slice, store, component=main_name, compute=False)
+            try:
+                batch_task = da.to_zarr(batch_slice, target, region=region, compute=False)
+            except Exception:
+                batch_task = da.to_zarr(batch_slice, store, component=main_name, compute=False)
 
         if client is not None:
             fut = client.compute(batch_task)
