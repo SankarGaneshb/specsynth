@@ -529,3 +529,48 @@ def test_cli_cmd_synth_per_galaxy_z(monkeypatch):
     spectra_computed = saved_spec["spectra"].compute()
     assert spectra_computed.shape == (6, 50)
 
+
+def test_cli_main_scheduler_modes(monkeypatch):
+    import dask
+    from specsynth.cli import main
+
+    dispatched = []
+
+    def mock_fn(a, client):
+        dispatched.append((a.cmd, client, dask.config.get("scheduler", None)))
+
+    # 1. Test synchronous scheduler
+    monkeypatch.setattr(sys, "argv", ["specsynth", "--scheduler", "sync", "make-sfh", "--n-gal", "10"])
+    monkeypatch.setattr("specsynth.cli.cmd_make_sfh", mock_fn)
+    main()
+    assert len(dispatched) == 1
+    assert dispatched[0][0] == "make-sfh"
+    assert dispatched[0][1] is None
+    assert dispatched[0][2] == "synchronous"
+
+    # 2. Test threaded scheduler
+    dispatched.clear()
+    monkeypatch.setattr(sys, "argv", ["specsynth", "--scheduler", "threads", "make-sfh", "--n-gal", "10"])
+    main()
+    assert len(dispatched) == 1
+    assert dispatched[0][1] is None
+    assert dispatched[0][2] == "threads"
+
+
+def test_cli_adaptive_memory_guard_sfh(monkeypatch):
+    from specsynth.cli import cmd_make_sfh
+
+    monkeypatch.setattr("specsynth.cli.read_small", lambda store, comp: np.zeros(20 if comp == "ages" else 5))
+    mock_write_many = MagicMock()
+    monkeypatch.setattr("specsynth.cli.write_many", mock_write_many)
+
+    ap = build_parser()
+    # Request a massive chunk (100,000) under a strict 256MB memory limit
+    args = ap.parse_args(["--memory-limit", "256MB", "make-sfh", "--n-gal", "200000", "--chunk", "100000"])
+    cmd_make_sfh(args, None)
+
+    # Chunk should have been auto-tuned down to prevent OOM
+    assert args.chunk < 100_000
+    mock_write_many.assert_called_once()
+
+

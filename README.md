@@ -480,7 +480,7 @@ specsynth synth --base /data/run1 --filters jwst_nircam --sentry
 # Install core dependencies
 pip install -r requirements.txt
 
-# Run automated test suite (154 tests, 88% coverage, strict tier markers)
+# Run automated test suite (159 tests, 88% coverage, strict tier markers)
 pytest -v --cov=specsynth
 
 # Or run tests with automated cache cleanup (Windows / cross-platform):
@@ -488,6 +488,7 @@ pytest -v --cov=specsynth
 # or: python scripts/clean.py   # clean caches anytime
 
 # Run local end-to-end pipeline test with JWST filters and IGM attenuation
+# (Use --scheduler sync or --scheduler threads for fast in-process runs with zero TCP socket overhead)
 S="python specsynth.py --base /tmp/run1 --workers 2 --memory-limit 1GB"
 $S make-ssp --adapter toy --n-age 40 --n-met 4 --n-wave 2000
 $S make-sfh --n-gal 50000 --chunk 10000

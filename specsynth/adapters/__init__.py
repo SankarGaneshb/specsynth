@@ -26,7 +26,7 @@ __all__ = [
 def get_adapter(name: str, **kwargs) -> BaseAdapter:
     """Factory helper to instantiate an SSP adapter by name."""
     name_clean = name.strip().lower()
-    if name_clean == "toy":
+    if name_clean in ("toy", "analytical", "benchmark"):
         return ToyAdapter(**kwargs)
     elif name_clean in ("bc03", "bruzual-charlot", "bruzual_charlot"):
         return BC03Adapter(**kwargs)

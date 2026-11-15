@@ -6,7 +6,7 @@
 ## Repository Map
 - `specsynth.py`: Primary CLI entry point (`make-ssp`, `make-sfh`, `import-catalog`, `synth`, `verify`, `benchmark`, `sentry`, `clean-catalog`, `sentry-agent`).
 - `specsynth/`: Core package (matrix contractions, dust attenuation, Madau 1995 IGM, filter projections, `specsynth.adapters`, `specsynth.sentry`, `specsynth.tools`, and `specsynth.agent`).
-- `tests/`: Automated `pytest` suite (154 unit & integration tests, 88% coverage, strict tier markers, including `test_validation_external.py`).
+- `tests/`: Automated `pytest` suite (159 unit & integration tests, 88% coverage, strict tier markers, including `test_validation_external.py`).
 - `k8s/`: Kubernetes manifests for Dask Operator cluster deployment (`dask-cluster.yaml`, `synth-job.yaml`).
 - `paper/`: JOSS manuscript (`paper/paper.md`) and benchmark verification artifacts.
 - `scripts/clean.py`, `test.ps1`, `test.bat`: Cross-platform test runners and workspace cleanup utilities.

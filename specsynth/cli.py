@@ -16,6 +16,7 @@ from specsynth.core import (
     _gen_params,
     attenuation_curve,
     band_matrix,
+    compute_adaptive_chunk_size,
     read_small,
     sfh_from_params,
     small,
@@ -54,7 +55,7 @@ def cmd_make_ssp(a, client: Client):
     adapter_name = a.adapter.lower()
     adapter_kwargs = {}
 
-    if adapter_name == "toy":
+    if adapter_name in ("toy", "analytical", "benchmark"):
         adapter_kwargs = {"n_age": a.n_age, "n_met": a.n_met, "n_wave": a.n_wave}
     elif adapter_name == "bc03":
         if not a.input_path:
@@ -131,10 +132,25 @@ def _gen_redshift(block: np.ndarray, seed: int, z_min: float, z_max: float, bloc
 # --------------------------------------------------------------------------
 # make-sfh : synthetic galaxy catalogue, generated chunk-wise on the cluster
 # --------------------------------------------------------------------------
-def cmd_make_sfh(a, client: Client):
+def cmd_make_sfh(a, client: Client | None):
     ssp_store = url(a.base, "ssp.zarr")
     ages, mets = read_small(ssp_store, "ages"), read_small(ssp_store, "mets")
     K = len(ages) * len(mets)
+
+    # Adaptive Memory Guard: scale chunk size to stay safely within worker RAM limits
+    mem_lim = getattr(a, "memory_limit", "1GB")
+    safe_chunk = compute_adaptive_chunk_size(
+        requested_chunk=a.chunk,
+        n_wave=2000,
+        k_dim=K,
+        memory_limit=mem_lim,
+    )
+    if safe_chunk < a.chunk:
+        print(
+            f"Notice [Adaptive Memory Guard]: --chunk {a.chunk:,} exceeds safe RAM footprint for {mem_lim}.\n"
+            f"  -> Auto-tuned chunk size to {safe_chunk:,} galaxies/block."
+        )
+        a.chunk = safe_chunk
 
     # Task Graph Guard: Prevent scheduler bottlenecks at scale (> 25k tasks)
     n_tasks = (a.n_gal + a.chunk - 1) // a.chunk
@@ -210,7 +226,25 @@ def cmd_synth(a, client: Client):
 
     sfh = da.from_zarr(gal_store, component="sfh")
     N = sfh.shape[0]
-    sfh = sfh.rechunk((a.chunk or sfh.chunks[0][0], K))
+
+    req_chunk = a.chunk or sfh.chunks[0][0]
+    mem_lim = getattr(a, "memory_limit", "1GB")
+    safe_chunk = compute_adaptive_chunk_size(
+        requested_chunk=req_chunk,
+        n_wave=W,
+        k_dim=K,
+        memory_limit=mem_lim,
+    )
+    if safe_chunk < req_chunk:
+        print(
+            f"Notice [Adaptive Memory Guard]: Chunk size {req_chunk:,} exceeds safe RAM footprint for {mem_lim}.\n"
+            f"  -> Auto-tuned chunk size to {safe_chunk:,} galaxies/block to prevent worker OOM."
+        )
+        active_chunk = safe_chunk
+    else:
+        active_chunk = req_chunk
+
+    sfh = sfh.rechunk((active_chunk, K))
     tau_d = da.from_zarr(gal_store, component="tau_diffuse").rechunk(sfh.chunks[0])
     tau_b = da.from_zarr(gal_store, component="tau_birth").rechunk(sfh.chunks[0])
     k_d = small(attenuation_curve(wave, a.diffuse_index)).rechunk((ssp.chunks[1],))
@@ -349,19 +383,22 @@ def cmd_synth(a, client: Client):
             dimming = dimming / (4.0 * np.pi * (max(d_L_cm, 1e-10) ** 2))
             if input_units == "lsun":
                 dimming = dimming * L_SUN_ERG_S
-            spec = spec.astype(np.float64) * dimming
-        else:
-            spec = spec * np.float32(dimming)
 
         wave = wave * (1.0 + redshift)
+        t_igm = None
         if apply_igm:
             print("Applying Madau (1995) IGM attenuation...")
             t_igm = madau_transmission(wave, redshift)
-            spec = spec * small(t_igm).rechunk((ssp.chunks[1],))
 
         if filter_req:
             proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, filter_req)
-            bm = small(proj_mat).rechunk((ssp.chunks[1], (len(filter_names),)))
+            # Memory optimization: fold scalar dimming & 1D IGM attenuation into the filter projection matrix
+            # M_eff = (dimming * T_igm)[:, None] * proj_mat
+            # This contracts (N x W) directly into (N x N_filters) without allocating intermediate full-spectrum arrays!
+            eff_proj_mat = proj_mat.astype(np.float64) * dimming
+            if apply_igm and t_igm is not None:
+                eff_proj_mat = eff_proj_mat * t_igm[:, None]
+            bm = small(eff_proj_mat.astype(np.float32)).rechunk((ssp.chunks[1], (len(filter_names),)))
             phot = da.matmul(spec, bm)
             arrays["photometry"] = phot
             metadata["filters"] = filter_names
@@ -369,10 +406,19 @@ def cmd_synth(a, client: Client):
             print(f"Projecting into {len(filter_names)} filters: {', '.join(filter_names)}")
             print("  [Notice: Built-in filter profiles are analytical approximations. Load empirical curves via FilterCurve.from_file() for calibrated photometry.]")
         elif a.bands:
-            bm = small(band_matrix(wave, a.bands)).rechunk((ssp.chunks[1], (a.bands,)))
+            bm_mat = band_matrix(wave, a.bands).astype(np.float64) * dimming
+            if apply_igm and t_igm is not None:
+                bm_mat = bm_mat * t_igm[:, None]
+            bm = small(bm_mat.astype(np.float32)).rechunk((ssp.chunks[1], (a.bands,)))
             phot = da.matmul(spec, bm)
             arrays["photometry"] = phot
         else:
+            if distance_dimming:
+                spec = spec.astype(np.float64) * dimming
+            else:
+                spec = spec * np.float32(dimming)
+            if apply_igm and t_igm is not None:
+                spec = spec * small(t_igm).rechunk((ssp.chunks[1],))
             arrays["spectra"] = spec
         arrays["wave"] = small(wave)
 
@@ -658,6 +704,13 @@ def cmd_verify(a, client: Client):
                 ref = ref @ band_matrix(wave, got.shape[1]).astype(np.float64)
 
     # Numerical Error Diagnostics
+    if np.all(got == 0.0) and not np.all(ref == 0.0):
+        print(
+            "\n[WARNING] Stored array in spectra.zarr contains all zeros.\n"
+            "  * This indicates that the preceding 'synth' job crashed or was killed (e.g. by an OOM/KilledWorker)\n"
+            "    before finishing its chunks. Please ensure 'synth' completes 100% before running verify.\n"
+        )
+
     diff = got - ref
     abs_err = np.abs(diff)
     rel = abs_err / (np.abs(ref) + 1e-300)
@@ -834,18 +887,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Storage base URI, e.g. /data/run1, s3://bucket/run1, gs://bucket/run1 (default: ./run)",
     )
     ap.add_argument(
-        "--scheduler", help="Dask scheduler address, e.g. tcp://synth-scheduler:8786"
+        "--scheduler",
+        help="Dask scheduler address (e.g. tcp://synth-scheduler:8786) or execution mode: "
+             "'distributed' (default), 'sync'/'synchronous' (in-process single-threaded), "
+             "'threads' (in-process multi-threaded), 'processes' (multi-process without TCP)",
     )
     ap.add_argument(
         "--workers",
         type=int,
         default=2,
-        help="LocalCluster worker processes (when no --scheduler)",
+        help="LocalCluster worker processes (when running in distributed mode without --scheduler)",
+    )
+    ap.add_argument(
+        "--threads-per-worker",
+        type=int,
+        default=None,
+        help="Threads per Dask worker (defaults to auto-budgeted physical cores / workers)",
     )
     ap.add_argument(
         "--memory-limit",
-        default="1GB",
-        help="Per-worker memory limit for LocalCluster (e.g. 1GB, 4GiB)",
+        default="2GB",
+        help="Per-worker memory limit for LocalCluster (e.g. 2GB, 4GB, or 0 to disable limit)",
     )
 
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -854,9 +916,9 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("make-ssp", help="Build or import an SSP library into ssp.zarr")
     s.add_argument(
         "--adapter",
-        default="toy",
-        choices=["toy", "bc03", "emiles", "fits", "fsps"],
-        help="Model adapter: 'toy' (built-in), 'bc03', 'emiles', 'fits' (or HDF5), 'fsps'",
+        default="analytical",
+        choices=["analytical", "toy", "benchmark", "bc03", "emiles", "fits", "fsps"],
+        help="Model adapter: 'analytical'/'toy' (built-in analytical benchmark grid), 'bc03', 'emiles', 'fits' (or HDF5), 'fsps'",
     )
     # Toy model options
     s.add_argument("--n-age", type=int, default=60, help="Number of age bins (toy adapter)")
@@ -1023,28 +1085,55 @@ def main():
         "distributed.worker.memory.spill": 0.8,
     })
 
-    if a.scheduler:
+    client = None
+    sched_arg = (a.scheduler or "").lower().strip()
+
+    if sched_arg in ("sync", "synchronous"):
+        dask.config.set(scheduler="synchronous")
+        print("dask: synchronous scheduler active (single-thread in-process, zero socket overhead)")
+    elif sched_arg in ("threads", "threaded"):
+        dask.config.set(scheduler="threads")
+        print("dask: multi-threaded scheduler active (in-process, zero socket overhead)")
+    elif sched_arg in ("processes", "multiprocessing"):
+        dask.config.set(scheduler="processes")
+        print("dask: multi-process scheduler active")
+    elif a.scheduler and a.scheduler != "distributed":
         client = Client(a.scheduler)
+        print(f"dask: {len(client.scheduler_info()['workers'])} workers connected (remote scheduler: {a.scheduler})")
     else:
+        # Distributed LocalCluster mode with dynamic CPU thread budgeting
         import asyncio
+        import os
+        import psutil
+
         try:
             asyncio.get_running_loop()
         except RuntimeError:
             asyncio.set_event_loop(asyncio.new_event_loop())
 
+        # Determine physical cores vs worker count
+        phys_cores = psutil.cpu_count(logical=False) or os.cpu_count() or 2
+        threads_per_worker = a.threads_per_worker or max(1, phys_cores // a.workers)
+
+        # Budget BLAS threads per worker to avoid CPU thrashing / context-switching collapse
+        os.environ["OMP_NUM_THREADS"] = str(threads_per_worker)
+        os.environ["OPENBLAS_NUM_THREADS"] = str(threads_per_worker)
+        os.environ["MKL_NUM_THREADS"] = str(threads_per_worker)
+
         cluster = LocalCluster(
             n_workers=a.workers,
-            threads_per_worker=1,
+            threads_per_worker=threads_per_worker,
             memory_limit=a.memory_limit,
             dashboard_address=None,
         )
         client = Client(cluster)
+        print(f"dask: {len(client.scheduler_info()['workers'])} workers connected ({threads_per_worker} thread(s)/worker on {phys_cores} physical cores)")
 
-    print(f"dask: {len(client.scheduler_info()['workers'])} workers connected")
     try:
         a.fn(a, client)
     finally:
-        client.close()
+        if client is not None:
+            client.close()
 
 
 if __name__ == "__main__":

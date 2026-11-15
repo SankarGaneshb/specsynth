@@ -521,3 +521,60 @@ def test_gen_params_with_block_info():
     p = _gen_params(dummy, seed=42, block_info=binfo)
     assert p.shape == (5, 6)
     assert np.all(np.isfinite(p))
+
+
+@pytest.mark.critical
+def test_parse_memory_limit():
+    from specsynth.core import parse_memory_limit
+
+    assert parse_memory_limit("1GB") == 1024**3
+    assert parse_memory_limit("512MB") == 512 * 1024**2
+    assert parse_memory_limit("2GiB") == 2 * 1024**3
+    assert parse_memory_limit("100M") == 100 * 1024**2
+    assert parse_memory_limit(1073741824) == 1073741824
+    assert parse_memory_limit(None) == 0
+    assert parse_memory_limit("invalid") == 0
+
+
+@pytest.mark.critical
+def test_compute_adaptive_chunk_size():
+    from specsynth.core import compute_adaptive_chunk_size
+
+    # On 1GB limit, high resolution (2000 wave), safe chunk should be budgeted
+    # Bytes per galaxy approx (2*2000 + 160 + 7) * 4 = 16,668 bytes
+    # Safe budget = 1GB * 0.20 = ~214 MB -> ~12,883 galaxies
+    chunk_1gb = compute_adaptive_chunk_size(
+        requested_chunk=50_000,
+        n_wave=2000,
+        k_dim=160,
+        n_bands=7,
+        memory_limit="1GB",
+        safety_fraction=0.20,
+    )
+    assert 10_000 <= chunk_1gb <= 15_000
+
+    # If requested chunk is smaller than safe chunk, it should not be altered
+    assert compute_adaptive_chunk_size(
+        requested_chunk=5_000,
+        n_wave=2000,
+        k_dim=160,
+        n_bands=7,
+        memory_limit="1GB",
+    ) == 5_000
+
+    # On large 32GB node, requested 50,000 should be retained
+    assert compute_adaptive_chunk_size(
+        requested_chunk=50_000,
+        n_wave=2000,
+        k_dim=160,
+        n_bands=7,
+        memory_limit="32GB",
+    ) == 50_000
+
+    # Handles edge cases (invalid or zero limit falls back gracefully)
+    assert compute_adaptive_chunk_size(
+        requested_chunk=20_000,
+        n_wave=2000,
+        memory_limit=None,
+    ) >= 1_000
+

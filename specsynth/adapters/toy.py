@@ -42,7 +42,7 @@ def build_toy_ssp(n_age: int, n_met: int, n_wave: int) -> tuple[np.ndarray, np.n
 
 
 class ToyAdapter(BaseAdapter):
-    """Adapter for generating synthetic toy SSP grids."""
+    """Adapter for generating synthetic analytical reference SSP grids."""
 
     def __init__(self, n_age: int = 60, n_met: int = 6, n_wave: int = 4000):
         self.n_age = n_age
@@ -58,6 +58,6 @@ class ToyAdapter(BaseAdapter):
             ssp=ssp,
             metadata={
                 "model": "toy",
-                "description": "Synthetic toy SSP model for benchmarking and testing",
+                "description": "Analytical reference SSP model based on blackbody continuum, 4000 A break, and metallicity reddening for benchmarking and testing",
             },
         )

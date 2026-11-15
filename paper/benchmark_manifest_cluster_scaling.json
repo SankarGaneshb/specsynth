@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-15T16:40:16.745375+00:00",
+  "timestamp": "2026-11-15T18:22:24.690937+00:00",
   "benchmark_type": "Empirical Multi-Worker Cluster Scaling",
   "provenance": {
-    "git_commit_sha": "f47fc2b369d5cb666f30496df91692b0ad38e548",
+    "git_commit_sha": "7cb84e464f85a376e3316250f7edb066306bc40e",
     "image_digest": "sha256:fb6d2bbd33218ce590db96e2228966f03359f676c71027eda80412dcb617c39d",
     "python_version": "3.13.1",
     "package_versions": {
@@ -34,69 +34,69 @@
   "strong_scaling_comparison": [
     {
       "workers": 1,
-      "mean_elapsed_seconds": 10.142,
-      "std_elapsed_seconds": 0.13,
+      "mean_elapsed_seconds": 13.242,
+      "std_elapsed_seconds": 4.194,
       "raw_run_times_seconds": [
-        10.012,
-        10.271
+        17.436,
+        9.048
       ],
-      "throughput_galaxies_per_sec": 5916.3,
+      "throughput_galaxies_per_sec": 4531.0,
       "speedup_vs_1_worker": 1.0,
       "parallel_efficiency": 1.0,
       "raw_sample_output": [
         "",
         "====================== Performance Telemetry ======================",
-        "  * Elapsed Time       : 7.17s",
-        "  * Throughput         : 8,363 galaxies/s",
-        "  * Processing Rate    : 0.00 GB/s (8.0 GFLOPS)",
+        "  * Elapsed Time       : 6.50s",
+        "  * Throughput         : 9,224 galaxies/s",
+        "  * Processing Rate    : 0.00 GB/s (8.9 GFLOPS)",
         "  * Workers Active     : 1 (CPU BLAS)",
-        "  * Est. Cloud Cost    : $0.000022 USD",
+        "  * Est. Cloud Cost    : $0.000020 USD",
         "  * Output Destination : C:\\Users\\bsank\\specsynth\\.tmp_scaling_benchmark/spectra.zarr",
         "==================================================================="
       ]
     },
     {
       "workers": 2,
-      "mean_elapsed_seconds": 8.986,
-      "std_elapsed_seconds": 0.006,
+      "mean_elapsed_seconds": 9.03,
+      "std_elapsed_seconds": 0.299,
       "raw_run_times_seconds": [
-        8.992,
-        8.981
+        9.329,
+        8.732
       ],
-      "throughput_galaxies_per_sec": 6676.7,
-      "speedup_vs_1_worker": 1.13,
-      "parallel_efficiency": 0.56,
+      "throughput_galaxies_per_sec": 6644.2,
+      "speedup_vs_1_worker": 1.47,
+      "parallel_efficiency": 0.73,
       "raw_sample_output": [
         "",
         "====================== Performance Telemetry ======================",
-        "  * Elapsed Time       : 5.72s",
-        "  * Throughput         : 10,483 galaxies/s",
-        "  * Processing Rate    : 0.01 GB/s (10.1 GFLOPS)",
+        "  * Elapsed Time       : 5.60s",
+        "  * Throughput         : 10,723 galaxies/s",
+        "  * Processing Rate    : 0.01 GB/s (10.3 GFLOPS)",
         "  * Workers Active     : 2 (CPU BLAS)",
-        "  * Est. Cloud Cost    : $0.000035 USD",
+        "  * Est. Cloud Cost    : $0.000034 USD",
         "  * Output Destination : C:\\Users\\bsank\\specsynth\\.tmp_scaling_benchmark/spectra.zarr",
         "==================================================================="
       ]
     },
     {
       "workers": 3,
-      "mean_elapsed_seconds": 8.977,
-      "std_elapsed_seconds": 0.029,
+      "mean_elapsed_seconds": 17.291,
+      "std_elapsed_seconds": 1.361,
       "raw_run_times_seconds": [
-        8.948,
-        9.005
+        18.651,
+        15.93
       ],
-      "throughput_galaxies_per_sec": 6684.1,
-      "speedup_vs_1_worker": 1.13,
-      "parallel_efficiency": 0.38,
+      "throughput_galaxies_per_sec": 3470.1,
+      "speedup_vs_1_worker": 0.77,
+      "parallel_efficiency": 0.26,
       "raw_sample_output": [
         "",
         "====================== Performance Telemetry ======================",
-        "  * Elapsed Time       : 5.46s",
-        "  * Throughput         : 10,991 galaxies/s",
-        "  * Processing Rate    : 0.01 GB/s (10.6 GFLOPS)",
+        "  * Elapsed Time       : 12.52s",
+        "  * Throughput         : 4,794 galaxies/s",
+        "  * Processing Rate    : 0.00 GB/s (4.6 GFLOPS)",
         "  * Workers Active     : 3 (CPU BLAS)",
-        "  * Est. Cloud Cost    : $0.000050 USD",
+        "  * Est. Cloud Cost    : $0.000115 USD",
         "  * Output Destination : C:\\Users\\bsank\\specsynth\\.tmp_scaling_benchmark/spectra.zarr",
         "==================================================================="
       ]

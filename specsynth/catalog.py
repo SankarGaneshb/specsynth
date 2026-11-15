@@ -421,7 +421,7 @@ def import_catalog(
     else:
         # In-process write for non-distributed workflows
         tasks = [
-            da.to_zarr(a, output_zarr, component=name, overwrite=True, compute=False)
+            da.to_zarr(a, output_zarr, component=name, mode="a", compute=False)
             for name, a in arrays_to_write.items()
         ]
         da.compute(*tasks)
@@ -467,18 +467,24 @@ def clean_catalog(
             g_in = zarr.open_group(fsspec.get_mapper(gal_store), mode="r")
 
         raw_dict = {}
-        if "params" in g_in:
-            raw_dict["params"] = np.asarray(g_in["params"][:])
-            n_total = len(raw_dict["params"])
-        elif "sfh" in g_in:
+        if "sfh" in g_in:
             raw_dict["sfh"] = np.asarray(g_in["sfh"][:])
             n_total = len(raw_dict["sfh"])
+            if "params" in g_in:
+                p_arr = np.asarray(g_in["params"][:])
+                if len(p_arr) == n_total:
+                    raw_dict["params"] = p_arr
+        elif "params" in g_in:
+            raw_dict["params"] = np.asarray(g_in["params"][:])
+            n_total = len(raw_dict["params"])
         else:
             raise ValueError(f"No recognizable catalog datasets in {gal_store}")
 
         for k in ("tau_diffuse", "tau_birth", "redshift"):
             if k in g_in:
-                raw_dict[k] = np.asarray(g_in[k][:])
+                arr = np.asarray(g_in[k][:])
+                if len(arr) == n_total:
+                    raw_dict[k] = arr
     else:
         raise ValueError("Must provide either 'base' or 'source_table_path'")
 

@@ -311,6 +311,40 @@ def test_stream_csv_chunks(tmp_path):
     assert np.isclose(chunks[0]["redshift"][1], 0.1)
 
 
+def test_clean_catalog_mismatched_stale_arrays(tmp_path, monkeypatch):
+    from specsynth.catalog import clean_catalog
+
+    class MockZGroup(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attrs = {}
+
+    # Simulate a stale run: params has 10 rows, but sfh and tau_diffuse have 50 rows
+    mock_group = MockZGroup({
+        "params": np.zeros((10, 6), dtype=np.float32),
+        "sfh": np.zeros((50, 20), dtype=np.float32),
+        "tau_diffuse": np.zeros(50, dtype=np.float32),
+        "tau_birth": np.zeros(50, dtype=np.float32),
+    })
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: mock_group)
+
+    out_npz = str(tmp_path / "clean_reconciled.npz")
+    res = clean_catalog(
+        base=str(tmp_path),
+        anomalous_indices=[0, 2],
+        output_path=out_npz,
+    )
+    assert res["total_galaxies"] == 50
+    assert res["valid_galaxies"] == 48
+    assert res["quarantined_count"] == 2
+    assert os.path.exists(out_npz)
+    loaded = np.load(out_npz)
+    assert len(loaded["sfh"]) == 48
+    assert len(loaded["tau_diffuse"]) == 48
+    assert "params" not in loaded  # stale mismatched array was cleanly ignored
+
+
+
 
 
 

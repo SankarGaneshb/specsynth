@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import time
 from typing import Any
@@ -10,6 +11,63 @@ from dask.distributed import Client, progress
 
 YOUNG_AGE_YR = 1.0e7  # stars younger than this sit in their birth cloud
 N_PARAM = 6  # log10 M*, t_onset[Gyr], tau[Gyr], log10 Z_centre, tau_diffuse, tau_birth
+
+
+def parse_memory_limit(mem: str | int | float | None) -> int:
+    """Parse memory string (e.g. '1GB', '512MB', '2GiB', '100M') or byte count into integer bytes."""
+    if mem is None:
+        return 0
+    if isinstance(mem, (int, float)):
+        return max(0, int(mem))
+    s = str(mem).strip().upper()
+    units = {
+        "K": 1024, "KB": 1024, "KIB": 1024,
+        "M": 1024**2, "MB": 1024**2, "MIB": 1024**2,
+        "G": 1024**3, "GB": 1024**3, "GIB": 1024**3,
+        "T": 1024**4, "TB": 1024**4, "TIB": 1024**4,
+    }
+    for unit, mult in sorted(units.items(), key=lambda x: -len(x[0])):
+        if s.endswith(unit):
+            num_part = s[:-len(unit)].strip()
+            try:
+                return int(float(num_part) * mult)
+            except ValueError:
+                break
+    try:
+        return int(float(s))
+    except ValueError:
+        return 0
+
+
+def compute_adaptive_chunk_size(
+    requested_chunk: int,
+    n_wave: int,
+    k_dim: int = 160,
+    n_bands: int = 7,
+    memory_limit: str | int | float | None = None,
+    safety_fraction: float = 0.20,
+    min_chunk: int = 1_000,
+    max_chunk: int = 200_000,
+) -> int:
+    """Compute a memory-safe galaxy chunk size to prevent worker OOM kills.
+
+    Ensures transient working memory per chunk does not exceed safety_fraction
+    of the worker memory limit.
+    """
+    mem_bytes = parse_memory_limit(memory_limit)
+    if mem_bytes <= 0:
+        try:
+            import psutil
+            mem_bytes = int(psutil.virtual_memory().available)
+        except Exception:
+            return max(min_chunk, min(requested_chunk, max_chunk))
+
+    # Working memory per galaxy: contraction buffer + intermediate spectra + photometry
+    bytes_per_gal = max(1, (2 * n_wave + k_dim + n_bands) * 4)
+    safe_budget = int(mem_bytes * safety_fraction)
+    safe_chunk = max(min_chunk, safe_budget // bytes_per_gal)
+
+    return max(min_chunk, min(requested_chunk, safe_chunk, max_chunk))
 
 
 def url(base: str, name: str) -> str:
@@ -36,7 +94,7 @@ def write_many(
 ):
     """Write several dask arrays into one Zarr store in a single graph, with optional metadata."""
     tasks = [
-        da.to_zarr(a, store, component=name, overwrite=True, compute=False)
+        da.to_zarr(a, store, component=name, mode="a", compute=False)
         for name, a in arrays.items()
     ]
     if client is not None:
@@ -80,7 +138,7 @@ def write_many_batched(
     # 1. Write static arrays (e.g., wave grid)
     if static_arrays:
         static_tasks = [
-            da.to_zarr(a, store, component=name, overwrite=True, compute=False)
+            da.to_zarr(a, store, component=name, mode="a", compute=False)
             for name, a in static_arrays.items()
         ]
         if client is not None:
@@ -174,6 +232,10 @@ def write_many_batched(
         if client is not None:
             fut = client.compute(batch_task)
             client.gather(fut)
+            try:
+                client.cancel(fut)
+            except Exception:
+                pass
             del fut
         else:
             da.compute(batch_task)
