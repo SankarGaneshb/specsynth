@@ -16,7 +16,7 @@ authors:
 affiliations:
   - name: Independent Researcher
     index: 1
-date: 14 November 2026
+date: 17 November 2026
 bibliography: paper.bib
 ---
 
@@ -73,13 +73,21 @@ The core execution path is designed around dense matrix multiplication (GEMM) ov
 
 ![Figure 1: Streaming worker execution pipeline with in-flight filter projection.](figures/fig1_pipeline.png)
 
-1. **Pluggable Model Adapters**: Standardized adapters convert raw spectral libraries into immutable Zarr basis matrices ($K \times W$), supporting Bruzual & Charlot (2003) `.ised` binary/ASCII tables [@bruzual2003stellar], E-MILES FITS headers [@vazdekis2016uv], FSPS grids [@conroy2009propagation], and generic multi-dimensional FITS/HDF5/NPZ datasets.
+1. **Pluggable Astrophysical Model Adapters**: Standardized adapters convert raw spectral libraries into immutable Zarr basis matrices ($K \times W$), achieving 100% test coverage across all major stellar population synthesis libraries:
+   - **Bruzual & Charlot (2003)**: Ingests Fortran unformatted binary sequential records (`.ised`) and multi-metallicity ASCII tables [@bruzual2003stellar].
+   - **E-MILES / MILES**: Parses single- and multi-file FITS libraries [@vazdekis2016uv] with automatic wavelength interpolation, providing a built-in pure-Python fallback FITS reader to guarantee execution in lightweight environments where `astropy` is unavailable.
+   - **Flexible Stellar Population Synthesis (FSPS)**: Supports both programmatic generation via `python-fsps` [@conroy2009propagation] and direct ingestion of raw Fortran ASCII output tables (`spstot_*.spec`).
+   - **Arbitrary FITS/HDF5/NPZ Grids**: Generic multi-dimensional grid adapter with automatic age unit detection (linear years, $\log_{10}(\text{yr})$, or $\text{Gyr}$) and support for both primary image arrays and binary table columns.
 2. **In-Flight Filter Projection**: When broadband photometry is requested (`--filters` or `--bands`), the intermediate spectrum $\mathbf{F}_{\text{chunk}}$ is projected in-flight into $B$ photometric bands:
    $$\mathbf{Phot} = \mathbf{F}_{\text{chunk}} \times \mathbf{M}_{\text{filter}}$$
    Full spectra are streamed through worker cache/VRAM and discarded, reducing persistent cloud storage by **$>99.9\%$** ($3.2\text{ GB}$ vs. $3.2\text{ TB}$ for $10^8$ galaxies).
 3. **Simulation Catalog Ingestion (`import-catalog`)**: Native ingestion of cosmological simulation catalogs from Parquet, FITS, HDF5, CSV, and NPZ formats, automatically mapping physical columns (mass, age, metallicity, dust) to SFH parameter matrices.
 4. **Task Graph Guard and Batch Pipelining (`--batch-chunks`)**: For billion-object simulations ($N \ge 10^8$), submitting millions of chunk tasks bloats the centralized Dask scheduler memory. `specsynth` enforces an automatic task guard (keeping total graph tasks $< 25,000$) and provides a sliding-window batch pipeline (`--batch-chunks`) that bounds scheduler memory strictly to $O(B)$ chunks.
-5. **Automated Scientific Sentry & Quality Assurance (`specsynth sentry`)**: At survey scale ($10^7 - 10^9$ galaxies), human inspection of individual spectra is impossible, yet simulation subhalos frequently harbor unphysical edge cases. `specsynth` integrates a high-throughput, four-tier quality sentry enforcing numerical finiteness, energy conservation ($\int F_{\text{attenuated}} d\lambda \le \int F_{\text{intrinsic}} d\lambda$), physical $D_n(4000)$ break ranges ($[0.95, 2.50]$), and UV continuum slope limits ($\beta_{\text{UV}} \in [-2.8, 1.8]$). Anomalies are automatically quarantined to disk without halting distributed cluster execution, generating reproducible JSON and Markdown audit reports.
+5. **Automated Scientific Sentry & Autonomous Quality Assurance (`specsynth.sentry` & `specsynth.agent`)**: At survey scale ($10^7 - 10^9$ galaxies), human inspection of individual spectra is impossible, yet simulation subhalos frequently harbor unphysical edge cases (e.g., negative masses, zero-metallicity singularities, or inverted breaks) that corrupt mock catalogs silently without raising runtime errors. `specsynth` integrates a high-throughput, four-tier diagnostic quality sentry:
+   - **Tier 1 (Fast Numerical Invariants)**: Zero-copy SIMD bitmasks strictly evaluate finite values (`~np.isfinite` trapping IEEE 754 `NaN` and $\pm\infty$), non-negativity ($F > 0$), and energy conservation ($\int F_{\text{attenuated}} d\lambda \le (1+10^{-6}) \int F_{\text{intrinsic}} d\lambda$) to catch unphysical negative optical depths.
+   - **Tier 2 (Physical & Spectral Diagnostics)**: Narrowband $D_n(4000)$ break index ($0.95 \le D_n4000 \le 2.50$) detecting unphysical stellar age mixtures; UV continuum slope $\beta_{\text{UV}}$ ($-2.80 \le \beta \le +1.50$) isolating super-Rayleigh-Jeans single-star blowups and extreme over-reddening; and apparent AB magnitude bounds ($10.0 \le m_{\text{AB}} \le 35.0$) preventing $\log_{10}(0)$ singularities.
+   - **Tier 3 (Population Benchmark & Statistical Validation)**: Evaluates color-magnitude distributions and bimodality (red sequence vs. blue cloud), detecting population collapse where chunk outputs degenerate into constant identical vectors.
+   - **Tier 4 (Structured Reporting, Quarantine & Autonomous Remediation)**: Anomalous galaxy indices are automatically isolated to disk (`sentry_quarantine/`) along with companion `is_valid` boolean Zarr masks without halting distributed cluster execution. The accompanying `SentryAgent` (`specsynth sentry-agent`) automatically clusters anomalies by root cause (`STARBURST_SLOPE_EXTREME`, `DUST_ZERO_INFRARED_EXCESS`, `INPUT_MASS_ZERO_UNDERFLOW`), issues actionable remediation rules, and produces certified clean catalogs (`specsynth clean-catalog`). An out-of-core tool interface (`specsynth.tools`) allows AI coding agents and external LLMs to inspect galaxy parameters, spectra, and photometry directly from remote Zarr stores.
 
 # Performance, Scalability, and Reproducibility
 
@@ -199,8 +207,12 @@ All empirical benchmarks, system profiles, and unit test validations reported in
   - **Numerical Accuracy**: Max relative error $9.26 \times 10^{-7}$, RMSE $1.86 \times 10^{-3}$ (`PASS`)
 - **Full Reproduction Commands**:
   ```bash
-  # Run automated 159-test scientific verification suite (88% coverage)
+  # Run automated scientific verification suite (92% coverage, 100% on all SPS adapters and GPU)
   pytest -v --cov=specsynth
+
+  # Run Scientific Sentry quality audit and automated catalog remediation
+  python specsynth.py sentry --base ./run --sample 50000 --output ./run/sentry_report.json
+  python specsynth.py sentry-agent --base ./run --auto-remediate
 
   # Generate reproducible 1-, 2-, and 3-worker scaling benchmark manifest
   python scripts/run_cluster_scaling_benchmark.py --workers 1 2 3 --n-gal 60000 --chunk 20000
