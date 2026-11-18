@@ -48,10 +48,14 @@ paper/*.pdf
 # Local QA and benchmark outputs
 *report.json
 *report.md
+sentry_agent_memo.md
 sentry_quarantine/
 run/
 demo_run/
 clean_catalog.*
 benchmark_data/
 *.tar.gz
+
+# Documentation build artifacts
+site/
 

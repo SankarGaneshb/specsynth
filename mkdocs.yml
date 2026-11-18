@@ -1,0 +1,84 @@
+site_name: specsynth
+site_description: Cloud-native distributed infrastructure for survey-scale astrophysical stellar population synthesis and in-flight photometric forward-modeling.
+site_url: https://sankarganeshb.github.io/specsynth/
+repo_url: https://github.com/SankarGaneshb/specsynth
+repo_name: SankarGaneshb/specsynth
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+  - User Guides:
+      - SSP Model Adapters: guides/adapters.md
+      - Catalogs, Cosmology & Filters: guides/catalogs-and-photometry.md
+      - Distributed, Cloud & GPU Execution: guides/distributed-and-gpu.md
+      - Validation & Benchmarks: guides/validation-and-benchmarks.md
+      - Scientific Sentry QA: guides/sentry.md
+  - Reference:
+      - CLI Reference: cli.md
+      - Python API:
+          - Overview: api/index.md
+          - Core Engine: api/core.md
+          - SSP Adapters: api/adapters.md
+          - Cosmology, Filters & IGM: api/physics.md
+          - Catalog Ingestion & Benchmarks: api/catalog-and-benchmark.md
+          - Scientific Sentry: api/sentry.md
+  - Contributing: contributing.md

@@ -59,4 +59,4 @@ To contribute code, adapters, or tests:
 
 ## 4. Code of Conduct
 
-Contributors and maintainers agree to foster an open, welcoming, and harassment-free scientific software community. Respectful, constructive technical feedback is expected in all issues, pull requests, and reviews.
+Contributors and maintainers adhere to the [Code of Conduct](CODE_OF_CONDUCT.md) (Contributor Covenant v2.1) to foster an open, welcoming, and harassment-free scientific software community. Respectful, constructive technical feedback is expected in all issues, pull requests, and reviews.

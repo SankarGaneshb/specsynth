@@ -1,16 +1,17 @@
 cff-version: 1.2.0
 title: "specsynth: Cloud-Native Distributed Infrastructure for Survey-Scale Astrophysical Spectral Synthesis"
-message: "If you use specsynth in your research or survey pipeline, please cite this software and our JOSS paper."
+message: "If you use specsynth in your research or survey pipeline, please cite this software using the metadata below."
 type: software
 authors:
   - given-names: Sankar
     family-names: Ganesh
+    orcid: "https://orcid.org/0009-0006-1590-1356"
     alias: SankarGaneshb
 repository-code: "https://github.com/SankarGaneshb/specsynth"
-url: "https://github.com/SankarGaneshb/specsynth"
+url: "https://sankarganeshb.github.io/specsynth/"
 license: MIT
 version: 1.0.0
-date-released: "2026-11-14"
+date-released: "2026-11-18"
 identifiers:
   - type: doi
     value: 10.57967/hf/11635
@@ -26,12 +27,3 @@ keywords:
   - gpu
   - cupy
   - cosmology
-preferred-citation:
-  type: article
-  authors:
-    - given-names: Sankar
-      family-names: Ganesh
-  title: "specsynth: Cloud-Native Distributed Infrastructure for Survey-Scale Astrophysical Spectral Synthesis"
-  journal: "Journal of Open Source Software"
-  year: 2026
-  notes: "Submitted"

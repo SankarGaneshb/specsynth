@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-18T14:10:22.451096+00:00",
+  "environment": {
+    "python": "3.13.1",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "numpy": "2.5.4"
+  },
+  "overall_status": "PASS",
+  "checks": {
+    "cosmology_vs_astropy": {
+      "status": "PASS",
+      "reference_backend": "independent_flrw_quadrature_2000node",
+      "cosmologies": {
+        "planck18": {
+          "H0": 67.4,
+          "Om0": 0.315,
+          "z_min": 0.05,
+          "z_max": 6.0,
+          "max_rel_err_comoving_distance": 8.507534344807024e-14,
+          "max_rel_err_luminosity_distance": 8.513703695310872e-14,
+          "status": "PASS"
+        },
+        "concordance": {
+          "H0": 70.0,
+          "Om0": 0.3,
+          "z_min": 0.05,
+          "z_max": 6.0,
+          "max_rel_err_comoving_distance": 8.227108365290357e-14,
+          "max_rel_err_luminosity_distance": 8.230259306832023e-14,
+          "status": "PASS"
+        }
+      }
+    },
+    "tng_population_photometry_vs_float64": {
+      "n_galaxies": 500,
+      "z_snapshot": 2.0,
+      "elapsed_seconds": 0.16725970001425594,
+      "throughput_gal_per_s": 2989.3632474372716,
+      "rss_start_mb": 81.58203125,
+      "rss_end_mb": 141.2734375,
+      "max_abs_delta_mag_all_bands": 2.964144130146451e-07,
+      "filter_sets": {
+        "jwst_nircam": {
+          "n_bands": 7,
+          "filters": [
+            "jwst_f090w",
+            "jwst_f115w",
+            "jwst_f150w",
+            "jwst_f200w",
+            "jwst_f277w",
+            "jwst_f356w",
+            "jwst_f444w"
+          ],
+          "max_abs_delta_mag": 1.56846027721258e-07,
+          "median_abs_delta_mag": 9.830507963215496e-09,
+          "status": "PASS"
+        },
+        "hst": {
+          "n_bands": 4,
+          "filters": [
+            "hst_f435w",
+            "hst_f606w",
+            "hst_f814w",
+            "hst_f160w"
+          ],
+          "max_abs_delta_mag": 2.964144130146451e-07,
+          "median_abs_delta_mag": 1.3265015752494946e-08,
+          "status": "PASS"
+        },
+        "sdss": {
+          "n_bands": 5,
+          "filters": [
+            "sdss_u",
+            "sdss_g",
+            "sdss_r",
+            "sdss_i",
+            "sdss_z"
+          ],
+          "max_abs_delta_mag": 2.613605829537846e-07,
+          "median_abs_delta_mag": 1.3923255437475746e-08,
+          "status": "PASS"
+        }
+      },
+      "astrophysical_colors": {
+        "dust_reddening_delta_f150_f444_mag": 0.33294996658951703,
+        "dust_reddens_spectrum": true,
+        "intrinsic_metric": "median dust-free (F090W - F200W) [AB mag]",
+        "star_forming": 0.9870752334180395,
+        "quiescent": 1.4619964270279127,
+        "quiescent_redder_than_sf": true
+      },
+      "status": "PASS"
+    },
+    "live_python_fsps": {
+      "status": "skipped_not_installed",
+      "note": "Install python-fsps (`conda install -c conda-forge fsps python-fsps`) to enable live FSPS cross-validation."
+    },
+    "live_dsps": {
+      "status": "skipped_not_installed",
+      "note": "Install dsps (`pip install dsps jax`) to enable live DSPS cross-validation."
+    }
+  }
+}
