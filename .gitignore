@@ -48,6 +48,7 @@ paper/*.pdf
 # Local QA and benchmark outputs
 *report.json
 *report.md
+!/.github/ISSUE_TEMPLATE/*.md
 sentry_agent_memo.md
 sentry_quarantine/
 run/
