@@ -59,7 +59,33 @@ Verified on a 3-node Oracle Container Engine for Kubernetes (OKE) cluster (`pape
 
 ---
 
-## 4. Reproducing Benchmarks & Reference Catalog
+## 4. TNG → JWST NIRCam Scientific Validation (`paper/benchmark_manifest_tng_jwst.json`)
+
+Evaluated on the curated 100-galaxy IllustrisTNG demonstration sample ($z \in [0.22, 3.88]$) across the 6 calibrated JWST NIRCam wide filters (F090W, F150W, F200W, F277W, F356W, F444W) using FSPS:
+
+| Metric | Measured Value | Scientific Tolerance | Status |
+| :--- | :---: | :---: | :---: |
+| **Max Relative Flux Error** | `4.77e-08` | `< 5.0e-04` | **PASS** |
+| **Mean Relative Flux Error** | `1.03e-08` | `< 1.0e-05` | **PASS** |
+| **Photometric RMSE** | `5.59e-23 erg/s/cm^2/A` | — | **PASS** |
+| **Max Photometric Residual** | `5.17e-08 mag` | `< 0.005 mag` | **PASS** |
+| **Flat $f_\nu$ AB Zero-Point Error** | `0.000 mag` | `< 0.0005 mag` | **PASS** |
+| **Synthesis Throughput (Single Core)** | `1,510.5 gal/s` | `> 200 gal/s` | **PASS** |
+| **Interactive Notebook Runtime** | `2.04 seconds` | `≤ 5.0 seconds` | **PASS** |
+| **Sentry Pristine Fraction** | `100.0%` (100/100) | `> 95%` | **PASS** |
+
+Run the automated validation pipeline:
+```bash
+python scripts/validate_tng_jwst.py
+```
+Or launch the interactive demonstration notebook:
+```bash
+jupyter lab notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb
+```
+
+---
+
+## 5. Reproducing Benchmarks & Reference Catalog
 
 ```bash
 # Run full automated scientific verification suite

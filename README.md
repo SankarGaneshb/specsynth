@@ -54,6 +54,22 @@ pytest -v
 python scripts/cross_validate_sps.py --n-gal 500
 ```
 
+### TNG → JWST NIRCam Scientific Validation & Demonstration (Milestone 1)
+
+For researchers evaluating synthetic JWST NIRCam photometry from cosmological simulations (IllustrisTNG-100) using FSPS:
+
+- **Interactive Jupyter Notebook (< 5s CPU evaluation)**:
+  ```bash
+  jupyter lab notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb
+  ```
+  *Executes in **~2.04 seconds** on a single CPU core without external Fortran compiler prerequisites, generating 5 publication-ready figures.*
+
+- **Automated End-to-End Validation Pipeline**:
+  ```bash
+  python scripts/validate_tng_jwst.py
+  ```
+  *Executes all 6 validation stages, validating STScI NIRCam filter checksums, in-flight GEMM synthesis ($1{,}510\,\mathrm{gal/s}$), C09 scientific catalog export, and double-precision stability ($\max \delta F/F = 4.77 \times 10^{-8}$).*
+
 ---
 
 ## 2. System Architecture & Worker Pipeline
@@ -106,6 +122,7 @@ $$F_g(\lambda) = D_g(\lambda) \cdot \left[ \sum_{k \in \text{old}} \text{SFH}[g,
 All numbers below are empirically measured and recorded in machine-readable JSON manifests under [`paper/`](paper/):
 
 - **Numerical Accuracy**: Max relative spectral error `9.87e-7` (RMSE `2.24e-11`) against an independent `float64` reference (`paper/benchmark_manifest.json`).
+- **TNG → JWST NIRCam Scientific Validation**: Max relative error `4.77e-8` (RMSE `5.59e-23`), $0.000\,\mathrm{mag}$ AB zero-point deviation, and $1{,}510.5\,\mathrm{gal/s}$ CPU throughput over the curated 100-galaxy TNG-100 sample (`paper/benchmark_manifest_tng_jwst.json`).
 - **Single-Node CPU vs. GPU**: `57,978 gal/s` on workstation CPU (`scipy-openblas`) and `258,812 gal/s` (**4.51x speedup**) on an NVIDIA Tesla T4 GPU via CuPy (`paper/benchmark_manifest_gpu_t4.json`).
 - **Memory Boundedness**: Peak RSS stays flat at `261.5–261.8 MB` (< 0.2% variance) while streaming 100,000 to 1,000,000 galaxies in 20,000-galaxy chunks.
 - **Multi-Node Kubernetes**: `53,814 gal/s` on a 3-node OCI OKE cluster (100,000 galaxies in `1.86 s`, max rel. error `8.16e-7`, `paper/benchmark_manifest_oci_oke_3node.json`).
