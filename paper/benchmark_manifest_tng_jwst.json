@@ -1,0 +1,50 @@
+{
+  "milestone": "TNG-JWST Scientific Validation v1.0",
+  "timestamp": "2026-11-21T17:35:36Z",
+  "hardware": {
+    "platform": "win32",
+    "python_version": "3.13.1",
+    "cpu_threads": 14
+  },
+  "scientific_configuration": {
+    "ssp_adapter": "FSPS",
+    "imf": "chabrier",
+    "isochrone": "mist",
+    "cosmology": {
+      "name": "TNG (Planck 2015)",
+      "H0": 67.74,
+      "Om0": 0.3089
+    },
+    "dust_model": "Charlot & Fall (2000)",
+    "igm_model": "Madau (1995)",
+    "instrument": "JWST NIRCam",
+    "filters": [
+      "jwst_f090w",
+      "jwst_f150w",
+      "jwst_f200w",
+      "jwst_f277w",
+      "jwst_f356w",
+      "jwst_f444w"
+    ]
+  },
+  "dataset": {
+    "sample_catalog": "data/examples/tng_sample/sample_catalog.parquet",
+    "n_galaxies": 100,
+    "n_wavelengths": 2500
+  },
+  "performance_telemetry": {
+    "total_elapsed_seconds": 4.88,
+    "synthesis_time_seconds": 0.275,
+    "throughput_galaxies_per_sec": 363.8
+  },
+  "numerical_accuracy": {
+    "max_relative_error": 4.76623133922837e-08,
+    "mean_relative_error": 1.0280114142824505e-08,
+    "rmse": 5.585084880988486e-23,
+    "status": "PASS"
+  },
+  "quality_audit": {
+    "sentry_status": "PASSED",
+    "pristine_fraction": 100.0
+  }
+}

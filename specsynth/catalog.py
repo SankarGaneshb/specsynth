@@ -12,9 +12,13 @@ from specsynth.core import N_PARAM, read_small, sfh_from_params, small, url, wri
 
 # Standard column aliases for cosmological catalogs
 COLUMN_ALIASES: dict[str, list[str]] = {
+    "galaxy_id": [
+        "galaxy_id", "subhaloid", "subfind_id", "subhalo_id", "id", "obj_id", "halo_id"
+    ],
     "mass": [
         "log_mstar", "logmstar", "log_mass", "logmass", "mstar", "mass",
-        "stellar_mass", "m_star", "m_stellar", "sm", "log_sm"
+        "stellar_mass", "m_star", "m_stellar", "sm", "log_sm",
+        "subhalomass", "subhalomasstype", "subhalostarmass", "subhalo_mass", "subhalo_masstype"
     ],
     "onset": [
         "t_onset", "onset", "formation_time", "t_form", "t_birth",
@@ -23,8 +27,12 @@ COLUMN_ALIASES: dict[str, list[str]] = {
     "tau": [
         "tau", "sfh_tau", "tau_sfh", "decay_time", "tau_decay", "e_folding_time"
     ],
+    "sfr": [
+        "sfr", "subhalosfr", "subhalo_sfr", "star_formation_rate", "ssfr"
+    ],
     "met": [
-        "log_z", "logz", "metallicity", "z_met", "met", "z_stellar", "Z", "log_Z"
+        "log_z", "logz", "metallicity", "z_met", "met", "z_stellar", "Z", "log_Z",
+        "subhalometallicity", "subhalostarmetallicity", "subhalo_metallicity", "subhalo_starmetallicity"
     ],
     "tau_diffuse": [
         "tau_diffuse", "tau_d", "av", "a_v", "Av", "tau_v", "dust_diffuse", "optical_depth_diffuse"
@@ -33,7 +41,7 @@ COLUMN_ALIASES: dict[str, list[str]] = {
         "tau_birth", "tau_b", "av_birth", "a_v_birth", "tau_bc", "dust_birth", "optical_depth_birth"
     ],
     "redshift": [
-        "redshift", "z", "z_spec", "z_obs", "z_cosmo"
+        "redshift", "z", "z_spec", "z_obs", "z_cosmo", "snapshot_z", "cosmo_z"
     ],
 }
 
@@ -146,7 +154,13 @@ def resolve_catalog_columns(
                     break
 
         if chosen_col is not None:
-            resolved[param_name] = np.asarray(case_map[chosen_col], dtype=np.float32)
+            if param_name == "galaxy_id":
+                resolved[param_name] = np.asarray(case_map[chosen_col])
+            else:
+                try:
+                    resolved[param_name] = np.asarray(case_map[chosen_col], dtype=np.float32)
+                except (ValueError, TypeError):
+                    resolved[param_name] = np.asarray(case_map[chosen_col])
 
     # Validate essential mass column
     if "mass" not in resolved:
@@ -415,6 +429,10 @@ def import_catalog(
         z_da = da.from_array(resolved["redshift"], chunks=(row_chunks,))
         arrays_to_write["redshift"] = z_da
 
+    if "galaxy_id" in resolved:
+        gid_da = da.from_array(resolved["galaxy_id"].astype(str), chunks=(row_chunks,))
+        arrays_to_write["galaxy_id"] = gid_da
+
     metadata = {
         "source_catalog": str(catalog_path),
         "n_galaxies": n_gals,
@@ -553,5 +571,189 @@ def clean_catalog(
         "quarantined_count": n_quarantined,
         "retention_rate_pct": round((n_clean / max(1, n_total)) * 100.0, 3),
         "output_path": str(output_path) if output_path else None,
+    }
+
+
+def export_scientific_catalog(
+    base: str,
+    output_path: str | Path,
+    format: str | None = None,
+    sentry_report_path: str | Path | None = None,
+    model_id: str = "FSPS_Chabrier_MIST",
+) -> dict[str, Any]:
+    """
+    Export synthesized photometry and physical galaxy parameters into a standardized
+    astronomer-facing scientific catalog (Task C09).
+
+    Produces columns:
+      - galaxy_id: Simulation subhalo identifier
+      - redshift: Applied cosmological redshift
+      - stellar_mass: Total stellar mass in M_sun
+      - log_mstar: log10(M* / M_sun)
+      - metallicity: Mass fraction Z
+      - log_z_solar: log10(Z / Z_sun) relative to Z_sun=0.019
+      - sfr: Star formation rate [M_sun/yr]
+      - {filter}_mag: Synthetic AB magnitude for each projected bandpass
+      - {filter}_fnu_ujy: Mean band flux density in microJanskys (uJy)
+      - quality_flag: 0 = Pristine, 1 = Warning, 2 = Anomalous (from Sentry)
+      - model_id: Provenance identifier for the underlying stellar population model
+
+    Supports export to Parquet, CSV, FITS, or HDF5.
+    """
+    import zarr
+    import fsspec
+    from specsynth.filters import C_AA_S, f_lambda_to_f_nu, flux_to_ab_mag, get_filter
+
+    gal_store = url(base, "galaxies.zarr")
+    spec_store = url(base, "spectra.zarr")
+
+    try:
+        g_in = zarr.open_group(gal_store, mode="r")
+    except Exception:
+        g_in = zarr.open_group(fsspec.get_mapper(gal_store), mode="r")
+
+    try:
+        g_out = zarr.open_group(spec_store, mode="r")
+    except Exception:
+        g_out = zarr.open_group(fsspec.get_mapper(spec_store), mode="r")
+
+    if "photometry" not in g_out:
+        raise ValueError(
+            f"No 'photometry' dataset found in {spec_store}. "
+            f"Run 'specsynth synth --filters <filter_list>' first before exporting."
+        )
+
+    # 1. Load photometry and metadata
+    phot = np.asarray(g_out["photometry"][:])
+    n_gals = phot.shape[0]
+    filter_names = g_out.attrs.get("filters", [f"band_{i}" for i in range(phot.shape[1])])
+    distance_dimming = g_out.attrs.get("distance_dimming", False)
+    input_units = g_out.attrs.get("input_units", "lsun")
+
+    # 2. Extract galaxy parameters
+    if "params" in g_in:
+        params = np.asarray(g_in["params"][:])
+    else:
+        params = np.zeros((n_gals, N_PARAM), dtype=np.float32)
+
+    log_mstar = params[:, 0]
+    stellar_mass = 10.0 ** log_mstar
+    t_onset = params[:, 1]
+    tau = params[:, 2]
+    log_z = params[:, 3]
+    metallicity = 10.0 ** log_z
+    log_z_solar = log_z - np.log10(0.019)
+
+    # Approximate instantaneous SFR from delayed-tau: SFR = (t_on / tau) * exp(-t_on / tau)
+    # Scaled to M_sun / yr
+    sfr = (stellar_mass / (tau * 1e9 + 1e-10)) * (t_onset / (tau + 1e-10)) * np.exp(-t_onset / (tau + 1e-10))
+
+    # Redshift
+    if "redshift" in g_in:
+        redshift = np.asarray(g_in["redshift"][:], dtype=np.float64)
+    else:
+        z_meta = g_out.attrs.get("redshift", 0.0)
+        redshift = np.full(n_gals, float(z_meta), dtype=np.float64)
+
+    # Galaxy ID
+    if "galaxy_id" in g_in:
+        galaxy_id = np.asarray(g_in["galaxy_id"][:])
+    else:
+        galaxy_id = np.arange(n_gals, dtype=np.int64)
+
+    # 3. Compute AB magnitudes and flux densities per filter
+    columns: dict[str, np.ndarray] = {
+        "galaxy_id": galaxy_id,
+        "redshift": redshift.astype(np.float32),
+        "stellar_mass": stellar_mass.astype(np.float32),
+        "log_mstar": log_mstar.astype(np.float32),
+        "metallicity": metallicity.astype(np.float32),
+        "log_z_solar": log_z_solar.astype(np.float32),
+        "sfr": sfr.astype(np.float32),
+    }
+
+    for j, fname in enumerate(filter_names):
+        clean_band_name = fname.replace("jwst_", "").upper()
+        flt = get_filter(fname)
+        pivot = flt.pivot_wavelength
+
+        # phot[:, j] is F_lambda in cgs (erg/s/cm^2/A) if distance_dimming=True
+        # or rest-frame L_lambda if distance_dimming=False
+        f_lambda = phot[:, j]
+        f_nu_cgs = f_lambda_to_f_nu(f_lambda, pivot)
+        # MicroJanskys: 1 Jy = 1e-23 cgs -> 1 uJy = 1e-29 cgs
+        f_nu_ujy = (f_nu_cgs / 1e-29).astype(np.float32)
+        ab_mag = flux_to_ab_mag(f_nu_cgs).astype(np.float32)
+
+        columns[f"{clean_band_name}"] = ab_mag
+        columns[f"{clean_band_name}_flux_uJy"] = f_nu_ujy
+
+    # 4. Integrate Quality Flags (Sentry)
+    quality_flags = np.zeros(n_gals, dtype=np.int32)
+    if sentry_report_path and os.path.exists(sentry_report_path):
+        import json
+        with open(sentry_report_path, "r", encoding="utf-8") as f:
+            rep = json.load(f)
+            for anom in rep.get("anomalies", []):
+                idx = int(anom["galaxy_index"])
+                if 0 <= idx < n_gals:
+                    sev = anom.get("severity", "WARNING").upper()
+                    quality_flags[idx] = 2 if sev == "CRITICAL" else 1
+    else:
+        # Inline basic sanity check: flag non-finite or negative flux values
+        for j, fname in enumerate(filter_names):
+            clean_band_name = fname.replace("jwst_", "").upper()
+            mag = columns[f"{clean_band_name}"]
+            bad = ~np.isfinite(mag) | (mag > 50.0) | (mag < 0.0)
+            quality_flags[bad] = np.maximum(quality_flags[bad], 1)
+
+    columns["quality_flag"] = quality_flags
+    columns["model_id"] = np.full(n_gals, model_id)
+
+    # 5. Write output file
+    out_p = Path(output_path)
+    out_p.parent.mkdir(parents=True, exist_ok=True)
+    ext = out_p.suffix.lower() if not format else f".{format.lower().lstrip('.')}"
+
+    if ext in (".parquet", ".pq"):
+        try:
+            import pyarrow as pa
+            import pyarrow.parquet as pq
+            table = pa.Table.from_pydict(columns)
+            pq.write_table(table, str(out_p))
+        except ImportError:
+            # Fallback to CSV
+            out_p = out_p.with_suffix(".csv")
+            ext = ".csv"
+
+    if ext in (".csv", ".tsv"):
+        import csv
+        sep = "\t" if ext == ".tsv" else ","
+        headers = list(columns.keys())
+        with open(out_p, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, delimiter=sep)
+            writer.writerow(headers)
+            for i in range(n_gals):
+                writer.writerow([columns[h][i] for h in headers])
+
+    elif ext in (".fits", ".fit"):
+        from astropy.table import Table
+        tbl = Table(columns)
+        tbl.write(str(out_p), overwrite=True)
+
+    elif ext in (".h5", ".hdf5"):
+        import h5py
+        with h5py.File(str(out_p), "w") as hf:
+            for k, v in columns.items():
+                hf.create_dataset(k, data=v)
+
+    return {
+        "output_path": str(out_p),
+        "n_galaxies": n_gals,
+        "n_filters": len(filter_names),
+        "filters": filter_names,
+        "clean_galaxies_count": int(np.sum(quality_flags == 0)),
+        "flagged_galaxies_count": int(np.sum(quality_flags > 0)),
+        "model_id": model_id,
     }
 

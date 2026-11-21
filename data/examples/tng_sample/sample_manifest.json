@@ -1,0 +1,26 @@
+{
+  "dataset_name": "IllustrisTNG-100 Curated Demonstration Sample",
+  "description": "Representative 100-galaxy sample for rapid 10-minute scientific evaluation",
+  "n_galaxies": 100,
+  "simulation": "IllustrisTNG (TNG100-1)",
+  "redshift_range": [
+    0.21593965590000153,
+    3.884899139404297
+  ],
+  "log_mass_range": [
+    9.063575744628906,
+    11.455887794494629
+  ],
+  "sfr_range_msun_yr": [
+    5.511790368473157e-05,
+    82.71241760253906
+  ],
+  "file_name": "sample_catalog.parquet",
+  "sha256": "5a63fac422b882a77b3d0f5ce83948b7aca31349fcc32d04c541d88a12ec67cd",
+  "cosmology": {
+    "model": "FlatLambdaCDM",
+    "H0": 67.74,
+    "Om0": 0.3089,
+    "provenance": "Planck 2015 / IllustrisTNG"
+  }
+}

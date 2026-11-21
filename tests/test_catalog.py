@@ -344,6 +344,56 @@ def test_clean_catalog_mismatched_stale_arrays(tmp_path, monkeypatch):
     assert "params" not in loaded  # stale mismatched array was cleanly ignored
 
 
+def test_export_scientific_catalog(tmp_path):
+    from specsynth.catalog import export_scientific_catalog
+    import zarr
+
+    base_dir = tmp_path / "run_export"
+    base_dir.mkdir()
+    gal_store = str(base_dir / "galaxies.zarr")
+    spec_store = str(base_dir / "spectra.zarr")
+
+    g_in = zarr.open_group(gal_store, mode="w")
+    n_gal = 10
+    params = np.zeros((n_gal, 6), dtype=np.float32)
+    params[:, 0] = 10.5  # log_mstar
+    params[:, 1] = 5.0   # t_onset
+    params[:, 2] = 2.0   # tau
+    params[:, 3] = -1.7  # log_z
+    g_in["params"] = params
+    g_in["redshift"] = np.linspace(0.5, 2.5, n_gal).astype(np.float32)
+
+    g_out = zarr.open_group(spec_store, mode="w")
+    # 2 filters: jwst_f090w, jwst_f200w
+    mock_phot = np.ones((n_gal, 2), dtype=np.float32) * 1e-19  # F_lambda
+    g_out["photometry"] = mock_phot
+    g_out.attrs["filters"] = ["jwst_f090w", "jwst_f200w"]
+    g_out.attrs["distance_dimming"] = True
+
+    out_csv = tmp_path / "scientific_photometry.csv"
+    res = export_scientific_catalog(
+        base=str(base_dir),
+        output_path=out_csv,
+    )
+    assert res["n_galaxies"] == n_gal
+    assert res["n_filters"] == 2
+    assert os.path.exists(out_csv)
+
+    # Validate exported columns
+    import csv
+    with open(out_csv, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        assert len(rows) == n_gal
+        assert "galaxy_id" in rows[0]
+        assert "redshift" in rows[0]
+        assert "stellar_mass" in rows[0]
+        assert "F090W" in rows[0]
+        assert "F200W" in rows[0]
+        assert "quality_flag" in rows[0]
+        assert "model_id" in rows[0]
+
+
 
 
 

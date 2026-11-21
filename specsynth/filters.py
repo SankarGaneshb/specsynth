@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -156,6 +156,8 @@ STANDARD_FILTER_SPECS = {
 
 FILTER_SETS = {
     "jwst_nircam": ["jwst_f090w", "jwst_f115w", "jwst_f150w", "jwst_f200w", "jwst_f277w", "jwst_f356w", "jwst_f444w"],
+    "jwst_nircam_six": ["jwst_f090w", "jwst_f150w", "jwst_f200w", "jwst_f277w", "jwst_f356w", "jwst_f444w"],
+    "jwst_nircam6": ["jwst_f090w", "jwst_f150w", "jwst_f200w", "jwst_f277w", "jwst_f356w", "jwst_f444w"],
     "jwst_nircam_approx": [
         "jwst_f090w_approx", "jwst_f115w_approx", "jwst_f150w_approx", "jwst_f200w_approx",
         "jwst_f277w_approx", "jwst_f356w_approx", "jwst_f444w_approx"
@@ -166,6 +168,85 @@ FILTER_SETS = {
     "sdss": ["sdss_u", "sdss_g", "sdss_r", "sdss_i", "sdss_z"],
     "euclid": ["euclid_vis", "euclid_y", "euclid_j", "euclid_h"],
 }
+
+# --------------------------------------------------------------------------
+# Official JWST NIRCam Calibrated Filter Registry (Task C06)
+# Records official STScI throughput curve provenance, detector channel,
+# nominal bandpass specifications, and SHA-256 integrity checksums.
+# --------------------------------------------------------------------------
+NIRCAM_FILTER_REGISTRY: dict[str, dict[str, Any]] = {
+    "jwst_f090w": {
+        "channel": "SW",
+        "nominal_center_A": 9000.0,
+        "nominal_fwhm_A": 2000.0,
+        "pivot_wavelength_A": 8990.54,
+        "sha256": "58eb808d6ecc4ff698234173bab99d9e998c2ea6651fa98ff636de21d9e7ffb8",
+        "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    },
+    "jwst_f115w": {
+        "channel": "SW",
+        "nominal_center_A": 11500.0,
+        "nominal_fwhm_A": 2300.0,
+        "pivot_wavelength_A": 11520.01,
+        "sha256": "1e31b7100dfcdf7cdd5b18e2b66061bf18aeab603fa806e13e266c2165139088",
+        "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    },
+    "jwst_f150w": {
+        "channel": "SW",
+        "nominal_center_A": 15000.0,
+        "nominal_fwhm_A": 3000.0,
+        "pivot_wavelength_A": 14979.26,
+        "sha256": "3a47ccc4006658d4ed704283e97d914516e13c9f90e795c3ef16b06f4487c9b1",
+        "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    },
+    "jwst_f200w": {
+        "channel": "SW",
+        "nominal_center_A": 20000.0,
+        "nominal_fwhm_A": 4600.0,
+        "pivot_wavelength_A": 19831.19,
+        "sha256": "6c1091caa32451e4f7f4426ac8598e72f16916cf35573f54e39beb0de76c3f5d",
+        "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    },
+    "jwst_f277w": {
+        "channel": "LW",
+        "nominal_center_A": 27700.0,
+        "nominal_fwhm_A": 6800.0,
+        "pivot_wavelength_A": 27545.27,
+        "sha256": "f4fe1a9373c090af558f3772e29c3bf46be0377eb2877885c01c154585abb308",
+        "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    },
+    "jwst_f356w": {
+        "channel": "LW",
+        "nominal_center_A": 35600.0,
+        "nominal_fwhm_A": 7800.0,
+        "pivot_wavelength_A": 35601.98,
+        "sha256": "e9682e1a21a18abb9e2f50ca34fc6a95d09ec393fedd7f98dacbf6819ef7847b",
+        "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    },
+    "jwst_f444w": {
+        "channel": "LW",
+        "nominal_center_A": 44400.0,
+        "nominal_fwhm_A": 10200.0,
+        "pivot_wavelength_A": 43971.35,
+        "sha256": "a6582a07bafde3c6e89a1008a7e5f63dbde6d5cd2be822d51266720950083b57",
+        "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    },
+}
+
+
+def verify_filter_registry() -> dict[str, bool]:
+    """Verify SHA-256 integrity checksums for all bundled NIRCam filter curves."""
+    import hashlib
+    status = {}
+    for fname, info in NIRCAM_FILTER_REGISTRY.items():
+        bundled_file = DATA_FILTERS_DIR / f"{fname}.csv"
+        if not bundled_file.is_file():
+            status[fname] = False
+            continue
+        with open(bundled_file, "rb") as f:
+            h = hashlib.sha256(f.read()).hexdigest().lower()
+        status[fname] = (h == info["sha256"].lower())
+    return status
 
 
 def get_filter(name: str) -> FilterCurve:
@@ -249,6 +330,18 @@ def build_filter_projection_matrix(
     for fname in resolved_names:
         flt = get_filter(fname)
         trans = flt.resample(wave)  # Resample onto target wave
+        if np.sum(trans) <= 0.0:
+            import warnings
+            active_idx = np.where(flt.transmission > 0.0)[0]
+            w_lo = flt.wave[active_idx[0]] if len(active_idx) > 0 else flt.wave[0]
+            w_hi = flt.wave[active_idx[-1]] if len(active_idx) > 0 else flt.wave[-1]
+            warnings.warn(
+                f"Filter '{fname}' has zero transmission overlap with the provided wavelength grid "
+                f"[{wave[0]:.1f}, {wave[-1]:.1f}] A (filter range: [{w_lo:.1f}, {w_hi:.1f}] A). "
+                f"Synthetic photometry will evaluate to zero flux for this band.",
+                UserWarning,
+                stacklevel=2,
+            )
         weight = trans * wave * dl
         norm = np.sum(weight)
         if norm <= 0:

@@ -33,12 +33,27 @@ def parse_fsps_spec_file(filepath: str | Path) -> tuple[np.ndarray, np.ndarray, 
         raise ValueError(f"Unable to automatically parse FSPS table format in {filepath}")
 
 
+def find_default_fsps_grid() -> Path | None:
+    """Locate pre-compiled bundled wide-wavelength FSPS reference grid."""
+    candidates = [
+        Path(__file__).parents[2] / "sample_models" / "fsps" / "fsps_full_chabrier_mist.spec",
+        Path("sample_models/fsps/fsps_full_chabrier_mist.spec"),
+        Path(__file__).parents[2] / "sample_models" / "fsps" / "spstot_chab.spec",
+        Path("sample_models/fsps/spstot_chab.spec"),
+    ]
+    for p in candidates:
+        if p.is_file():
+            return p.resolve()
+    return None
+
+
 class FSPSAdapter(BaseAdapter):
     """
     Adapter for Flexible Stellar Population Synthesis (FSPS).
     Supports either:
       - Programmatic generation using python-fsps
       - Ingestion of raw FSPS ASCII output files (spstot_*.spec)
+      - Offline CPU reproduction via bundled reference grids
     """
 
     def __init__(
@@ -50,6 +65,7 @@ class FSPSAdapter(BaseAdapter):
         metallicities: Sequence[float] | None = None,
         metallicity: float = 0.019,
         add_nebular_emission: bool = False,
+        fallback_to_bundled: bool = False,
     ):
         self.filepath = Path(filepath) if filepath else None
         self.imf_type = imf_type
@@ -66,6 +82,7 @@ class FSPSAdapter(BaseAdapter):
         )
         self.metallicity = metallicity
         self.add_nebular_emission = add_nebular_emission
+        self.fallback_to_bundled = fallback_to_bundled
 
     def load(self) -> SSPData:
         # File mode
@@ -83,6 +100,21 @@ class FSPSAdapter(BaseAdapter):
         try:
             import fsps
         except ImportError as e:
+            if self.fallback_to_bundled:
+                default_file = find_default_fsps_grid()
+                if default_file:
+                    ages, wave, fluxes = parse_fsps_spec_file(default_file)
+                    return SSPData.from_3d_grid(
+                        ages=ages,
+                        mets=np.array([self.metallicity]),
+                        wave=wave,
+                        grid_3d=fluxes[:, None, :],
+                        metadata={
+                            "model": "FSPS",
+                            "file": str(default_file),
+                            "note": "Bundled reference grid (python-fsps not installed)",
+                        },
+                    )
             raise ImportError(
                 "python-fsps is required to run the dynamic FSPS adapter. Install it with: "
                 "conda install -c conda-forge fsps python-fsps or pip install fsps "

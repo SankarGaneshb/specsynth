@@ -19,10 +19,13 @@ env/
 *.zarr/
 .tmp*/
 run1/
-/data/
+/data/*
+!/data/examples/
 sample_data/
 sample_catalogs/
-sample_models/
+sample_models/*
+!sample_models/fsps/
+!sample_models/fsps/fsps_full_chabrier_mist.spec
 tmp/
 
 # Testing & coverage
@@ -44,6 +47,7 @@ Thumbs.db
 
 # Compiled JOSS PDF previews
 paper/*.pdf
+notebooks/tng-jwst/figures/
 
 # Local QA and benchmark outputs
 *report.json

@@ -67,6 +67,39 @@ class FlatLambdaCDM:
 # Default benchmark cosmology (Planck 2018 compatible)
 DEFAULT_COSMOLOGY = FlatLambdaCDM(H0=70.0, Om0=0.3)
 
+# IllustrisTNG Planck 2015 cosmology (Om0=0.3089, Ode0=0.6911, h=0.6774 -> H0=67.74)
+TNG_COSMOLOGY = FlatLambdaCDM(H0=67.74, Om0=0.3089)
+
+# Planck 2018 final parameters (Om0=0.315, h=0.674 -> H0=67.4)
+PLANCK18_COSMOLOGY = FlatLambdaCDM(H0=67.4, Om0=0.315)
+
+# Named cosmology presets
+COSMOLOGY_PRESETS: dict[str, FlatLambdaCDM] = {
+    "default": DEFAULT_COSMOLOGY,
+    "tng": TNG_COSMOLOGY,
+    "tng100": TNG_COSMOLOGY,
+    "tng300": TNG_COSMOLOGY,
+    "tng50": TNG_COSMOLOGY,
+    "planck2015": TNG_COSMOLOGY,
+    "planck2018": PLANCK18_COSMOLOGY,
+    "planck18": PLANCK18_COSMOLOGY,
+    "wmap9": FlatLambdaCDM(H0=69.3, Om0=0.286),
+}
+
+
+def get_cosmology(name_or_obj: str | FlatLambdaCDM | None = None) -> FlatLambdaCDM:
+    """Resolve a cosmology by name (e.g. 'tng', 'planck2018', 'default') or return FlatLambdaCDM instance."""
+    if name_or_obj is None:
+        return DEFAULT_COSMOLOGY
+    if isinstance(name_or_obj, FlatLambdaCDM):
+        return name_or_obj
+    key = str(name_or_obj).strip().lower()
+    if key in COSMOLOGY_PRESETS:
+        return COSMOLOGY_PRESETS[key]
+    raise ValueError(
+        f"Unknown cosmology preset '{name_or_obj}'. Available presets: {list(COSMOLOGY_PRESETS.keys())}"
+    )
+
 
 def redshift_flux(
     wave_rest: np.ndarray,

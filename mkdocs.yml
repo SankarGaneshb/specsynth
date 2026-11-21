@@ -67,11 +67,28 @@ nav:
       - Installation: getting-started/installation.md
       - Quickstart: getting-started/quickstart.md
   - User Guides:
+      - TNG → JWST Quickstart: guides/getting-started-tng-jwst.md
+      - Preparing TNG Catalogs: guides/preparing-tng-catalogs.md
+      - Configuring FSPS: guides/configuring-fsps.md
+      - Generating NIRCam Photometry: guides/generating-nircam-photometry.md
+      - Interpreting Results: guides/interpreting-results.md
+      - Troubleshooting: guides/troubleshooting.md
       - SSP Model Adapters: guides/adapters.md
       - Catalogs, Cosmology & Filters: guides/catalogs-and-photometry.md
       - Distributed, Cloud & GPU Execution: guides/distributed-and-gpu.md
       - Validation & Benchmarks: guides/validation-and-benchmarks.md
       - Scientific Sentry QA: guides/sentry.md
+  - TNG → JWST Validation:
+      - Overview & Charter: science/tng-jwst-experiment.md
+      - Readiness Assessment: science/tng-jwst-scientific-readiness-assessment.md
+      - Physical Assumptions: science/physical-assumptions.md
+      - FSPS Model Config: science/fsps-model-configuration.md
+      - Cosmology & Redshift: science/cosmology-and-redshift.md
+      - NIRCam Filter Provenance: science/nircam-filter-provenance.md
+      - Photometry Methodology: science/photometry-methodology.md
+      - Validation Report: science/validation-report.md
+      - Research Brief: science/tng-jwst-research-brief.md
+      - Reviewer Feedback: science/reviewer-feedback-packet.md
   - Reference:
       - CLI Reference: cli.md
       - Python API:

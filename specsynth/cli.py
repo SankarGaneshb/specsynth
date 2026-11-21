@@ -29,7 +29,9 @@ from specsynth.cosmology import (
     DEFAULT_COSMOLOGY,
     FlatLambdaCDM,
     L_SUN_ERG_S,
+    TNG_COSMOLOGY,
     apply_redshift_to_chunk,
+    get_cosmology,
     project_per_galaxy_photometry_chunk,
     redshift_flux,
 )
@@ -84,11 +86,18 @@ def cmd_make_ssp(a, client: Client):
             "flux_key": a.flux_key,
         }
     elif adapter_name == "fsps":
+        from specsynth.adapters.fsps import find_default_fsps_grid
+        input_f = getattr(a, "input_file", None)
+        if not input_f:
+            default_grid = find_default_fsps_grid()
+            if default_grid:
+                input_f = str(default_grid)
         adapter_kwargs = {
-            "filepath": a.input_file if getattr(a, "input_file", None) else None,
+            "filepath": input_f,
             "imf_type": a.imf,
             "isochrone": a.isochrone,
             "add_nebular_emission": a.nebular,
+            "fallback_to_bundled": True,
         }
 
     print(f"Loading SSP library using adapter: '{adapter_name}'...")
@@ -281,6 +290,10 @@ def cmd_synth(a, client: Client):
     distance_dimming = getattr(a, "distance_dimming", False)
     input_units = getattr(a, "input_units", "lsun")
     apply_igm = getattr(a, "igm", False)
+    cosmo_choice = getattr(a, "cosmology", "default")
+    cosmo = get_cosmology(cosmo_choice)
+    if cosmo_choice and cosmo_choice.lower() != "default":
+        print(f"[Cosmology] Adopting '{cosmo_choice}' cosmology: H0={cosmo.H0:.2f}, Om0={cosmo.Om0:.4f}")
 
     # Inspect if catalog store has per-galaxy redshift array
     has_catalog_z = False
@@ -306,6 +319,7 @@ def cmd_synth(a, client: Client):
         "igm": apply_igm,
         "distance_dimming": distance_dimming,
         "input_units": input_units,
+        "cosmology": {"H0": cosmo.H0, "Om0": cosmo.Om0, "preset": str(cosmo_choice)},
     }
 
     filter_req = getattr(a, "filters", None)
@@ -342,7 +356,7 @@ def cmd_synth(a, client: Client):
                 apply_igm,
                 distance_dimming,
                 input_units,
-                DEFAULT_COSMOLOGY,
+                cosmo,
                 dtype=phot_dtype,
                 chunks=(sfh.chunks[0], (len(filter_names),)),
             )
@@ -360,7 +374,7 @@ def cmd_synth(a, client: Client):
                 apply_igm,
                 distance_dimming,
                 input_units,
-                DEFAULT_COSMOLOGY,
+                cosmo,
                 dtype=spec_dtype,
                 chunks=spec.chunks,
             )
@@ -375,8 +389,6 @@ def cmd_synth(a, client: Client):
 
         metadata["mode"] = "snapshot"
         metadata["redshift"] = redshift
-
-        cosmo = DEFAULT_COSMOLOGY
         dimming = 1.0 / (1.0 + redshift)
         if distance_dimming:
             d_L_cm = cosmo.luminosity_distance_cm(redshift)
@@ -537,6 +549,38 @@ def cmd_synth(a, client: Client):
         if getattr(a, "fail_on_anomaly", False) and report.status == "CRITICAL_FAILURE":
             raise RuntimeError(f"Sentry audit detected critical anomalies: status={report.status}")
 
+    if getattr(a, "export_catalog", None):
+        from specsynth.catalog import export_scientific_catalog
+        print(f"[*] Exporting standard scientific catalog -> {a.export_catalog}...")
+        exp_meta = export_scientific_catalog(
+            base=a.base,
+            output_path=a.export_catalog,
+        )
+        print(
+            f"  * Galaxies Exported  : {exp_meta['n_galaxies']:,}\n"
+            f"  * Filter Bands       : {len(exp_meta['filters'])} ({', '.join(exp_meta['filters'])})\n"
+            f"  * Pristine Objects   : {exp_meta['clean_galaxies_count']:,}\n"
+            f"  * Output Destination : {exp_meta['output_path']}\n"
+        )
+
+
+def cmd_export_catalog(a, client: Client | None):
+    from specsynth.catalog import export_scientific_catalog
+    print(f"Exporting scientific catalog from '{a.base}' -> {a.output}...")
+    res = export_scientific_catalog(
+        base=a.base,
+        output_path=a.output,
+        format=getattr(a, "format", None),
+        sentry_report_path=getattr(a, "sentry_report", None),
+    )
+    print(
+        f"Scientific Export Complete:\n"
+        f"  * Galaxies Exported  : {res['n_galaxies']:,}\n"
+        f"  * Bands              : {', '.join(res['filters'])}\n"
+        f"  * Pristine / Flagged : {res['clean_galaxies_count']:,} / {res['flagged_galaxies_count']:,}\n"
+        f"  * Destination        : {res['output_path']}"
+    )
+
 
 # --------------------------------------------------------------------------
 # import-catalog : ingest external simulation catalogs (FITS, HDF5, CSV, Parquet)
@@ -652,11 +696,21 @@ def cmd_verify(a, client: Client):
     has_igm = getattr(a, "igm", False) or attrs.get("igm", False)
     redshift = getattr(a, "redshift", 0.0) or float(attrs.get("redshift", 0.0))
 
+    cosmo_meta = attrs.get("cosmology", {})
+    if getattr(a, "cosmology", "default") != "default":
+        cosmo = get_cosmology(a.cosmology)
+    elif isinstance(cosmo_meta, dict) and "preset" in cosmo_meta:
+        cosmo = get_cosmology(cosmo_meta["preset"])
+    elif isinstance(cosmo_meta, str):
+        cosmo = get_cosmology(cosmo_meta)
+    else:
+        cosmo = DEFAULT_COSMOLOGY
+
     if per_galaxy_z and "redshift" in g_in:
         z_sample = np.asarray(g_in["redshift"][:])[idx].astype(np.float64)
         if "spectra" in g_out:
             ref = apply_redshift_to_chunk(
-                ref, z_sample, wave, apply_igm=has_igm, distance_dimming=distance_dimming, input_units=input_units
+                ref, z_sample, wave, apply_igm=has_igm, distance_dimming=distance_dimming, input_units=input_units, cosmo=cosmo
             )
             got = np.stack([g_out["spectra"][i] for i in idx]).astype(np.float64)
         else:
@@ -670,12 +724,11 @@ def cmd_verify(a, client: Client):
                     norm = 1.0
                 filter_data.append((fname, flt.wave, flt.transmission, norm))
             ref = project_per_galaxy_photometry_chunk(
-                ref, z_sample, wave, filter_data, apply_igm=has_igm, distance_dimming=distance_dimming, input_units=input_units
+                ref, z_sample, wave, filter_data, apply_igm=has_igm, distance_dimming=distance_dimming, input_units=input_units, cosmo=cosmo
             )
             got = np.stack([g_out["photometry"][i] for i in idx]).astype(np.float64)
     else:
         if redshift > 0.0:
-            cosmo = DEFAULT_COSMOLOGY
             dimming = 1.0 / (1.0 + redshift)
             if distance_dimming:
                 d_L_cm = cosmo.luminosity_distance_cm(redshift)
@@ -1005,6 +1058,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--input-table", help="Optional original raw table path to filter directly")
     s.set_defaults(fn=cmd_clean_catalog)
 
+    # export-catalog
+    s = sub.add_parser("export-catalog", help="Export standard astronomer-facing scientific catalog with AB magnitudes and metadata")
+    s.add_argument("--output", "-o", default="synthetic_photometry.parquet", help="Path to save exported catalog (parquet, csv, fits, hdf5)")
+    s.add_argument("--format", help="Explicit format: 'parquet', 'csv', 'fits', 'hdf5'")
+    s.add_argument("--sentry-report", help="Optional sentry_report.json to attach anomaly quality flags")
+    s.set_defaults(fn=cmd_export_catalog)
+
     # sentry-agent
     s = sub.add_parser("sentry-agent", help="Launch autonomous Scientific Sentry agent for root-cause diagnosis & remediation")
     s.add_argument("--sample", type=int, default=50_000, help="Number of galaxies to evaluate (default: 50000)")
@@ -1025,11 +1085,13 @@ def build_parser() -> argparse.ArgumentParser:
         s.add_argument("--distance-dimming", action="store_true", help="Apply physical 1/(4*pi*D_L^2) cosmological distance dimming")
         s.add_argument("--input-units", choices=["lsun", "cgs"], default="lsun", help="Input SSP luminosity density units: 'lsun' (L_sun/A) or 'cgs' (erg/s/A)")
         s.add_argument("--igm", action="store_true", help="Apply Madau (1995) IGM attenuation for z > 0")
+        s.add_argument("--cosmology", default="default", help="Cosmology preset: 'tng', 'planck2015', 'planck2018', 'wmap9', or 'default'")
         s.add_argument(
             "--filters",
             help="Filter set or comma-separated filters: 'jwst_nircam', 'hst', 'rubin', 'sdss', 'euclid'",
         )
         if name == "synth":
+            s.add_argument("--export-catalog", help="Path to export standard astronomer-facing scientific catalog (e.g. .parquet, .csv, .fits)")
             s.add_argument("--chunk", type=int, default=0, help="Rechunk galaxies (0 = keep stored chunks)")
             s.add_argument("--wave-chunk", type=int, default=0, help="Split wavelength axis (0 = whole)")
             s.add_argument(
