@@ -1,6 +1,6 @@
 {
   "milestone": "TNG-JWST Scientific Validation v1.0",
-  "timestamp": "2026-11-21T20:00:49Z",
+  "timestamp": "2026-11-21T21:58:31Z",
   "hardware": {
     "platform": "win32",
     "python_version": "3.13.1",
@@ -33,9 +33,9 @@
     "n_wavelengths": 2500
   },
   "performance_telemetry": {
-    "total_elapsed_seconds": 1.08,
-    "synthesis_time_seconds": 0.07,
-    "throughput_galaxies_per_sec": 1423.6
+    "total_elapsed_seconds": 1.18,
+    "synthesis_time_seconds": 0.112,
+    "throughput_galaxies_per_sec": 896.6
   },
   "numerical_accuracy": {
     "max_relative_error": 4.76623133922837e-08,

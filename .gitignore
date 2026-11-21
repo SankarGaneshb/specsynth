@@ -50,9 +50,12 @@ paper/*.pdf
 notebooks/tng-jwst/figures/
 
 # Local QA and benchmark outputs
-*report.json
-*report.md
+/benchmark_report.json
+/benchmark_report.md
+/sentry_report.json
+/sentry_report.md
 !/.github/ISSUE_TEMPLATE/*.md
+!/docs/**
 sentry_agent_memo.md
 sentry_quarantine/
 run/

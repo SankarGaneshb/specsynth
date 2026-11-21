@@ -78,6 +78,8 @@ nav:
       - Distributed, Cloud & GPU Execution: guides/distributed-and-gpu.md
       - Validation & Benchmarks: guides/validation-and-benchmarks.md
       - Scientific Sentry QA: guides/sentry.md
+  - Architecture & Ecosystem:
+      - Perandam Space Intelligence (PSI): architecture/perandam_space_intelligence.md
   - TNG → JWST Validation:
       - Overview & Charter: science/tng-jwst-experiment.md
       - Readiness Assessment: science/tng-jwst-scientific-readiness-assessment.md

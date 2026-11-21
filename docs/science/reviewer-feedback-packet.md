@@ -15,7 +15,7 @@ Rather than asking you to review an entire software codebase, we have designed a
 
 ### Reviewer Resources:
 - **Research Brief**: [`docs/science/tng-jwst-research-brief.md`](tng-jwst-research-brief.md)
-- **Executable Notebook**: [`notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb`](../../notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb)
+- **Executable Notebook**: [`notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb`](https://github.com/SankarGaneshb/specsynth/blob/main/notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb)
 - **Validation Report**: [`docs/science/validation-report.md`](validation-report.md)
 
 ---

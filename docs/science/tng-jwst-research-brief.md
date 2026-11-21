@@ -32,6 +32,6 @@ Forward-modeling mock galaxy surveys from cosmological hydrodynamical simulation
 ## How to Evaluate
 
 Researchers can evaluate the validation results directly:
-1. Run the self-contained notebook: [`notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb`](../../notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb).
+1. Run the self-contained notebook: [`notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb`](https://github.com/SankarGaneshb/specsynth/blob/main/notebooks/tng-jwst/01_tng_jwst_synthetic_photometry.ipynb).
 2. Inspect the automated validation report: [`docs/science/validation-report.md`](validation-report.md).
-3. Review the machine-readable benchmark manifest: [`paper/benchmark_manifest_tng_jwst.json`](../../paper/benchmark_manifest_tng_jwst.json).
+3. Review the machine-readable benchmark manifest: [`paper/benchmark_manifest_tng_jwst.json`](https://github.com/SankarGaneshb/specsynth/blob/main/paper/benchmark_manifest_tng_jwst.json).
