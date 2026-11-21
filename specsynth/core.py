@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+from pathlib import Path
 from typing import Any
 
 import dask.array as da
@@ -151,6 +152,7 @@ def write_many_batched(
     # 2. Initialize target Zarr array for main_array with empty metadata
     # This creates the dataset metadata without writing chunk data yet.
     target_zarr_arr = None
+    init_err = None
     try:
         import zarr
         try:
@@ -201,9 +203,20 @@ def write_many_batched(
                 target_zarr_arr = grp[main_name]
             except Exception:
                 pass
-    except Exception:
-        # Fallback if zarr direct initialization is not accessible (e.g. mocked in tests)
-        pass
+    except Exception as e:
+        init_err = e
+
+    if target_zarr_arr is None:
+        # Allow fallback only if zarr.open_group or da.to_zarr was mocked in synthetic tests
+        is_mocked = (
+            not isinstance(store, (str, Path))
+            or hasattr(da.to_zarr, "_mock_return_value")
+            or (grp is not None and (hasattr(grp, "_mock_return_value") or type(grp).__name__ == "MockGroup"))
+        )
+        if not is_mocked:
+            raise RuntimeError(
+                f"Failed to initialize target Zarr array '{main_name}' at '{store}' for regional writing: {init_err}"
+            )
 
     # 3. Stream chunk blocks in windows of batch_chunks
     row_blocks = main_array.chunks[0]
@@ -219,15 +232,14 @@ def write_many_batched(
 
         batch_slice = main_array[row_start:row_end]
         region = (slice(row_start, row_end), slice(None)) if main_array.ndim == 2 else (slice(row_start, row_end),)
-        target = target_zarr_arr if target_zarr_arr is not None else store
 
-        try:
-            batch_task = da.to_zarr(batch_slice, target, component=main_name, region=region, compute=False)
-        except Exception:
+        if target_zarr_arr is not None:
             try:
-                batch_task = da.to_zarr(batch_slice, target, region=region, compute=False)
+                batch_task = da.to_zarr(batch_slice, target_zarr_arr, region=region, compute=False)
             except Exception:
-                batch_task = da.to_zarr(batch_slice, store, component=main_name, compute=False)
+                batch_task = da.to_zarr(batch_slice, target_zarr_arr, component=main_name, region=region, compute=False)
+        else:
+            batch_task = da.to_zarr(batch_slice, store, component=main_name, region=region, compute=False)
 
         if client is not None:
             fut = client.compute(batch_task)

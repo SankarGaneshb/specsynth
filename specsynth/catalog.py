@@ -146,7 +146,10 @@ def resolve_catalog_columns(
             if req in case_map:
                 chosen_col = req
             else:
-                raise KeyError(f"Explicit column '{explicit[param_name]}' for '{param_name}' not found in catalog.")
+                raise KeyError(
+                    f"Explicit column '{explicit[param_name]}' for '{param_name}' not found in catalog. "
+                    f"Available columns: {list(raw_dict.keys())}"
+                )
         else:
             for alias in aliases:
                 if alias.lower() in case_map:
@@ -207,11 +210,19 @@ def resolve_catalog_columns(
     else:
         # Check if the column name explicitly or via alias corresponds to Av in magnitudes
         chosen_dust_col = ""
-        for alias in COLUMN_ALIASES["tau_diffuse"]:
-            if alias.lower() in case_map:
-                chosen_dust_col = alias.lower()
-                break
-        if chosen_dust_col in ("av", "a_v"):
+        if "tau_diffuse" in explicit and explicit["tau_diffuse"]:
+            chosen_dust_col = str(explicit["tau_diffuse"]).lower()
+        else:
+            for alias in COLUMN_ALIASES["tau_diffuse"]:
+                if alias.lower() in case_map:
+                    chosen_dust_col = alias.lower()
+                    break
+        if (
+            chosen_dust_col in ("av", "a_v")
+            or chosen_dust_col.startswith("av_")
+            or chosen_dust_col.startswith("a_v_")
+            or chosen_dust_col.endswith("_av")
+        ):
             # Astronomical conversion: optical depth tau_V = A_V / (2.5 * log10(e)) = A_V / 1.086
             resolved["tau_diffuse"] = (np.clip(resolved["tau_diffuse"], 0.0, None) / 1.086).astype(np.float32)
         else:
@@ -269,7 +280,11 @@ def stream_hdf5_chunks(filepath: str | Path, chunk_size: int = 50_000):
             yield {k: np.asarray(ds[start:stop]) for k, ds in datasets.items()}
 
 
-def stream_csv_chunks(filepath: str | Path, chunk_size: int = 50_000):
+def stream_csv_chunks(
+    filepath: str | Path,
+    chunk_size: int = 50_000,
+    drop_invalid: bool = False,
+):
     """Yield column dictionaries chunk by chunk from a CSV/TSV catalog without loading into RAM."""
     import csv
     path_str = str(filepath)
@@ -278,23 +293,82 @@ def stream_csv_chunks(filepath: str | Path, chunk_size: int = 50_000):
         reader = csv.DictReader(f, delimiter=delimiter)
         if not reader.fieldnames:
             return
-        cols = [c.lower() for c in reader.fieldnames]
+        cols = [c.strip().lower() for c in reader.fieldnames if c and c.strip()]
         current_chunk = {c: [] for c in cols}
         count = 0
-        for row in reader:
+        line_num = 1
+        for raw_row in reader:
+            line_num += 1
+            # Normalize row dictionary keys to lowercase and strip whitespace
+            row = {
+                k.strip().lower(): (v.strip() if v is not None else "")
+                for k, v in raw_row.items()
+                if k and k.strip()
+            }
+            row_vals = {}
+            row_has_invalid = False
+
             for c in cols:
+                raw_val = row.get(c, "")
+                if raw_val == "":
+                    if drop_invalid:
+                        row_has_invalid = True
+                        break
+                    raise ValueError(
+                        f"CSV ingestion error at line {line_num}: column '{c}' is blank or missing. "
+                        f"Pass --drop-invalid to skip unphysical rows."
+                    )
                 try:
-                    val = float(row.get(c, 0.0) or 0.0)
+                    val = float(raw_val)
+                    if not np.isfinite(val):
+                        if drop_invalid:
+                            row_has_invalid = True
+                            break
+                        raise ValueError(
+                            f"CSV ingestion error at line {line_num}: column '{c}' has non-finite value '{raw_val}'. "
+                            f"Pass --drop-invalid to skip unphysical rows."
+                        )
+                    row_vals[c] = val
                 except ValueError:
-                    val = 0.0
-                current_chunk[c].append(val)
+                    # Non-float string column (e.g. galaxy_id)
+                    if c in ("galaxy_id", "id", "subhalo_id", "name"):
+                        row_vals[c] = raw_val
+                    elif drop_invalid:
+                        row_has_invalid = True
+                        break
+                    else:
+                        raise ValueError(
+                            f"CSV ingestion error at line {line_num}: cannot parse '{raw_val}' as numeric float for column '{c}'. "
+                            f"Pass --drop-invalid to skip unphysical rows."
+                        )
+
+            if row_has_invalid:
+                continue
+
+            for c in cols:
+                current_chunk[c].append(row_vals[c])
             count += 1
             if count >= chunk_size:
-                yield {c: np.asarray(current_chunk[c], dtype=np.float32) for c in cols}
+                out = {}
+                for c in cols:
+                    arr = current_chunk[c]
+                    if c in ("galaxy_id", "id", "subhalo_id", "name") and arr and isinstance(arr[0], str):
+                        out[c] = np.asarray(arr, dtype=object)
+                    else:
+                        out[c] = np.asarray(arr, dtype=np.float32)
+                yield out
                 current_chunk = {c: [] for c in cols}
                 count = 0
+
         if count > 0:
-            yield {c: np.asarray(current_chunk[c], dtype=np.float32) for c in cols}
+            out = {}
+            for c in cols:
+                arr = current_chunk[c]
+                if c in ("galaxy_id", "id", "subhalo_id", "name") and arr and isinstance(arr[0], str):
+                    out[c] = np.asarray(arr, dtype=object)
+                else:
+                    out[c] = np.asarray(arr, dtype=np.float32)
+            yield out
 
 
 def import_catalog(
@@ -305,11 +379,20 @@ def import_catalog(
     explicit_columns: Mapping[str, str] | None = None,
     client: Any = None,
     streaming: bool = False,
+    drop_invalid: bool = False,
 ) -> dict[str, Any]:
     """
-    Import an external cosmological simulation catalog (FITS, HDF5, CSV, Parquet)
+    Import an external cosmological simulation catalog (FITS, HDF5, CSV, Parquet, TSV, NPZ)
     and synthesize standard galaxies.zarr dataset.
-    Supports in-memory loading as well as streaming chunk-by-chunk ingestion for large datasets.
+
+    Streaming Out-of-Core Formats:
+      - Parquet (.parquet, .pq)
+      - HDF5 (.h5, .hdf5)
+      - CSV / TSV (.csv, .tsv)
+
+    In-Memory Formats:
+      - FITS (.fits, .fit)
+      - NumPy Archive (.npz)
     """
     path_str = str(catalog_path)
     ext = os.path.splitext(path_str)[1].lower()
@@ -332,7 +415,7 @@ def import_catalog(
         elif ext in (".h5", ".hdf5"):
             chunk_iter = stream_hdf5_chunks(path_str, chunk_size)
         else:
-            chunk_iter = stream_csv_chunks(path_str, chunk_size)
+            chunk_iter = stream_csv_chunks(path_str, chunk_size, drop_invalid=drop_invalid)
         import zarr
         import fsspec
 
@@ -345,6 +428,26 @@ def import_catalog(
         cols_mapped = {}
         for chunk_idx, raw_chunk in enumerate(chunk_iter):
             resolved = resolve_catalog_columns(raw_chunk, explicit_columns)
+
+            # Validate positive finite mass and valid non-negative redshift
+            mass = resolved["mass"]
+            valid_mask = np.isfinite(mass) & (mass > 0.0)
+            if "redshift" in resolved:
+                z = resolved["redshift"]
+                valid_mask = valid_mask & np.isfinite(z) & (z >= 0.0)
+
+            if not np.all(valid_mask):
+                if drop_invalid:
+                    if not np.any(valid_mask):
+                        continue
+                    for k in list(resolved.keys()):
+                        resolved[k] = resolved[k][valid_mask]
+                else:
+                    raise ValueError(
+                        "Catalog contains non-positive or non-finite stellar mass, or invalid redshift (< 0). "
+                        "Pass --drop-invalid to automatically drop unphysical rows."
+                    )
+
             n_chunk = len(resolved["mass"])
             if n_chunk == 0:
                 continue
@@ -352,7 +455,7 @@ def import_catalog(
             params_block = catalog_to_params_matrix(resolved)
             sfh_block = sfh_from_params(params_block, ages, mets)
 
-            if chunk_idx == 0:
+            if total_gals == 0:
                 try:
                     grp.create_dataset("sfh", data=sfh_block, chunks=(chunk_size, K), dtype=np.float32, overwrite=True)
                     grp.create_dataset("tau_diffuse", data=params_block[:, 4], chunks=(chunk_size,), dtype=np.float32, overwrite=True)
@@ -360,6 +463,9 @@ def import_catalog(
                     grp.create_dataset("params", data=params_block, chunks=(chunk_size, N_PARAM), dtype=np.float32, overwrite=True)
                     if "redshift" in resolved:
                         grp.create_dataset("redshift", data=resolved["redshift"], chunks=(chunk_size,), dtype=np.float32, overwrite=True)
+                    if "galaxy_id" in resolved:
+                        gid = resolved["galaxy_id"].astype(str)
+                        grp.create_dataset("galaxy_id", data=gid, chunks=(chunk_size,), dtype=object, overwrite=True)
                 except (TypeError, AttributeError):
                     grp.create_array("sfh", shape=sfh_block.shape, chunks=(chunk_size, K), dtype=np.float32, overwrite=True)
                     grp["sfh"][:] = sfh_block
@@ -372,6 +478,10 @@ def import_catalog(
                     if "redshift" in resolved:
                         grp.create_array("redshift", shape=resolved["redshift"].shape, chunks=(chunk_size,), dtype=np.float32, overwrite=True)
                         grp["redshift"][:] = resolved["redshift"]
+                    if "galaxy_id" in resolved:
+                        gid = resolved["galaxy_id"].astype(str)
+                        grp.create_array("galaxy_id", shape=gid.shape, chunks=(chunk_size,), dtype=object, overwrite=True)
+                        grp["galaxy_id"][:] = gid
             else:
                 grp["sfh"].append(sfh_block, axis=0)
                 grp["tau_diffuse"].append(params_block[:, 4], axis=0)
@@ -379,6 +489,8 @@ def import_catalog(
                 grp["params"].append(params_block, axis=0)
                 if "redshift" in resolved and "redshift" in grp:
                     grp["redshift"].append(resolved["redshift"], axis=0)
+                if "galaxy_id" in resolved and "galaxy_id" in grp:
+                    grp["galaxy_id"].append(resolved["galaxy_id"].astype(str), axis=0)
 
             total_gals += n_chunk
 
@@ -388,6 +500,7 @@ def import_catalog(
             "ssp_grid_k": K,
             "columns_mapped": cols_mapped,
             "ingestion_mode": "streaming_out_of_core",
+            "streaming_capable": True,
         }
         try:
             grp.attrs.update(metadata)
@@ -398,6 +511,24 @@ def import_catalog(
     # In-memory tabular load with chunked Dask conversion
     raw_data = load_raw_table(catalog_path)
     resolved = resolve_catalog_columns(raw_data, explicit_columns)
+
+    # Validate physical constraints
+    mass = resolved["mass"]
+    valid_mask = np.isfinite(mass) & (mass > 0.0)
+    if "redshift" in resolved:
+        z = resolved["redshift"]
+        valid_mask = valid_mask & np.isfinite(z) & (z >= 0.0)
+
+    if not np.all(valid_mask):
+        if drop_invalid:
+            for k in list(resolved.keys()):
+                resolved[k] = resolved[k][valid_mask]
+        else:
+            raise ValueError(
+                "Catalog contains non-positive or non-finite stellar mass, or invalid redshift (< 0). "
+                "Pass --drop-invalid to automatically drop unphysical rows."
+            )
+
     n_gals = len(resolved["mass"])
 
     params = catalog_to_params_matrix(resolved)

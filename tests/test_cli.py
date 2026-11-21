@@ -574,3 +574,65 @@ def test_cli_adaptive_memory_guard_sfh(monkeypatch):
     mock_write_many.assert_called_once()
 
 
+def test_cli_aliases_and_cgs_snapshot_photometry(monkeypatch):
+    import dask.array as da
+    ages, mets, wave = np.array([1e6, 1e8]), np.array([0.02]), np.linspace(1000, 10000, 50)
+    monkeypatch.setattr("specsynth.cli.read_small", lambda s, c: ages if c == "ages" else (mets if c == "mets" else wave))
+    monkeypatch.setattr("specsynth.cli.wait", MagicMock())
+
+    ssp_da = da.ones((2, 50), chunks=(2, 50), dtype=np.float32)
+    sfh_da = da.ones((6, 2), chunks=(6, 2), dtype=np.float32)
+    tau_da = da.zeros(6, chunks=(6,), dtype=np.float32)
+
+    def mock_from_zarr(store, component=None):
+        if component == "ssp": return ssp_da
+        if component == "sfh": return sfh_da
+        return tau_da
+
+    monkeypatch.setattr("dask.array.from_zarr", mock_from_zarr)
+    mock_write = MagicMock()
+    monkeypatch.setattr("specsynth.cli.write_many", mock_write)
+    monkeypatch.setattr("zarr.open_group", lambda *args, **kwargs: MagicMock(attrs={}))
+
+    mock_client = MagicMock()
+    mock_client.persist = lambda x: x
+    mock_client.scheduler_info.return_value = {"workers": {"w1": {}}}
+
+    ap = build_parser()
+
+    # 1. Test --lightcone alias
+    args_lc = ap.parse_args(["synth", "--lightcone"])
+    assert args_lc.per_galaxy_z is True
+
+    # 2. Test --tau-d-col alias in import-catalog
+    args_ic = ap.parse_args(["import-catalog", "-i", "cat.csv", "--tau-d-col", "Av_diffuse"])
+    assert args_ic.dust_diffuse_col == "Av_diffuse"
+
+    # 3. Test snapshot mode with input_units="cgs" and --distance-dimming (verifying non-zero photometry)
+    args_snap_cgs = ap.parse_args([
+        "synth",
+        "--redshift", "2.0",
+        "--distance-dimming",
+        "--input-units", "cgs",
+        "--filters", "jwst_nircam",
+    ])
+    args_snap_cgs.fn(args_snap_cgs, mock_client)
+
+    mock_write.assert_called_once()
+    saved = mock_write.call_args[0][2]
+    phot = saved["photometry"].compute()
+    assert phot.shape == (6, 7)
+    # Check that photometry for overlapping filters is strictly positive and non-zero (did not underflow)
+    assert np.all(phot[:, :6] > 0.0)
+    assert not np.any(np.isnan(phot))
+
+    # 4. Test zero redshift rejection when distance dimming is requested
+    args_bad_z = ap.parse_args([
+        "synth",
+        "--redshift", "0.0",
+        "--distance-dimming",
+    ])
+    with pytest.raises(ValueError, match="Physical luminosity-distance dimming requires z > 0"):
+        args_bad_z.fn(args_bad_z, mock_client)
+
+

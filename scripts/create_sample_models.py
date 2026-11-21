@@ -76,9 +76,13 @@ def make_sample_emiles(target_dir: Path, n_wave: int = 200):
 
     f1 = target_dir / "Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits"
     f2 = target_dir / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits"
+    f3 = target_dir / "Ebi1.30Zp0.06T05.0000_iTp0.00_baseFe.fits"
+    f4 = target_dir / "Ebi1.30Zm0.40T01.0000_iTp0.00_baseFe.fits"
     write_fits_1d(f1, np.linspace(1.0, 5.0, n_wave, dtype=">f4"))
     write_fits_1d(f2, np.linspace(0.5, 3.5, n_wave, dtype=">f4"))
-    print(f"  [+] Wrote E-MILES models:    {target_dir} (2 sample FITS files)")
+    write_fits_1d(f3, np.linspace(0.8, 4.0, n_wave, dtype=">f4"))
+    write_fits_1d(f4, np.linspace(0.7, 3.2, n_wave, dtype=">f4"))
+    print(f"  [+] Wrote E-MILES models:    {target_dir} (4 sample FITS files)")
 
 
 def make_sample_fsps(target_file: Path, n_wave: int = 200):

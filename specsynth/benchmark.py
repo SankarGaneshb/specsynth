@@ -61,10 +61,16 @@ def get_system_hardware_info() -> dict[str, Any]:
         except Exception:
             git_hash = "unknown"
     info["git_commit"] = git_hash or "unknown"
-    info["image_digest"] = os.environ.get(
-        "SPECSYNTH_IMAGE_DIGEST",
-        "sha256:fb6d2bbd33218ce590db96e2228966f03359f676c71027eda80412dcb617c39d"
-    )
+    dirty = False
+    try:
+        status_out = subprocess.check_output(
+            ["git", "status", "--porcelain"], stderr=subprocess.DEVNULL, text=True
+        ).strip()
+        dirty = bool(status_out)
+    except Exception:
+        pass
+    info["git_dirty"] = dirty
+    info["image_digest"] = os.environ.get("SPECSYNTH_IMAGE_DIGEST") or "not_containerized"
 
     # BLAS / NumPy backend info
     try:

@@ -58,6 +58,12 @@ sentry_quarantine/
 run/
 demo_run/
 clean_catalog.*
+
+# Node / Frontend (PerandamΨ)
+node_modules/
+perandam-psi/dist/
+perandam-psi/node_modules/
+
 benchmark_data/
 *.tar.gz
 

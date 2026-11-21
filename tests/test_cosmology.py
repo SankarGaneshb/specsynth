@@ -42,7 +42,7 @@ def test_redshift_flux():
     assert d_cm == cosmo.luminosity_distance(1.0) * cosmo.Mpc_to_cm
 
     # Test redshift_flux with z=0 (identity)
-    w0, f0 = redshift_flux(wave_rest, flux_rest, z=0.0)
+    w0, f0 = redshift_flux(wave_rest, flux_rest, z=0.0, distance_dimming=False)
     assert np.allclose(w0, wave_rest)
     assert np.allclose(f0, flux_rest)
 
@@ -154,5 +154,50 @@ def test_cosmology_flux_units():
     # Ratio between lsun and cgs must be exactly L_SUN_ERG_S
     ratio = f_lsun / f_cgs
     assert np.allclose(ratio, L_SUN_ERG_S, rtol=1e-6)
+
+
+def test_zero_or_negative_redshift_distance_dimming_raises():
+    """Verify that requesting physical distance dimming with z <= 0 raises ValueError."""
+    from specsynth.cosmology import (
+        apply_redshift_to_chunk,
+        project_per_galaxy_photometry_chunk,
+        redshift_flux,
+    )
+
+    wave = np.linspace(3000, 7000, 10)
+    flux = np.ones_like(wave)
+
+    with pytest.raises(ValueError, match="Physical luminosity-distance dimming"):
+        redshift_flux(wave, flux, z=0.0, distance_dimming=True)
+
+    with pytest.raises(ValueError, match="Physical luminosity-distance dimming"):
+        redshift_flux(wave, flux, z=-0.5, distance_dimming=True)
+
+    spec_2d = np.ones((2, 10), dtype=np.float32)
+    with pytest.raises(ValueError, match="Physical luminosity-distance dimming"):
+        apply_redshift_to_chunk(spec_2d, np.array([0.0, 1.0]), wave, distance_dimming=True)
+
+    filter_data = [("test", wave, np.ones_like(wave), 1.0)]
+    with pytest.raises(ValueError, match="Physical luminosity-distance dimming"):
+        project_per_galaxy_photometry_chunk(spec_2d, np.array([0.0, 1.0]), wave, filter_data, distance_dimming=True)
+
+
+def test_cgs_photometry_magnitude_consistency():
+    """Verify that cgs distance dimming preserves physical flux densities (~1e-20) without underflowing."""
+    from specsynth.cosmology import DEFAULT_COSMOLOGY, redshift_flux
+
+    wave = np.linspace(4000, 8000, 50)
+    # 1e40 erg/s/A
+    flux_erg_s = np.full_like(wave, 1e40)
+    z = 2.0
+
+    w_obs, f_obs = redshift_flux(wave, flux_erg_s, z=z, distance_dimming=True, input_units="cgs")
+    # Expected: 1e40 / ((1 + 2) * 4 * pi * D_L(2.0)^2)
+    dl_cm = DEFAULT_COSMOLOGY.luminosity_distance_cm(z)
+    expected_f = 1e40 / ((1.0 + z) * 4.0 * np.pi * dl_cm**2)
+
+    assert not np.any(f_obs == 0.0)
+    assert np.allclose(f_obs, expected_f, rtol=1e-5)
+    assert 1e-25 < np.mean(f_obs) < 1e-15
 
 

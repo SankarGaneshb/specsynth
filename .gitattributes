@@ -1,0 +1,17 @@
+# Set default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Enforce LF for python, shell, markdown, JSON, and filter data tables
+*.py text eol=lf
+*.csv text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binary formats
+*.parquet binary
+*.gz binary
+*.tar binary
+*.png binary

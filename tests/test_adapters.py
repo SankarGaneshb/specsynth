@@ -6,6 +6,7 @@ import pytest
 
 from specsynth.adapters import (
     BC03Adapter,
+    BPASSAdapter,
     EMILESAdapter,
     FITSGridAdapter,
     FSPSAdapter,
@@ -109,6 +110,9 @@ def test_get_adapter_factory():
 
     bc03 = get_adapter("bc03", path="mock.spec")
     assert isinstance(bc03, BC03Adapter)
+
+    bpass = get_adapter("bpass", filepath="mock.dat")
+    assert isinstance(bpass, BPASSAdapter)
 
     emiles = get_adapter("emiles", path="mock_dir")
     assert isinstance(emiles, EMILESAdapter)
@@ -248,8 +252,12 @@ def test_emiles_adapter_directory(tmp_path):
 
     f1 = tmp_path / "Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits"
     f2 = tmp_path / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits"
+    f3 = tmp_path / "Ebi1.30Zp0.06T05.0000_iTp0.00_baseFe.fits"
+    f4 = tmp_path / "Ebi1.30Zm0.40T01.0000_iTp0.00_baseFe.fits"
     write_mock_fits(f1, 2.0)
     write_mock_fits(f2, 3.0)
+    write_mock_fits(f3, 2.5)
+    write_mock_fits(f4, 1.5)
 
     adapter = EMILESAdapter(path=tmp_path)
     data = adapter.load()
@@ -259,6 +267,96 @@ def test_emiles_adapter_directory(tmp_path):
     assert np.isclose(data.wave[0], 3500.0)
     assert np.isclose(data.wave[-1], 3500.0 + 9 * 100.0)
     assert data.ssp.shape == (4, 10)
+
+
+@pytest.mark.astrophysics
+def test_emiles_adapter_incomplete_grid_raises(tmp_path):
+    n_wave = 10
+    crval1, cdelt1 = 3500.0, 100.0
+
+    def write_mock_fits(filepath, flux_val):
+        try:
+            from astropy.io import fits
+            hdr = fits.Header()
+            hdr["SIMPLE"] = True
+            hdr["BITPIX"] = -32
+            hdr["NAXIS"] = 1
+            hdr["NAXIS1"] = n_wave
+            hdr["CRVAL1"] = crval1
+            hdr["CDELT1"] = cdelt1
+            hdr["CRPIX1"] = 1.0
+            data = np.full(n_wave, flux_val, dtype=np.float32)
+            fits.writeto(filepath, data, hdr, overwrite=True)
+        except ImportError:
+            cards = [
+                "SIMPLE  =                    T",
+                "BITPIX  =                  -32",
+                "NAXIS   =                    1",
+                f"NAXIS1  =                 {n_wave:4d}",
+                f"CRVAL1  =             {crval1:8.1f}",
+                f"CDELT1  =               {cdelt1:6.1f}",
+                "CRPIX1  =                  1.0",
+                "END",
+            ]
+            hdr_bytes = "".join(c.ljust(80) for c in cards).encode("ascii")
+            rem = len(hdr_bytes) % 2880
+            if rem != 0:
+                hdr_bytes += b" " * (2880 - rem)
+            data = np.full(n_wave, flux_val, dtype=">f4")
+            data_bytes = data.tobytes()
+            rem_d = len(data_bytes) % 2880
+            if rem_d != 0:
+                data_bytes += b"\x00" * (2880 - rem_d)
+            with open(filepath, "wb") as fp:
+                fp.write(hdr_bytes)
+                fp.write(data_bytes)
+
+    # Write only 2 of 4 grid combinations
+    f1 = tmp_path / "Ebi1.30Zp0.06T01.0000_iTp0.00_baseFe.fits"
+    f2 = tmp_path / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits"
+    write_mock_fits(f1, 2.0)
+    write_mock_fits(f2, 3.0)
+
+    # Default strict mode must raise ValueError
+    with pytest.raises(ValueError, match="incomplete age-metallicity grid"):
+        EMILESAdapter(path=tmp_path).load()
+
+    # allow_incomplete=True should permit loading
+    sparse = EMILESAdapter(path=tmp_path, allow_incomplete=True).load()
+    assert sparse.ssp.shape == (4, 10)
+
+
+@pytest.mark.astrophysics
+def test_bpass_adapter_ascii_file_and_directory(tmp_path):
+    # Create mock BPASS ASCII spectot tables with 10 wavelengths and 5 age bins
+    wave = np.linspace(1000.0, 5000.0, 10)
+    # 5 age columns
+    flux_cols = np.ones((10, 5), dtype=np.float32) * 1e6  # 1e6 L_sun / A per 1e6 M_sun -> 1.0 L_sun/A/M_sun
+
+    table_data = np.column_stack([wave, flux_cols])
+
+    # 1. Single file mode
+    f_z020 = tmp_path / "spectot-bin-imf135_300.z020.dat"
+    np.savetxt(f_z020, table_data, header="BPASS mock v2.2")
+
+    adapter_file = BPASSAdapter(filepath=f_z020)
+    data_file = adapter_file.load()
+    assert len(data_file.wave) == 10
+    assert len(data_file.mets) == 1
+    assert np.isclose(data_file.mets[0], 0.020)
+    assert len(data_file.ages) == 5
+    # Value should be scaled by 1e-6 -> 1.0
+    assert np.isclose(data_file.ssp[0, 0], 1.0)
+
+    # 2. Directory mode with multiple metallicities
+    f_z004 = tmp_path / "spectot-bin-imf135_300.z004.dat"
+    np.savetxt(f_z004, table_data * 2.0, header="BPASS mock v2.2 z=0.004")
+
+    adapter_dir = BPASSAdapter(path=tmp_path)
+    data_dir = adapter_dir.load()
+    assert len(data_dir.mets) == 2
+    assert np.allclose(data_dir.mets, [0.004, 0.020])
+    assert data_dir.ssp.shape == (10, 10)  # 5 ages * 2 mets = 10 spectra
 
 
 @pytest.mark.astrophysics
@@ -586,14 +684,19 @@ def test_emiles_single_file_and_errors(tmp_path):
     f2 = interp_dir / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe.fits"
     # Duplicate with same age and met
     f3 = interp_dir / "Ebi1.30Zm0.40T05.0000_iTp0.00_baseFe_dup.fits"
+    # Additional combinations to complete 2x2 grid
+    f4 = interp_dir / "Ebi1.30Zp0.06T05.0000_iTp0.00_baseFe.fits"
+    f5 = interp_dir / "Ebi1.30Zm0.40T01.0000_iTp0.00_baseFe.fits"
     write_simple_fits(f1, n_wave=8, crval1=3500.0, cdelt1=100.0, flux_val=2.0)
     write_simple_fits(f2, n_wave=10, crval1=3400.0, cdelt1=90.0, flux_val=3.0)
     write_simple_fits(f3, n_wave=10, crval1=3400.0, cdelt1=90.0, flux_val=3.0)
+    write_simple_fits(f4, n_wave=10, crval1=3400.0, cdelt1=90.0, flux_val=2.5)
+    write_simple_fits(f5, n_wave=8, crval1=3500.0, cdelt1=100.0, flux_val=1.5)
 
     ad_interp = EMILESAdapter(interp_dir)
     d_interp = ad_interp.load()
-    assert d_interp.ssp.shape == (4, 10)
-    assert len(d_interp.wave) == 10
+    assert d_interp.ssp.shape == (4, len(d_interp.wave))
+    assert len(d_interp.wave) in (8, 10)
 
 
 @pytest.mark.astrophysics

@@ -1,10 +1,16 @@
 {
   "schema_version": "1.0",
-  "timestamp_utc": "2026-11-18T14:10:22.451096+00:00",
+  "timestamp_utc": "2026-11-21T20:00:01.508909+00:00",
   "environment": {
     "python": "3.13.1",
     "platform": "Windows-11-10.0.26300-SP0",
-    "numpy": "2.5.4"
+    "numpy": "2.5.4",
+    "git_commit": "9f1255067ca3e29cf08c06da82cb2b8ccbbc19be",
+    "scipy": "not_installed",
+    "astropy": "8.0.2",
+    "dask": "2026.8.0",
+    "zarr": "3.4.2",
+    "psutil": "7.2.2"
   },
   "overall_status": "PASS",
   "checks": {
@@ -35,10 +41,10 @@
     "tng_population_photometry_vs_float64": {
       "n_galaxies": 500,
       "z_snapshot": 2.0,
-      "elapsed_seconds": 0.16725970001425594,
-      "throughput_gal_per_s": 2989.3632474372716,
-      "rss_start_mb": 81.58203125,
-      "rss_end_mb": 141.2734375,
+      "elapsed_seconds": 0.0479808999953093,
+      "throughput_gal_per_s": 10420.813282970534,
+      "rss_start_mb": 82.07421875,
+      "rss_end_mb": 141.43359375,
       "max_abs_delta_mag_all_bands": 2.964144130146451e-07,
       "filter_sets": {
         "jwst_nircam": {

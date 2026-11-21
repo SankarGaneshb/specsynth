@@ -67,6 +67,14 @@ def cmd_make_ssp(a, client: Client):
             "metallicity": a.metallicity,
             "imf": a.imf,
         }
+    elif adapter_name in ("bpass", "bpass2", "bpass_v2"):
+        target_p = getattr(a, "input_file", None) or getattr(a, "input_path", None)
+        if not target_p:
+            raise ValueError("--input-file or --input-path is required for the bpass adapter")
+        adapter_kwargs = {
+            "filepath": target_p,
+            "metallicity": getattr(a, "metallicity", None),
+        }
     elif adapter_name in ("emiles", "e-miles", "miles"):
         if not a.input_path:
             raise ValueError("--input-path is required for the emiles adapter")
@@ -286,14 +294,25 @@ def cmd_synth(a, client: Client):
     )
 
     redshift = getattr(a, "redshift", 0.0)
-    per_galaxy_z = getattr(a, "per_galaxy_z", False)
+    per_galaxy_z = getattr(a, "per_galaxy_z", False) or getattr(a, "lightcone", False)
     distance_dimming = getattr(a, "distance_dimming", False)
     input_units = getattr(a, "input_units", "lsun")
     apply_igm = getattr(a, "igm", False)
     cosmo_choice = getattr(a, "cosmology", "default")
-    cosmo = get_cosmology(cosmo_choice)
-    if cosmo_choice and cosmo_choice.lower() != "default":
+    h0_custom = getattr(a, "h0", None)
+    om0_custom = getattr(a, "omega_m", None)
+    if h0_custom is not None or om0_custom is not None:
+        cosmo = FlatLambdaCDM(H0=h0_custom or 70.0, Om0=om0_custom or 0.3)
+    else:
+        cosmo = get_cosmology(cosmo_choice)
+    if cosmo_choice and str(cosmo_choice).lower() not in ("default", "concordance"):
         print(f"[Cosmology] Adopting '{cosmo_choice}' cosmology: H0={cosmo.H0:.2f}, Om0={cosmo.Om0:.4f}")
+
+    if not per_galaxy_z and redshift <= 0.0 and distance_dimming:
+        raise ValueError(
+            "Physical luminosity-distance dimming requires z > 0; found redshift <= 0. "
+            "Specify a snapshot redshift with --redshift <z> (e.g. --redshift 2.0) or disable --distance-dimming."
+        )
 
     # Inspect if catalog store has per-galaxy redshift array
     has_catalog_z = False
@@ -379,7 +398,11 @@ def cmd_synth(a, client: Client):
                 chunks=spec.chunks,
             )
             arrays["spectra"] = spec
+            metadata["wavelength_frame"] = "rest_frame_reference"
+            metadata["per_galaxy_observed_wavelength_formula"] = "wave * (1 + redshift)"
         arrays["wave"] = small(wave)
+        if z_da is not None:
+            arrays["redshift"] = z_da
 
     elif redshift > 0.0:
         if has_catalog_z:
@@ -392,7 +415,7 @@ def cmd_synth(a, client: Client):
         dimming = 1.0 / (1.0 + redshift)
         if distance_dimming:
             d_L_cm = cosmo.luminosity_distance_cm(redshift)
-            dimming = dimming / (4.0 * np.pi * (max(d_L_cm, 1e-10) ** 2))
+            dimming = dimming / (4.0 * np.pi * (d_L_cm ** 2))
             if input_units == "lsun":
                 dimming = dimming * L_SUN_ERG_S
 
@@ -404,33 +427,41 @@ def cmd_synth(a, client: Client):
 
         if filter_req:
             proj_mat, filter_names, pivots = build_filter_projection_matrix(wave, filter_req)
-            # Memory optimization: fold scalar dimming & 1D IGM attenuation into the filter projection matrix
-            # M_eff = (dimming * T_igm)[:, None] * proj_mat
-            # This contracts (N x W) directly into (N x N_filters) without allocating intermediate full-spectrum arrays!
-            eff_proj_mat = proj_mat.astype(np.float64) * dimming
+            eff_proj_mat = proj_mat.astype(np.float64)
             if apply_igm and t_igm is not None:
                 eff_proj_mat = eff_proj_mat * t_igm[:, None]
+            # Fold filter matrix in float32 without dimming to avoid float32 underflow with cgs units
             bm = small(eff_proj_mat.astype(np.float32)).rechunk((ssp.chunks[1], (len(filter_names),)))
             phot = da.matmul(spec, bm)
+            if distance_dimming or dimming != 1.0:
+                phot = phot.astype(np.float64) * dimming
+                if not distance_dimming:
+                    phot = phot.astype(np.float32)
             arrays["photometry"] = phot
             metadata["filters"] = filter_names
             metadata["pivot_wavelengths"] = pivots
             print(f"Projecting into {len(filter_names)} filters: {', '.join(filter_names)}")
-            print("  [Notice: Built-in filter profiles are analytical approximations. Load empirical curves via FilterCurve.from_file() for calibrated photometry.]")
+            has_approx = any(f.endswith("_approx") for f in filter_names)
+            if has_approx:
+                print("  [Notice: Analytical filter approximations active. Load empirical curves via FilterCurve.from_file() for calibrated photometry.]")
         elif a.bands:
-            bm_mat = band_matrix(wave, a.bands).astype(np.float64) * dimming
+            bm_mat = band_matrix(wave, a.bands).astype(np.float64)
             if apply_igm and t_igm is not None:
                 bm_mat = bm_mat * t_igm[:, None]
             bm = small(bm_mat.astype(np.float32)).rechunk((ssp.chunks[1], (a.bands,)))
             phot = da.matmul(spec, bm)
+            if distance_dimming or dimming != 1.0:
+                phot = phot.astype(np.float64) * dimming
+                if not distance_dimming:
+                    phot = phot.astype(np.float32)
             arrays["photometry"] = phot
         else:
+            if apply_igm and t_igm is not None:
+                spec = spec * small(t_igm.astype(np.float32)).rechunk((ssp.chunks[1],))
             if distance_dimming:
                 spec = spec.astype(np.float64) * dimming
-            else:
+            elif dimming != 1.0:
                 spec = spec * np.float32(dimming)
-            if apply_igm and t_igm is not None:
-                spec = spec * small(t_igm).rechunk((ssp.chunks[1],))
             arrays["spectra"] = spec
         arrays["wave"] = small(wave)
 
@@ -599,8 +630,9 @@ def cmd_import_catalog(a, client: Client | None):
         col_map["tau"] = a.tau_col
     if getattr(a, "met_col", None):
         col_map["met"] = a.met_col
-    if getattr(a, "dust_diffuse_col", None):
-        col_map["tau_diffuse"] = a.dust_diffuse_col
+    dust_d_col = getattr(a, "dust_diffuse_col", None) or getattr(a, "tau_d_col", None)
+    if dust_d_col:
+        col_map["tau_diffuse"] = dust_d_col
     if getattr(a, "dust_birth_col", None):
         col_map["tau_birth"] = a.dust_birth_col
     if getattr(a, "redshift_col", None):
@@ -616,6 +648,7 @@ def cmd_import_catalog(a, client: Client | None):
         explicit_columns=col_map,
         client=client,
         streaming=getattr(a, "streaming", False),
+        drop_invalid=getattr(a, "drop_invalid", False),
     )
     dt = time.time() - t0
     print(
@@ -970,8 +1003,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument(
         "--adapter",
         default="analytical",
-        choices=["analytical", "toy", "benchmark", "bc03", "emiles", "fits", "fsps"],
-        help="Model adapter: 'analytical'/'toy' (built-in analytical benchmark grid), 'bc03', 'emiles', 'fits' (or HDF5), 'fsps'",
+        choices=["analytical", "toy", "benchmark", "bc03", "bpass", "emiles", "fits", "fsps"],
+        help="Model adapter: 'analytical'/'toy' (built-in analytical benchmark grid), 'bc03', 'bpass', 'emiles', 'fits' (or HDF5), 'fsps'",
     )
     # Toy model options
     s.add_argument("--n-age", type=int, default=60, help="Number of age bins (toy adapter)")
@@ -1025,10 +1058,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--age-col", help="Column name for starburst onset/age")
     s.add_argument("--tau-col", help="Column name for star formation timescale tau")
     s.add_argument("--met-col", help="Column name for metallicity")
-    s.add_argument("--dust-diffuse-col", help="Column name for diffuse ISM dust")
+    s.add_argument("--dust-diffuse-col", "--tau-d-col", dest="dust_diffuse_col", help="Column name for diffuse ISM dust (tau_d or A_V)")
     s.add_argument("--dust-birth-col", help="Column name for birth-cloud dust")
     s.add_argument("--redshift-col", help="Column name for cosmological redshift")
-    s.add_argument("--streaming", action="store_true", help="Stream records in chunk blocks directly to Zarr without full in-memory loading (for large Parquet/HDF5)")
+    s.add_argument("--streaming", action="store_true", help="Stream records in chunk blocks directly to Zarr without full in-memory loading (for large Parquet/HDF5/CSV)")
+    s.add_argument("--drop-invalid", action="store_true", help="Drop unphysical or blank rows (non-positive mass, unparseable floats, negative z) instead of raising error")
     s.set_defaults(fn=cmd_import_catalog)
 
     # benchmark
@@ -1081,11 +1115,13 @@ def build_parser() -> argparse.ArgumentParser:
         s.add_argument("--diffuse-index", type=float, default=-0.7, help="Diffuse ISM dust power-law index")
         s.add_argument("--birth-index", type=float, default=-1.3, help="Birth cloud dust power-law index")
         s.add_argument("--redshift", type=float, default=0.0, help="Cosmological redshift z to apply to spectra")
-        s.add_argument("--per-galaxy-z", action="store_true", help="Apply per-galaxy cosmological redshift from catalog 'redshift' column")
+        s.add_argument("--per-galaxy-z", "--lightcone", dest="per_galaxy_z", action="store_true", help="Apply per-galaxy cosmological redshift from catalog 'redshift' column (lightcone mode)")
         s.add_argument("--distance-dimming", action="store_true", help="Apply physical 1/(4*pi*D_L^2) cosmological distance dimming")
         s.add_argument("--input-units", choices=["lsun", "cgs"], default="lsun", help="Input SSP luminosity density units: 'lsun' (L_sun/A) or 'cgs' (erg/s/A)")
         s.add_argument("--igm", action="store_true", help="Apply Madau (1995) IGM attenuation for z > 0")
-        s.add_argument("--cosmology", default="default", help="Cosmology preset: 'tng', 'planck2015', 'planck2018', 'wmap9', or 'default'")
+        s.add_argument("--cosmology", default="concordance", help="Cosmology preset: 'concordance' (default H0=70, Om0=0.3), 'planck18', 'tng'")
+        s.add_argument("--h0", type=float, default=None, help="Custom Hubble parameter H0 in km/s/Mpc")
+        s.add_argument("--omega-m", type=float, default=None, help="Custom matter density Omega_m")
         s.add_argument(
             "--filters",
             help="Filter set or comma-separated filters: 'jwst_nircam', 'hst', 'rubin', 'sdss', 'euclid'",
@@ -1159,10 +1195,7 @@ def main():
     elif sched_arg in ("processes", "multiprocessing"):
         dask.config.set(scheduler="processes")
         print("dask: multi-process scheduler active")
-    elif a.scheduler and a.scheduler != "distributed":
-        client = Client(a.scheduler)
-        print(f"dask: {len(client.scheduler_info()['workers'])} workers connected (remote scheduler: {a.scheduler})")
-    else:
+    elif sched_arg in ("local", "localcluster", "distributed", ""):
         # Distributed LocalCluster mode with dynamic CPU thread budgeting
         import asyncio
         import os
@@ -1190,6 +1223,9 @@ def main():
         )
         client = Client(cluster)
         print(f"dask: {len(client.scheduler_info()['workers'])} workers connected ({threads_per_worker} thread(s)/worker on {phys_cores} physical cores)")
+    else:
+        client = Client(a.scheduler)
+        print(f"dask: {len(client.scheduler_info()['workers'])} workers connected (remote scheduler: {a.scheduler})")
 
     try:
         a.fn(a, client)

@@ -76,6 +76,7 @@ PLANCK18_COSMOLOGY = FlatLambdaCDM(H0=67.4, Om0=0.315)
 # Named cosmology presets
 COSMOLOGY_PRESETS: dict[str, FlatLambdaCDM] = {
     "default": DEFAULT_COSMOLOGY,
+    "concordance": DEFAULT_COSMOLOGY,
     "tng": TNG_COSMOLOGY,
     "tng100": TNG_COSMOLOGY,
     "tng300": TNG_COSMOLOGY,
@@ -129,6 +130,12 @@ def redshift_flux(
     """
     z_arr = np.asarray(z)
     if z_arr.ndim == 0 and float(z_arr) <= 0.0:
+        if distance_dimming:
+            raise ValueError(
+                "Physical luminosity-distance dimming (1 / [4*pi*D_L^2]) requires cosmological redshift z > 0; "
+                f"found non-positive redshift (z = {float(z_arr):.4f}). "
+                "Disable distance dimming or provide an explicit non-zero redshift."
+            )
         return np.asarray(wave_rest), np.asarray(flux_rest)
 
     cosmo = cosmo or DEFAULT_COSMOLOGY
@@ -137,8 +144,14 @@ def redshift_flux(
     # F_lambda(lambda_obs) = (1 / (1 + z)) * L_lambda(lambda_rest) / (4 * pi * D_L^2)
     dimming_factor = 1.0 / (1.0 + z_arr)
     if distance_dimming:
+        if np.any(z_arr <= 0.0):
+            raise ValueError(
+                "Physical luminosity-distance dimming (1 / [4*pi*D_L^2]) requires cosmological redshift z > 0; "
+                f"found non-positive redshift (min z = {float(np.min(z_arr)):.4f}). "
+                "Disable distance dimming or provide an explicit non-zero redshift."
+            )
         d_L_cm = cosmo.luminosity_distance_cm(z_arr)
-        dimming_factor = dimming_factor / (4.0 * np.pi * (np.maximum(d_L_cm, 1e-10) ** 2))
+        dimming_factor = dimming_factor / (4.0 * np.pi * (d_L_cm ** 2))
         if input_units == "lsun":
             dimming_factor = dimming_factor * L_SUN_ERG_S
 
@@ -174,8 +187,14 @@ def apply_redshift_to_chunk(
     cosmo = cosmo or DEFAULT_COSMOLOGY
     dimming_factor = 1.0 / (1.0 + z)
     if distance_dimming:
+        if np.any(z <= 0.0):
+            raise ValueError(
+                "Physical luminosity-distance dimming (1 / [4*pi*D_L^2]) requires cosmological redshift z > 0; "
+                f"found non-positive redshift (min z = {float(np.min(z)):.4f}). "
+                "Disable distance dimming or provide an explicit non-zero redshift."
+            )
         d_L_cm = cosmo.luminosity_distance_cm(z)
-        dimming_factor = dimming_factor / (4.0 * np.pi * (np.maximum(d_L_cm, 1e-10) ** 2))
+        dimming_factor = dimming_factor / (4.0 * np.pi * (d_L_cm ** 2))
         if input_units == "lsun":
             dimming_factor = dimming_factor * L_SUN_ERG_S
 
@@ -227,8 +246,14 @@ def project_per_galaxy_photometry_chunk(
 
     dimming_factor = 1.0 / (1.0 + z)
     if distance_dimming:
+        if np.any(z <= 0.0):
+            raise ValueError(
+                "Physical luminosity-distance dimming (1 / [4*pi*D_L^2]) requires cosmological redshift z > 0; "
+                f"found non-positive redshift (min z = {float(np.min(z)):.4f}). "
+                "Disable distance dimming or provide an explicit non-zero redshift."
+            )
         d_L_cm = cosmo.luminosity_distance_cm(z)
-        dimming_factor = dimming_factor / (4.0 * np.pi * (np.maximum(d_L_cm, 1e-10) ** 2))
+        dimming_factor = dimming_factor / (4.0 * np.pi * (d_L_cm ** 2))
         if input_units == "lsun":
             dimming_factor = dimming_factor * L_SUN_ERG_S
 

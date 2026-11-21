@@ -91,16 +91,19 @@ class EMILESAdapter(BaseAdapter):
         path: str | Path,
         z_sun: float = 0.019,
         imf_filter: str | None = None,
+        allow_incomplete: bool = False,
     ):
         """
         Args:
             path: Path to directory containing E-MILES / MILES FITS files.
             z_sun: Solar metallicity mass fraction used to convert [M/H] to absolute Z.
             imf_filter: Optional substring filter for IMF code (e.g. 'bi1.30', 'ku1.30', 'ch').
+            allow_incomplete: Whether to allow sparse/incomplete age-metallicity grids without error.
         """
         self.path = Path(path)
         self.z_sun = z_sun
         self.imf_filter = imf_filter
+        self.allow_incomplete = allow_incomplete
 
     def load(self) -> SSPData:
         if not self.path.is_dir():
@@ -167,6 +170,20 @@ class EMILESAdapter(BaseAdapter):
                 # Interpolate if individual file wavelength grid differs slightly
                 grid_3d[i, j, :] = np.interp(ref_wave, w, flx, left=0.0, right=0.0).astype(np.float32)
             filled[i, j] = True
+
+        if not filled.all():
+            missing = []
+            for i, age in enumerate(unique_ages):
+                for j, met in enumerate(unique_mets):
+                    if not filled[i, j]:
+                        missing.append(f"(age={age/1e9:.2f} Gyr, Z={met:.4f})")
+            if not getattr(self, "allow_incomplete", False):
+                missing_str = ", ".join(missing[:4]) + (f" and {len(missing) - 4} more" if len(missing) > 4 else "")
+                raise ValueError(
+                    f"E-MILES adapter detected incomplete age-metallicity grid: {np.count_nonzero(~filled)} of "
+                    f"{filled.size} cells are unpopulated ({missing_str}). "
+                    f"Ensure all model FITS files are present in '{self.path}' or set allow_incomplete=True."
+                )
 
         return SSPData.from_3d_grid(
             ages=unique_ages,

@@ -10,7 +10,7 @@
 
 - **Memory-Bounded Out-of-Core Streaming**: Worker memory stays strictly bounded to one galaxy chunk ($O(N_{\text{chunk}})$), verified with < 0.2% RAM variance from 100k to 1M galaxies.
 - **In-Flight Filter Projection**: Projects chunk spectra directly into calibrated JWST NIRCam, HST ACS/WFC3, SDSS, Rubin/LSST, or custom throughput curves, reducing persistent output storage by > 99.9%.
-- **Pluggable SPS Library Adapters**: Native loaders for Bruzual & Charlot (2003) `.ised`/ASCII, E-MILES/MILES FITS, FSPS (`python-fsps` and `spstot_*.spec`), and arbitrary 3D FITS/HDF5/NPZ SSP grids.
+- **Pluggable SPS Library Adapters**: Native loaders for Bruzual & Charlot (2003) `.ised`/ASCII, E-MILES/MILES FITS, FSPS (`python-fsps` and `spstot_*.spec`), BPASS v2.2+, and arbitrary 3D FITS/HDF5/NPZ SSP grids.
 - **Simulation Catalog Ingestion**: Imports mock galaxy catalogs from Parquet, FITS, HDF5, CSV, and NPZ (including IllustrisTNG, EAGLE, CAMELS, and semi-analytic models).
 - **Snapshot & Lightcone Cosmology**: Built-in `FlatLambdaCDM` luminosity-distance flux scaling, $(1+z)$ rest-to-observed bandpass shifting, and Madau (1995) neutral-hydrogen IGM attenuation.
 - **CPU BLAS & GPU Acceleration**: Vectorized `scipy-openblas` / NumPy GEMM on CPUs with transparent CuPy CUDA acceleration on NVIDIA GPUs.

@@ -1,0 +1,178 @@
+{
+  "jwst_f090w": {
+    "telescope": "JWST",
+    "instrument": "NIRCam",
+    "channel": "SW",
+    "nominal_center_A": 9000.0,
+    "nominal_fwhm_A": 2000.0,
+    "pivot_wavelength_A": 8990.54,
+    "sha256": "58eb808d6ecc4ff698234173bab99d9e998c2ea6651fa98ff636de21d9e7ffb8",
+    "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    "response_type": "photon"
+  },
+  "jwst_f115w": {
+    "telescope": "JWST",
+    "instrument": "NIRCam",
+    "channel": "SW",
+    "nominal_center_A": 11500.0,
+    "nominal_fwhm_A": 2300.0,
+    "pivot_wavelength_A": 11520.01,
+    "sha256": "1e31b7100dfcdf7cdd5b18e2b66061bf18aeab603fa806e13e266c2165139088",
+    "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    "response_type": "photon"
+  },
+  "jwst_f150w": {
+    "telescope": "JWST",
+    "instrument": "NIRCam",
+    "channel": "SW",
+    "nominal_center_A": 15000.0,
+    "nominal_fwhm_A": 3000.0,
+    "pivot_wavelength_A": 14979.26,
+    "sha256": "3a47ccc4006658d4ed704283e97d914516e13c9f90e795c3ef16b06f4487c9b1",
+    "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    "response_type": "photon"
+  },
+  "jwst_f200w": {
+    "telescope": "JWST",
+    "instrument": "NIRCam",
+    "channel": "SW",
+    "nominal_center_A": 20000.0,
+    "nominal_fwhm_A": 4600.0,
+    "pivot_wavelength_A": 19831.19,
+    "sha256": "6c1091caa32451e4f7f4426ac8598e72f16916cf35573f54e39beb0de76c3f5d",
+    "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    "response_type": "photon"
+  },
+  "jwst_f277w": {
+    "telescope": "JWST",
+    "instrument": "NIRCam",
+    "channel": "LW",
+    "nominal_center_A": 27700.0,
+    "nominal_fwhm_A": 6800.0,
+    "pivot_wavelength_A": 27545.27,
+    "sha256": "f4fe1a9373c090af558f3772e29c3bf46be0377eb2877885c01c154585abb308",
+    "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    "response_type": "photon"
+  },
+  "jwst_f356w": {
+    "telescope": "JWST",
+    "instrument": "NIRCam",
+    "channel": "LW",
+    "nominal_center_A": 35600.0,
+    "nominal_fwhm_A": 7800.0,
+    "pivot_wavelength_A": 35601.98,
+    "sha256": "e9682e1a21a18abb9e2f50ca34fc6a95d09ec393fedd7f98dacbf6819ef7847b",
+    "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    "response_type": "photon"
+  },
+  "jwst_f444w": {
+    "telescope": "JWST",
+    "instrument": "NIRCam",
+    "channel": "LW",
+    "nominal_center_A": 44400.0,
+    "nominal_fwhm_A": 10200.0,
+    "pivot_wavelength_A": 43971.35,
+    "sha256": "a6582a07bafde3c6e89a1008a7e5f63dbde6d5cd2be822d51266720950083b57",
+    "provenance": "STScI NIRCam Baseline / SVO Filter Profile Service (Optics x Detector QE x Filter)",
+    "response_type": "photon"
+  },
+  "hst_f435w": {
+    "telescope": "HST",
+    "instrument": "ACS/WFC",
+    "channel": "WFC",
+    "nominal_center_A": 4323.0,
+    "nominal_fwhm_A": 720.0,
+    "pivot_wavelength_A": 4323.0,
+    "sha256": "7e1ffdf0b5fddb073d95b066510bc6794cced8c06fa1eeca394b89f535c87021",
+    "provenance": "STScI ACS Throughput Tables / SVO Filter Profile Service",
+    "response_type": "photon"
+  },
+  "hst_f606w": {
+    "telescope": "HST",
+    "instrument": "ACS/WFC",
+    "channel": "WFC",
+    "nominal_center_A": 5900.0,
+    "nominal_fwhm_A": 1570.0,
+    "pivot_wavelength_A": 5901.95,
+    "sha256": "0b92a5e27864d900181d5f51837c51cac5fbb6458b01cef55cdb30ef365a50d7",
+    "provenance": "STScI ACS Throughput Tables / SVO Filter Profile Service",
+    "response_type": "photon"
+  },
+  "hst_f814w": {
+    "telescope": "HST",
+    "instrument": "ACS/WFC",
+    "channel": "WFC",
+    "nominal_center_A": 8040.0,
+    "nominal_fwhm_A": 1530.0,
+    "pivot_wavelength_A": 8043.75,
+    "sha256": "093e39e42b8dc3cb4fd8af6616430e78d77ac83f3782688f0cb6b402c16f15a2",
+    "provenance": "STScI ACS Throughput Tables / SVO Filter Profile Service",
+    "response_type": "photon"
+  },
+  "hst_f160w": {
+    "telescope": "HST",
+    "instrument": "WFC3/IR",
+    "channel": "IR",
+    "nominal_center_A": 15350.0,
+    "nominal_fwhm_A": 2680.0,
+    "pivot_wavelength_A": 15347.69,
+    "sha256": "af728d911724b51f88aa557207e9582c672c2233b0827e21dfd7c9041b353c45",
+    "provenance": "STScI WFC3 Throughput Tables / SVO Filter Profile Service",
+    "response_type": "photon"
+  },
+  "sdss_u": {
+    "telescope": "SDSS 2.5m",
+    "instrument": "SDSS Camera",
+    "channel": "Optical",
+    "nominal_center_A": 3550.0,
+    "nominal_fwhm_A": 570.0,
+    "pivot_wavelength_A": 3552.99,
+    "sha256": "92d28792eef75aa58aebe4fe3406d4f720d6228b08d5e99fa9f58480670d20d2",
+    "provenance": "SDSS DR12 / SVO Filter Profile Service (Vacuum-shifted)",
+    "response_type": "photon"
+  },
+  "sdss_g": {
+    "telescope": "SDSS 2.5m",
+    "instrument": "SDSS Camera",
+    "channel": "Optical",
+    "nominal_center_A": 4800.0,
+    "nominal_fwhm_A": 1280.0,
+    "pivot_wavelength_A": 4806.91,
+    "sha256": "daa65651e27e35c2e66953f28c02f7192025dff7fa1aed5af44fddb80ac733ef",
+    "provenance": "SDSS DR12 / SVO Filter Profile Service (Vacuum-shifted)",
+    "response_type": "photon"
+  },
+  "sdss_r": {
+    "telescope": "SDSS 2.5m",
+    "instrument": "SDSS Camera",
+    "channel": "Optical",
+    "nominal_center_A": 6250.0,
+    "nominal_fwhm_A": 1150.0,
+    "pivot_wavelength_A": 6247.31,
+    "sha256": "84ff413e01c5278ba58a3f9519bbd753a51e3d2b874ef08f46f8f6c1d3ed5d08",
+    "provenance": "SDSS DR12 / SVO Filter Profile Service (Vacuum-shifted)",
+    "response_type": "photon"
+  },
+  "sdss_i": {
+    "telescope": "SDSS 2.5m",
+    "instrument": "SDSS Camera",
+    "channel": "Optical",
+    "nominal_center_A": 7660.0,
+    "nominal_fwhm_A": 1200.0,
+    "pivot_wavelength_A": 7658.08,
+    "sha256": "99a3cc9e5ae5f411362450ac01960dce67449aa5246c07db80a7e042225cf74b",
+    "provenance": "SDSS DR12 / SVO Filter Profile Service (Vacuum-shifted)",
+    "response_type": "photon"
+  },
+  "sdss_z": {
+    "telescope": "SDSS 2.5m",
+    "instrument": "SDSS Camera",
+    "channel": "Optical",
+    "nominal_center_A": 9100.0,
+    "nominal_fwhm_A": 1200.0,
+    "pivot_wavelength_A": 9087.62,
+    "sha256": "2c33dfb111a390496520f55044e2fc4ca8a09485fd7a4548328b70c4fe68d27c",
+    "provenance": "SDSS DR12 / SVO Filter Profile Service (Vacuum-shifted)",
+    "response_type": "photon"
+  }
+}

@@ -438,22 +438,50 @@ def validate_live_dsps() -> dict[str, Any]:
     Runs automatically if `dsps` is installed; otherwise returns a clean skip note.
     """
     try:
-        import dsps  # noqa: F401
-        import jax.numpy as jnp  # noqa: F401
+        import dsps
+        import jax.numpy as jnp
     except ImportError:
         return {
             "status": "skipped_not_installed",
             "note": "Install dsps (`pip install dsps jax`) to enable live DSPS cross-validation.",
         }
 
-    return {
-        "status": "available",
-        "dsps_version": getattr(dsps, "__version__", "unknown"),
-    }
+    try:
+        from dsps.data_loaders import load_ssp_templates
+        dsps_ssp = load_ssp_templates()
+        # Verify DSPS template grid dimensions match expected astrophysical ranges
+        assert len(dsps_ssp.ssp_wave) > 100
+        assert len(dsps_ssp.ssp_lg_age) > 10
+        assert len(dsps_ssp.ssp_lgmet) > 1
+
+        return {
+            "status": "PASS",
+            "dsps_version": getattr(dsps, "__version__", "unknown"),
+            "backend": "jax",
+            "n_ssp_wave": len(dsps_ssp.ssp_wave),
+            "n_ssp_age": len(dsps_ssp.ssp_lg_age),
+            "n_ssp_met": len(dsps_ssp.ssp_lgmet),
+            "validation_note": "Verified live DSPS SSP spectral template loading and dimension consistency",
+        }
+    except Exception as e:
+        return {
+            "status": "error_during_comparison",
+            "error": str(e),
+            "dsps_version": getattr(dsps, "__version__", "unknown"),
+        }
 
 
 def run_cross_validation(n_gal: int = 500, z_snapshot: float = 2.0, seed: int = 42) -> dict[str, Any]:
     """Execute all available cross-validation checks and return a provenance manifest."""
+    import subprocess
+    git_hash = "unknown"
+    try:
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
+        ).strip()
+    except Exception:
+        pass
+
     cosmo_res = validate_cosmology_vs_astropy()
     phot_res = validate_photometry_tng_population(n_gal=n_gal, z_snapshot=z_snapshot, seed=seed)
     fsps_res = validate_live_python_fsps()
@@ -463,16 +491,26 @@ def run_cross_validation(n_gal: int = 500, z_snapshot: float = 2.0, seed: int = 
         cosmo_res.get("status") in ("PASS", "skipped_astropy_not_installed")
         and phot_res.get("status") == "PASS"
         and fsps_res.get("status") in ("PASS", "skipped_not_installed")
+        and dsps_res.get("status") in ("PASS", "available", "skipped_not_installed")
     )
+
+    env_info = {
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "numpy": np.__version__,
+        "git_commit": git_hash,
+    }
+    for mod_name in ("scipy", "astropy", "dask", "zarr", "psutil"):
+        try:
+            mod = __import__(mod_name)
+            env_info[mod_name] = getattr(mod, "__version__", "installed")
+        except ImportError:
+            env_info[mod_name] = "not_installed"
 
     return {
         "schema_version": "1.0",
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "environment": {
-            "python": platform.python_version(),
-            "platform": platform.platform(),
-            "numpy": np.__version__,
-        },
+        "environment": env_info,
         "overall_status": "PASS" if overall_pass else "FAIL",
         "checks": {
             "cosmology_vs_astropy": cosmo_res,

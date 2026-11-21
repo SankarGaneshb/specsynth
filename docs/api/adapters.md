@@ -32,6 +32,12 @@
     options:
       show_root_heading: false
 
+### BPASS (Binary Population and Spectral Synthesis)
+
+::: specsynth.adapters.bpass
+    options:
+      show_root_heading: false
+
 ### Generic FITS / HDF5 / NPZ Grid
 
 ::: specsynth.adapters.fits_grid

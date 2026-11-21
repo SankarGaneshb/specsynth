@@ -41,17 +41,31 @@ specsynth --base ./run make-ssp --adapter fsps \
     --input-file /data/fsps/spstot_chabrier.spec
 ```
 
-### 4. Generic Multi-Dimensional Grids — `fits` / `hdf5` / `npz`
+### 4. Binary Population and Spectral Synthesis — `bpass`
+
+Ingests standard BPASS v2.2+ ASCII spectral tables (such as `spectra-bin-imf135_300.z*.dat`) containing a wavelength column followed by 51 $\log_{10}(\text{age})$ columns from 6.0 to 11.0, or directories of metallicity files with automatic metallicity extraction from filenames (e.g., `z020` $\to Z=0.02$, `zem4` $\to Z=0.0001$):
+
+```bash
+# Ingest single BPASS metallicity file
+specsynth --base ./run make-ssp --adapter bpass \
+    --input-file /data/bpass/spectra-bin-imf135_300.z020.dat --metallicity 0.02
+
+# Ingest directory containing multiple BPASS metallicity files
+specsynth --base ./run make-ssp --adapter bpass \
+    --input-path /data/bpass/
+```
+
+### 5. Generic Multi-Dimensional Grids — `fits` / `hdf5` / `npz`
 
 Loads arbitrary 3D `(n_age, n_met, n_wave)` grids from FITS, HDF5, or NumPy `.npz` archives with automatic age-unit detection (linear years, $\log_{10}(\text{yr})$, or Gyr):
 
 ```bash
 specsynth --base ./run make-ssp --adapter fits \
-    --input-file /data/custom_bpass_grid.h5 \
+    --input-file /data/custom_grid.h5 \
     --wave-key wave --age-key ages --met-key metallicities --flux-key spectra
 ```
 
-### 5. Analytical Reference Basis — `toy`
+### 6. Analytical Reference Basis — `toy`
 
 Generates a deterministic, smooth Planck blackbody + age/metallicity scaling basis useful for CI tests, scaling benchmarks, and offline exploration without external model downloads:
 

@@ -217,8 +217,8 @@ def make_fig4_memory_usage():
     x = np.arange(len(scales_n))
     labels = ["100k", "250k", "500k", "1M"]
 
-    ax1.plot(x, measured_mb, 'o-', color=color_ram, linewidth=2.5, markersize=8, label="Measured Peak Worker RSS (MB)")
-    ax1.set_ylabel("specsynth Measured Peak RSS (MB)", color=color_ram)
+    ax1.plot(x, measured_mb, 'o-', color=color_ram, linewidth=2.5, markersize=8, label="Measured Single-Process Chunk RSS (MB)")
+    ax1.set_ylabel("specsynth Sequential Chunk RSS (MB)", color=color_ram)
     ax1.tick_params(axis="y", labelcolor=color_ram)
     ax1.set_ylim(0, max(measured_mb) * 1.8)
     ax1.set_xticks(x)
@@ -236,7 +236,7 @@ def make_fig4_memory_usage():
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left", frameon=True)
 
-    plt.title("Figure 4: Measured Out-of-Core Memory Boundedness (O(N_chunk))", pad=12)
+    plt.title("Figure 4: Measured Out-of-Core Memory Boundedness (Sequential Chunk RSS)", pad=12)
     plt.tight_layout()
     out = FIG_DIR / "fig4_memory_usage.png"
     plt.savefig(out)

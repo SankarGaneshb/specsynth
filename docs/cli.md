@@ -24,7 +24,7 @@ specsynth [--base PATH_OR_URL] [--scheduler sync|threads|local|tcp://HOST:PORT] 
 Compile an SSP spectral library into `<base>/ssp.zarr`.
 
 ```bash
-specsynth --base ./run make-ssp --adapter {toy|bc03|emiles|fsps|fits} \
+specsynth --base ./run make-ssp --adapter {toy|bc03|emiles|fsps|bpass|fits} \
     [--input-path DIR_OR_FILE] [--input-file FILE] \
     [--n-age 40] [--n-met 4] [--n-wave 2000] \
     [--resample-wave MIN MAX N]
@@ -41,7 +41,8 @@ specsynth --base ./run make-sfh --n-gal 50000 --chunk 10000 [--seed 42]
 Ingest an external galaxy catalog (Parquet, FITS, HDF5, CSV, NPZ) into `<base>/galaxies.zarr`.
 
 ```bash
-specsynth --base ./run import-catalog -i catalog.parquet [--chunk 20000] [--streaming]
+specsynth --base ./run import-catalog -i catalog.parquet [--chunk 20000] [--streaming] [--drop-invalid] \
+    [--mass-col COL] [--age-col COL] [--met-col COL] [--tau-d-col COL] [--redshift-col COL]
 ```
 
 ### `synth`
@@ -49,7 +50,8 @@ Synthesize full spectra (`spectra.zarr`) or in-flight broadband photometry (`pho
 
 ```bash
 specsynth --base ./run synth [--filters jwst_nircam|hst|sdss|CUSTOM] [--bands N] \
-    [--redshift Z] [--lightcone] [--igm] \
+    [--redshift Z] [--lightcone] [--igm] [--distance-dimming] \
+    [--cosmology concordance|planck2018|planck2015|wmap9] [--h0 H0] [--omega-m OM] \
     [--chunk N] [--batch-chunks B] [--gpu]
 ```
 

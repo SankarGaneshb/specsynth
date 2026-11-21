@@ -270,7 +270,6 @@ def test_import_catalog_with_mock_client(tmp_path, monkeypatch):
 def test_import_catalog_streaming(tmp_path, monkeypatch):
     import h5py
     import dask.array as da
-    from unittest.mock import MagicMock
     from specsynth.catalog import import_catalog
 
     h5_path = tmp_path / "test_stream.h5"
@@ -280,8 +279,6 @@ def test_import_catalog_streaming(tmp_path, monkeypatch):
         f.create_dataset("tau", data=np.array([1.0, 2.0, 1.5, 0.8], dtype=np.float32))
 
     monkeypatch.setattr("specsynth.catalog.da.from_zarr", lambda s, component: da.from_array(np.array([1e7, 1e8])))
-    mock_write = MagicMock()
-    monkeypatch.setattr("specsynth.catalog.write_many", mock_write)
 
     zarr_out = str(tmp_path / "stream_h5_out.zarr")
     meta = import_catalog(
@@ -289,10 +286,106 @@ def test_import_catalog_streaming(tmp_path, monkeypatch):
         output_zarr=zarr_out,
         ssp_store="mock_ssp.zarr",
         chunk_size=2,
-        client=MagicMock(),
+        streaming=True,
     )
     assert meta["n_galaxies"] == 4
-    mock_write.assert_called_once()
+    assert meta["ingestion_mode"] == "streaming_out_of_core"
+
+
+def test_stream_csv_chunks_uppercase_and_mixed_case(tmp_path):
+    from specsynth.catalog import stream_csv_chunks
+
+    csv_path = tmp_path / "test_upper.csv"
+    with open(csv_path, "w", encoding="utf-8") as f:
+        f.write("MSTAR,REDSHIFT,TAU\n")
+        for i in range(10):
+            f.write(f"1e10,{i * 0.1},1.0\n")
+
+    chunks = list(stream_csv_chunks(csv_path, chunk_size=4))
+    assert len(chunks) == 3
+    # Check that uppercase header was normalized and values were properly retrieved, not silently set to 0.0
+    assert "mstar" in chunks[0]
+    assert np.allclose(chunks[0]["mstar"], 1e10)
+    assert np.isclose(chunks[0]["redshift"][1], 0.1)
+
+
+def test_stream_csv_chunks_invalid_data_validation(tmp_path):
+    import pytest
+    from specsynth.catalog import stream_csv_chunks
+
+    # Missing/blank and unparseable values
+    csv_path = tmp_path / "test_invalid.csv"
+    with open(csv_path, "w", encoding="utf-8") as f:
+        f.write("mstar,redshift,tau\n")
+        f.write("1e10,0.5,1.0\n")
+        f.write(",0.2,1.0\n")  # Blank mass
+        f.write("2e10,corrupt_z,1.0\n")  # Invalid numeric string
+        f.write("3e10,0.8,1.0\n")
+
+    # Strict mode should raise ValueError
+    with pytest.raises(ValueError, match="blank or missing"):
+        list(stream_csv_chunks(csv_path, chunk_size=10, drop_invalid=False))
+
+    # Permissive drop_invalid=True mode should skip unphysical rows
+    clean_chunks = list(stream_csv_chunks(csv_path, chunk_size=10, drop_invalid=True))
+    assert len(clean_chunks) == 1
+    assert len(clean_chunks[0]["mstar"]) == 2
+    assert np.allclose(clean_chunks[0]["mstar"], [1e10, 3e10])
+    assert np.allclose(clean_chunks[0]["redshift"], [0.5, 0.8])
+
+
+def test_streaming_vs_in_memory_catalog_equivalence(tmp_path, monkeypatch):
+    import dask.array as da
+    import zarr
+    from specsynth.catalog import import_catalog
+
+    csv_path = tmp_path / "test_equiv.csv"
+    with open(csv_path, "w", encoding="utf-8") as f:
+        f.write("m_star,redshift,tau\n")
+        for i in range(20):
+            f.write(f"{1e10 + i * 1e9},{0.1 + i * 0.05},1.5\n")
+
+    monkeypatch.setattr("specsynth.catalog.da.from_zarr", lambda s, component: da.from_array(np.array([1e7, 1e8])))
+
+    zarr_mem = str(tmp_path / "equiv_mem.zarr")
+    zarr_stream = str(tmp_path / "equiv_stream.zarr")
+
+    meta_mem = import_catalog(
+        catalog_path=csv_path,
+        output_zarr=zarr_mem,
+        ssp_store="mock_ssp.zarr",
+        chunk_size=5,
+        streaming=False,
+    )
+    meta_stream = import_catalog(
+        catalog_path=csv_path,
+        output_zarr=zarr_stream,
+        ssp_store="mock_ssp.zarr",
+        chunk_size=5,
+        streaming=True,
+    )
+
+    assert meta_mem["n_galaxies"] == meta_stream["n_galaxies"] == 20
+
+    # Compare arrays in both stores
+    grp_mem = zarr.open_group(zarr_mem, mode="r")
+    grp_stream = zarr.open_group(zarr_stream, mode="r")
+
+    np.testing.assert_allclose(grp_mem["sfh"][:], grp_stream["sfh"][:], rtol=1e-5)
+    np.testing.assert_allclose(grp_mem["params"][:], grp_stream["params"][:], rtol=1e-5)
+    np.testing.assert_allclose(grp_mem["redshift"][:], grp_stream["redshift"][:], rtol=1e-5)
+
+
+def test_dust_av_diffuse_column_mapping(tmp_path):
+    from specsynth.catalog import resolve_catalog_columns
+
+    raw = {
+        "mstar": np.array([1e10, 2e10], dtype=np.float32),
+        "Av_diffuse": np.array([1.086, 2.172], dtype=np.float32),
+    }
+    resolved = resolve_catalog_columns(raw, explicit_map={"tau_diffuse": "Av_diffuse"})
+    # Av / 1.086 -> 1.086 / 1.086 = 1.0, 2.172 / 1.086 = 2.0
+    np.testing.assert_allclose(resolved["tau_diffuse"], [1.0, 2.0], rtol=1e-4)
 
 
 def test_stream_csv_chunks(tmp_path):

@@ -6,21 +6,25 @@
 
 ## 1. Execution Schedulers
 
-Select the scheduler via `--scheduler`:
+Select the execution scheduler via the top-level `--scheduler` flag:
 
-| Mode | Flag | Best For |
-| :--- | :--- | :--- |
-| **Synchronous** | `--scheduler sync` | Unit tests, small runs (< 50k galaxies), debugging (zero IPC/TCP overhead) |
-| **Threaded** | `--scheduler threads` | Single-node multi-core BLAS workloads |
-| **Local Distributed** | `--scheduler local` (default) | Multi-process local cluster with explicit `--workers` and `--memory-limit` |
-| **External Cluster** | `--scheduler tcp://<ip>:8786` | Remote HPC / Slurm / Kubernetes Dask clusters |
+| Mode | Flag | Aliases | Best For |
+| :--- | :--- | :--- | :--- |
+| **Synchronous** | `--scheduler sync` | `synchronous`, `single-threaded` | Unit tests, small runs (< 50k galaxies), debugging (zero IPC/TCP overhead) |
+| **Threaded** | `--scheduler threads` | `threaded` | Single-node multi-core BLAS workloads without multiprocessing |
+| **Local Distributed** | `--scheduler local` (default) | `localcluster`, `distributed` | Multi-process local cluster with explicit `--workers` and `--memory-limit` |
+| **External Cluster** | `--scheduler tcp://<ip>:8786` | — | Remote HPC / Slurm / Kubernetes Dask clusters |
 
 ---
 
 ## 2. Memory Boundedness & Adaptive Chunking
 
-Working memory per worker task scales strictly as $O(N_{\text{chunk}} \times W)$:
+Working memory is strictly decoupled across three tiers:
+1. **Worker Working-Set Footprint**: Scales strictly as $O(N_{\text{chunk}}(K + W))$ where $K$ is the number of SSP templates and $W$ is the wavelength grid resolution. Intermediate spectra stay in worker cache/VRAM and are discarded after in-flight filter projection.
+2. **Client-Side Graph Construction Memory**: Dask task graph assembly remains bounded by submitting computations in discrete batches.
+3. **Scheduler Memory**: Regulated by the sliding-window batch pipeline (`--batch-chunks`).
 
+Key parameters:
 - **`--chunk`**: Number of galaxies processed per Dask block (default tuned via `compute_adaptive_chunk_size` so transient buffers stay under 20% of `--memory-limit`).
 - **`--batch-chunks`**: Sliding-window batch pipeline that submits only $B$ chunks at a time to the Dask scheduler, keeping scheduler memory strictly $O(B)$ even for $N \ge 10^8$ galaxies.
 - **Task Graph Guard**: Automatically checks total task count to prevent scheduler OOM on billion-galaxy configurations.

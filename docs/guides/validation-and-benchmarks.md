@@ -40,14 +40,16 @@ Workload: 50,000 galaxies, $K = 60$, $W = 1,200$ (5 timed runs after 2 warmups; 
 
 | Hardware Environment | Backend | Mean Runtime | Throughput | Compute Rate | Speedup |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Workstation CPU** (Intel 12C/14T) | `scipy-openblas` | 0.8624 s (± 0.0577 s) | 57,978 gal/s | 17.12 GFLOPS | 1.0x |
-| **Cloud VM CPU** (Linux x86_64, 2C/4T) | `scipy-openblas` | 0.8719 s (± 0.0252 s) | 57,344 gal/s | 16.93 GFLOPS | 1.0x |
+| **Workstation CPU** (Intel 12C/14T) | `scipy-openblas` | 0.8624 s (± 0.0577 s) | 57,978 gal/s | 17.12 GFLOPS | — |
+| **Cloud VM CPU** (Linux x86_64, 2C/4T) | `scipy-openblas` | 0.8719 s (± 0.0252 s) | 57,344 gal/s | 16.93 GFLOPS | 1.0x (baseline) |
 | **Cloud GPU** (NVIDIA Tesla T4, 15 GB) | CuPy / CUDA | **0.1932 s** (± 0.0040 s) | **258,812 gal/s** | **76.40 GFLOPS** | **4.51x** |
 
-### Out-of-Core Memory Boundedness (`psutil` RSS)
-Streaming 100k to 1M galaxies sequentially in 20,000-galaxy chunks:
+*Note: GPU throughput is measured end-to-end (including host-to-device memory copy, GPU GEMM contractions, dust/IGM attenuation, in-flight filter contraction, and device-to-host transfer). The 4.51x speedup is computed relative to the paired cloud VM CPU baseline.*
 
-| Streamed Catalog Scale | Measured Peak RSS | Monolithic Unchunked Footprint ($W=4,000$) |
+### Out-of-Core Memory Boundedness (`psutil` RSS)
+Streaming 100k to 1M galaxies sequentially in 20,000-galaxy chunks (measured as single-process sequential chunk RSS, distinguished from client graph overhead or distributed multi-worker memory):
+
+| Streamed Catalog Scale | Single-Process Chunk RSS | Monolithic Unchunked Footprint ($W=4,000$) |
 | :--- | :---: | :---: |
 | 100,000 Galaxies | 261.5 MB | 1.49 GB |
 | 250,000 Galaxies | 261.5 MB | 3.73 GB |
@@ -55,7 +57,18 @@ Streaming 100k to 1M galaxies sequentially in 20,000-galaxy chunks:
 | 1,000,000 Galaxies | 261.8 MB | 14.90 GB |
 
 ### Multi-Node Cloud Kubernetes Verification
-Verified on a 3-node Oracle Container Engine for Kubernetes (OKE) cluster (`paper/benchmark_manifest_oci_oke_3node.json`): **53,814 galaxies/s** (100,000 galaxies in 1.86 s, max relative error `8.16e-7`).
+Verified on a 3-node Oracle Container Engine for Kubernetes (OKE) cluster backed by in-cluster shared NFS (`paper/benchmark_manifest_oci_oke_3node.json`): **53,814 galaxies/s** (100,000 galaxies in 1.86 s, max relative error `8.16e-7`).
+
+### Analytical Cluster Scaling Projections (Category 4 Cloud Economics)
+*To prevent confusion between empirical benchmarks and theoretical capacity planning, multi-worker projections ($N \ge 10^7$ galaxies) are explicitly modeled via analytical queue-efficiency models rather than single-run empirical captures:*
+
+| Scale | Model Assumptions | Projected Runtime | Estimated Spot Cost (GCP) |
+| :--- | :--- | :---: | :---: |
+| **10 Million Galaxies** | 8 CPU workers (85% efficiency) | 24.0 seconds | $0.02 |
+| **100 Million Galaxies** | 32 CPU workers (82% efficiency) | 63.4 seconds (1.1 min) | $0.25 |
+| **1 Billion Galaxies** | 64 CPU workers (75% efficiency) | 336.9 seconds (5.6 min) | $4.20 |
+
+---
 
 ---
 

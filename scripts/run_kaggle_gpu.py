@@ -52,6 +52,7 @@ def get_kaggle_credentials() -> tuple[str | None, str | None]:
 def generate_worker_script(n_gal: int, n_runs: int, commit_sha: str = "") -> str:
     """Generate the self-contained benchmark worker script to run on Kaggle."""
     commit_injection = f'os.environ["SPECSYNTH_GIT_COMMIT"] = "{commit_sha}"\n' if commit_sha else ""
+    git_install_url = f"git+https://github.com/SankarGaneshb/specsynth.git@{commit_sha}" if commit_sha else "git+https://github.com/SankarGaneshb/specsynth.git"
     return f'''#!/usr/bin/env python3
 import os
 import subprocess
@@ -81,11 +82,11 @@ except Exception as e:
     print(f"  [*] Installing {{target_pkg}}...")
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", target_pkg], check=False)
 
-# Step 2: Install latest specsynth directly from GitHub
-print("\\n[*] Step 2: Installing specsynth from GitHub (main)...")
+# Step 2: Install exact specsynth commit directly from GitHub
+print(f"\\n[*] Step 2: Installing specsynth from GitHub ({git_install_url})...")
 subprocess.run([
     sys.executable, "-m", "pip", "install", "--upgrade", "--no-cache-dir", "-q",
-    "git+https://github.com/SankarGaneshb/specsynth.git", "matplotlib"
+    "{git_install_url}", "matplotlib"
 ], check=True)
 
 # Step 3: Verify GPU diagnostics

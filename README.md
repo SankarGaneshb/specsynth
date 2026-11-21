@@ -109,9 +109,9 @@ $$F_g(\lambda) = D_g(\lambda) \cdot \left[ \sum_{k \in \text{old}} \text{SFH}[g,
 
 | Capability | Summary | Documentation |
 | :--- | :--- | :--- |
-| **SSP Library Adapters** | Bruzual & Charlot (2003) `.ised`/ASCII, E-MILES/MILES FITS, FSPS (`python-fsps` & `spstot_*.spec`), generic 3D FITS/HDF5/NPZ | [SSP Adapters Guide](docs/guides/adapters.md) |
+| **SSP Library Adapters** | Bruzual & Charlot (2003) `.ised`/ASCII, E-MILES/MILES FITS, FSPS (`python-fsps` & `spstot_*.spec`), BPASS v2.2+, generic 3D FITS/HDF5/NPZ | [SSP Adapters Guide](docs/guides/adapters.md) |
 | **Catalog Ingestion** | Native Parquet, FITS, HDF5, CSV (streaming), and NPZ ingestion for IllustrisTNG, EAGLE, CAMELS, and SAM catalogs | [Catalogs & Photometry](docs/guides/catalogs-and-photometry.md) |
-| **Cosmology & Filters** | Planck 2018 `FlatLambdaCDM`, Snapshot & Lightcone modes, Madau (1995) IGM, calibrated JWST NIRCam, HST ACS/WFC3, and SDSS filters | [Catalogs & Photometry](docs/guides/catalogs-and-photometry.md) |
+| **Cosmology & Filters** | `FlatLambdaCDM` (default Concordance $H_0=70.0$, $\Omega_m=0.3$, Planck 2018/2015, or custom), Snapshot & Lightcone modes, Madau (1995) IGM, 16 calibrated JWST, HST, and SDSS filters | [Catalogs & Photometry](docs/guides/catalogs-and-photometry.md) |
 | **Distributed & GPU Scaling** | Dask (`sync`, `threads`, `local`, Kubernetes), `--batch-chunks` scheduler guard, `s3://`/`gs://`/`abfs://`, CuPy CUDA BLAS | [Distributed & GPU Guide](docs/guides/distributed-and-gpu.md) |
 | **Scientific Validation** | Cross-validation against Astropy cosmology, float64 reference, optional live `python-fsps`/`DSPS`, and 4-tier Scientific Sentry QA | [Validation & Benchmarks](docs/guides/validation-and-benchmarks.md) |
 
@@ -119,13 +119,14 @@ $$F_g(\lambda) = D_g(\lambda) \cdot \left[ \sum_{k \in \text{old}} \text{SFH}[g,
 
 ## 4. Empirical Verification Summary
 
-All numbers below are empirically measured and recorded in machine-readable JSON manifests under [`paper/`](paper/):
+All headline benchmarks below are empirically measured and recorded in machine-readable JSON manifests under [`paper/`](paper/):
 
 - **Numerical Accuracy**: Max relative spectral error `9.87e-7` (RMSE `2.24e-11`) against an independent `float64` reference (`paper/benchmark_manifest.json`).
 - **TNG → JWST NIRCam Scientific Validation**: Max relative error `4.77e-8` (RMSE `5.59e-23`), $0.000\,\mathrm{mag}$ AB zero-point deviation, and $1{,}510.5\,\mathrm{gal/s}$ CPU throughput over the curated 100-galaxy TNG-100 sample (`paper/benchmark_manifest_tng_jwst.json`).
-- **Single-Node CPU vs. GPU**: `57,978 gal/s` on workstation CPU (`scipy-openblas`) and `258,812 gal/s` (**4.51x speedup**) on an NVIDIA Tesla T4 GPU via CuPy (`paper/benchmark_manifest_gpu_t4.json`).
-- **Memory Boundedness**: Peak RSS stays flat at `261.5–261.8 MB` (< 0.2% variance) while streaming 100,000 to 1,000,000 galaxies in 20,000-galaxy chunks.
-- **Multi-Node Kubernetes**: `53,814 gal/s` on a 3-node OCI OKE cluster (100,000 galaxies in `1.86 s`, max rel. error `8.16e-7`, `paper/benchmark_manifest_oci_oke_3node.json`).
+- **Single-Node CPU vs. GPU**: `57,978 gal/s` on a 12-core workstation CPU (`scipy-openblas`). On an NVIDIA Tesla T4 GPU via CuPy, `specsynth` sustains `258,812 gal/s` end-to-end throughput (**4.51x speedup** relative to the paired cloud VM CPU baseline at `57,344 gal/s`, including host-device transfers; `paper/benchmark_manifest_gpu_t4.json`).
+- **Memory Boundedness**: Single-process sequential chunk RSS stays flat at `261.5–261.8 MB` (< 0.2% variance) while streaming 100,000 to 1,000,000 galaxies in 20,000-galaxy chunks.
+- **Multi-Node Kubernetes**: `53,814 gal/s` on a 3-node OCI OKE cluster backed by in-cluster shared NFS (100,000 galaxies in `1.86 s`, max rel. error `8.16e-7`, `paper/benchmark_manifest_oci_oke_3node.json`).
+- **Projected Cluster Scaling**: Analytical scaling models estimate throughput of $> 1.5 \times 10^6\,\mathrm{gal/s}$ across 32 distributed workers ($10^8$ galaxies in $\sim 1.1\,\mathrm{min}$, $\approx \$0.01$ spot compute; clearly distinguished from empirical measurements).
 
 See the full [Validation & Benchmarks Guide](docs/guides/validation-and-benchmarks.md) for reproduction commands and detailed tables.
 
