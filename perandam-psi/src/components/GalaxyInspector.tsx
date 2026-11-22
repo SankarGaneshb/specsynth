@@ -3,6 +3,8 @@ import { Galaxy, FilterCurveData } from '../types/galaxy';
 import { SedPlot } from './SedPlot';
 import { ColorColorPlot } from './ColorColorPlot';
 import { PhotometryBar } from './PhotometryBar';
+import { DiscoveryHypothesisCard } from './DiscoveryHypothesisCard';
+import { ProposalGeneratorModal } from './ProposalGeneratorModal';
 import {
   X,
   Sliders,
@@ -15,6 +17,7 @@ import {
   Check,
   ScatterChart,
   Info,
+  Sparkles,
 } from 'lucide-react';
 
 interface GalaxyInspectorProps {
@@ -36,6 +39,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const [sliderZ, setSliderZ] = useState<number | null>(null);
   const [sliderAv, setSliderAv] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [isProposalOpen, setIsProposalOpen] = useState<boolean>(false);
 
   // Reset slider state when a new galaxy is selected
   useEffect(() => {
@@ -123,7 +127,12 @@ print("Executing in-flight GEMM filter projection...")
           <div>
             <div className="flex items-center space-x-2">
               <h2 className="text-base font-bold text-slate-100">{galaxy.id}</h2>
-              {galaxy.sentry_status === 'PRISTINE' ? (
+              {galaxy.discovery_profile ? (
+                <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-950/80 text-purple-300 border border-purple-600/70 shadow-sm">
+                  <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
+                  <span>Frontier Discovery: {galaxy.discovery_profile.rarity_sigma.toFixed(1)}σ</span>
+                </span>
+              ) : galaxy.sentry_status === 'PRISTINE' ? (
                 <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-700/60">
                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                   <span>QC Passed: Validated</span>
@@ -203,6 +212,15 @@ print("Executing in-flight GEMM filter projection...")
 
       {/* Main Scientific Visualization Panel (Dominant View) */}
       <div className="p-3.5 flex-1 overflow-y-auto space-y-3.5">
+        {/* Discovery Hypothesis & Inference Card */}
+        {galaxy.discovery_profile && (
+          <DiscoveryHypothesisCard
+            galaxyId={galaxy.id}
+            profile={galaxy.discovery_profile}
+            onOpenProposal={() => setIsProposalOpen(true)}
+          />
+        )}
+
         {/* QC Failure Diagnostic Card */}
         {galaxy.sentry_status === 'ANOMALY' && (
           <div className="bg-rose-950/60 border border-rose-800/80 rounded-xl p-3.5 space-y-2 text-xs shadow-lg">
@@ -365,6 +383,13 @@ print("Executing in-flight GEMM filter projection...")
           </div>
         </div>
       </div>
+
+      {/* JWST Observing Proposal Generator Modal */}
+      <ProposalGeneratorModal
+        isOpen={isProposalOpen}
+        onClose={() => setIsProposalOpen(false)}
+        galaxy={galaxy}
+      />
     </aside>
   );
 };

@@ -10,6 +10,8 @@ interface SkyCanvasProps {
   fieldRadius: number;
   resetTrigger: number;
   colorMode?: SkyColorMode;
+  discoveryMode?: boolean;
+  rarityThreshold?: number;
 }
 
 export const SkyCanvas: React.FC<SkyCanvasProps> = ({
@@ -21,6 +23,8 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
   fieldRadius,
   resetTrigger,
   colorMode = 'rgb',
+  discoveryMode = false,
+  rarityThreshold = 3.5,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -208,17 +212,49 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         // Radius based on stellar mass and zoom
         const isSelected = selectedGalaxy?.id === g.id;
         const isHovered = hoveredGalaxy?.id === g.id;
+        const isDiscovery = Boolean(g.discovery_profile || (g.rarity_score && g.rarity_score >= rarityThreshold));
+        const alphaFactor = discoveryMode ? (isDiscovery ? 1.0 : 0.15) : 1.0;
 
         const mstar = typeof g.log_mstar === 'number' && !isNaN(g.log_mstar) ? g.log_mstar : 9.5;
         const baseRadius = Math.max(1.8, Math.min(8.5, (mstar - 6.5) * 1.6));
         const currentRadius = Math.max(1.5, baseRadius * Math.pow(Math.max(0.1, zoom), 0.35));
         const rgb = getGalaxyRgb(g);
 
+        // Discovery Auroral Beacon Halo
+        if (discoveryMode && isDiscovery) {
+          ctx.save();
+          const auroralRadius = Math.max(3.0, currentRadius * 4.5);
+          const aura = ctx.createRadialGradient(x, y, 0, x, y, auroralRadius);
+          aura.addColorStop(0, 'rgba(192, 132, 252, 0.85)'); // purple-400
+          aura.addColorStop(0.5, 'rgba(6, 182, 212, 0.4)'); // cyan-500
+          aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = aura;
+          ctx.beginPath();
+          ctx.arc(x, y, auroralRadius, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Pulsing Beacon Ring
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(x, y, currentRadius * 3.5 + 3, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Discovery Tag
+          if (zoom >= 0.8) {
+            ctx.fillStyle = '#e9d5ff';
+            ctx.font = 'bold 9px monospace';
+            const tag = g.discovery_profile?.class_title.split('(')[0].trim() || `${g.rarity_score?.toFixed(1)}σ Outlier`;
+            ctx.fillText(tag, x + currentRadius * 3.5 + 6, y + 3);
+          }
+          ctx.restore();
+        }
+
         // Glow halo
         const haloRadius = Math.max(2.0, currentRadius * 3.5);
         const haloGrad = ctx.createRadialGradient(x, y, 0, x, y, haloRadius);
-        haloGrad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`);
-        haloGrad.addColorStop(0.4, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`);
+        haloGrad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.9 * alphaFactor})`);
+        haloGrad.addColorStop(0.4, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.35 * alphaFactor})`);
         haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = haloGrad;
@@ -227,7 +263,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         ctx.fill();
 
         // Core dot
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = discoveryMode && !isDiscovery ? `rgba(255, 255, 255, 0.3)` : '#ffffff';
         ctx.beginPath();
         ctx.arc(x, y, currentRadius * 0.75, 0, Math.PI * 2);
         ctx.fill();
@@ -246,7 +282,9 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
         // Selected Galaxy Reticle
         if (isSelected) {
-          const reticleColor = g.sentry_status === 'ANOMALY' ? '#f43f5e' : '#f59e0b';
+          let reticleColor = '#f59e0b';
+          if (g.sentry_status === 'ANOMALY') reticleColor = '#f43f5e';
+          else if (g.discovery_profile) reticleColor = '#c084fc'; // purple for discovery
           ctx.strokeStyle = reticleColor;
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -314,6 +352,8 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     projectCoordinates,
     getGalaxyRgb,
     canvasSize,
+    discoveryMode,
+    rarityThreshold,
   ]);
 
   // Window Resize Listener & Dimensions Sync

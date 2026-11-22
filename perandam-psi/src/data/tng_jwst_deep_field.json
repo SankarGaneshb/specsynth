@@ -2252,10 +2252,1021 @@
       ]
     }
   ],
-  "n_galaxies": 504,
+  "n_galaxies": 508,
+  "n_discoveries": 4,
   "n_anomalies": 4,
   "sentry_certified": false,
   "galaxies": [
+    {
+      "id": "TNG-DISC-01",
+      "ra": 53.169,
+      "dec": -27.801,
+      "redshift": 6.85,
+      "stellar_mass": 7100000000.0,
+      "log_mstar": 9.85,
+      "sfr": 3.8,
+      "av": 0.25,
+      "tau_diffuse": 0.23,
+      "tau_birth": 0.46,
+      "sentry_status": "PRISTINE",
+      "rarity_score": 5.1,
+      "discovery_profile": {
+        "classification": "LITTLE_RED_DOT",
+        "class_title": "Candidate \"Little Red Dot\" (JWST High-z Dusty AGN)",
+        "rarity_sigma": 5.1,
+        "rarity_percentile": "Top 0.05% Frontier Discovery",
+        "observed_phenomenon": "Compact blue rest-frame UV continuum with sudden, extreme red slope in F277W - F444W = +1.84.",
+        "hypotheses": {
+          "primary": "Accreting intermediate-mass black hole (~10\u2077 M\u2609) shrouded by compact, dense dusty torus gas.",
+          "alternative": "Hyper-dense stellar core (effective radius < 150 pc) with extreme dust attenuation (Av > 3)."
+        },
+        "spectral_excess": {
+          "band": "jwst_f444w",
+          "excess_factor": 3.4,
+          "mechanism": "Broad-line H\u03b1 + AGN torus hot dust continuum"
+        },
+        "jwst_followup": {
+          "instrument": "NIRSpec",
+          "mode": "G395H / F290LP",
+          "exposure_time_s": 9000,
+          "science_goal": "Search for broad H\u03b1 line emission (FWHM > 2000 km/s) to definitively confirm black hole virial mass."
+        }
+      },
+      "fluxes": {
+        "jwst_f090w": 1.2e-33,
+        "jwst_f150w": 1.4e-32,
+        "jwst_f200w": 2.1e-32,
+        "jwst_f277w": 4.8e-32,
+        "jwst_f356w": 1.2e-31,
+        "jwst_f444w": 3.5e-31
+      },
+      "mags": {
+        "jwst_f090w": 31.2,
+        "jwst_f150w": 28.53,
+        "jwst_f200w": 28.09,
+        "jwst_f277w": 27.19,
+        "jwst_f356w": 26.2,
+        "jwst_f444w": 25.04
+      },
+      "apparent_mag": 28.09,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.0
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
+    {
+      "id": "TNG-DISC-02",
+      "ra": 53.129,
+      "dec": -27.762,
+      "redshift": 3.48,
+      "stellar_mass": 1600000000.0,
+      "log_mstar": 9.2,
+      "sfr": 28.5,
+      "av": 0.15,
+      "tau_diffuse": 0.14,
+      "tau_birth": 0.28,
+      "sentry_status": "PRISTINE",
+      "rarity_score": 4.8,
+      "discovery_profile": {
+        "classification": "EXTREME_EMISSION_LINE",
+        "class_title": "Extreme Emission Line Galaxy (EELG / [O III] Starburst)",
+        "rarity_sigma": 4.8,
+        "rarity_percentile": "Top 0.1% Primordial Burst",
+        "observed_phenomenon": "Single-band flux surge in F200W (+320% relative to stellar continuum) caused by extreme rest-frame [O III] \u03bb\u03bb4959,5007 and H\u03b2 line emission.",
+        "hypotheses": {
+          "primary": "Pristine, low-metallicity (Z < 0.1 Z\u2609) mini-starburst with high ionization parameter producing extreme equivalent widths (EW\u2080 > 1200 \u00c5).",
+          "alternative": "Dense Wolf-Rayet star population producing intense ionizing Lyman continuum radiation."
+        },
+        "spectral_excess": {
+          "band": "jwst_f200w",
+          "excess_factor": 3.2,
+          "mechanism": "Rest-frame [O III] \u03bb\u03bb4959,5007 + H\u03b2 nebular emission"
+        },
+        "jwst_followup": {
+          "instrument": "NIRSpec",
+          "mode": "PRISM / CLEAR",
+          "exposure_time_s": 3600,
+          "science_goal": "Resolve [O III] / H\u03b2 flux ratio to accurately measure gas-phase metallicity and ionizing photon escape fraction."
+        }
+      },
+      "fluxes": {
+        "jwst_f090w": 1.8e-32,
+        "jwst_f150w": 4.2e-32,
+        "jwst_f200w": 3.8e-31,
+        "jwst_f277w": 7.5e-32,
+        "jwst_f356w": 5.8e-32,
+        "jwst_f444w": 4.5e-32
+      },
+      "mags": {
+        "jwst_f090w": 28.26,
+        "jwst_f150w": 27.34,
+        "jwst_f200w": 24.95,
+        "jwst_f277w": 26.71,
+        "jwst_f356w": 26.99,
+        "jwst_f444w": 27.26
+      },
+      "apparent_mag": 24.95,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.0
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
+    {
+      "id": "TNG-DISC-03",
+      "ra": 53.176,
+      "dec": -27.756,
+      "redshift": 4.1,
+      "stellar_mass": 83000000000.0,
+      "log_mstar": 10.92,
+      "sfr": 0.02,
+      "av": 0.3,
+      "tau_diffuse": 0.28,
+      "tau_birth": 0.55,
+      "sentry_status": "PRISTINE",
+      "rarity_score": 4.9,
+      "discovery_profile": {
+        "classification": "EARLY_QUENCHED_GIANT",
+        "class_title": "Ultra-Early Quenched Giant at z = 4.10",
+        "rarity_sigma": 4.9,
+        "rarity_percentile": "Top 0.08% Frontier Outlier",
+        "observed_phenomenon": "Massive galaxy (8.3\u00d710\u00b9\u2070 M\u2609) already completely quenched (SFR = 0.02 M\u2609/yr) when the Universe was only 1.5 Gyr old.",
+        "hypotheses": {
+          "primary": "Extreme quasar blowout: central black hole accretion triggered a cataclysmic blast wave that emptied the dark matter halo of gas.",
+          "alternative": "Gravitational compaction followed by rapid gas depletion in a hyper-dense early environment."
+        },
+        "jwst_followup": {
+          "instrument": "NIRSpec",
+          "mode": "PRISM / CLEAR",
+          "exposure_time_s": 7200,
+          "science_goal": "Measure age of stellar continuum to constrain how fast a 100-billion star galaxy can form and starve in the early cosmos."
+        }
+      },
+      "fluxes": {
+        "jwst_f090w": 1e-34,
+        "jwst_f150w": 1.2e-33,
+        "jwst_f200w": 8.5e-32,
+        "jwst_f277w": 2.4e-31,
+        "jwst_f356w": 3.2e-31,
+        "jwst_f444w": 3.8e-31
+      },
+      "mags": {
+        "jwst_f090w": 33.9,
+        "jwst_f150w": 31.2,
+        "jwst_f200w": 26.57,
+        "jwst_f277w": 25.45,
+        "jwst_f356w": 25.13,
+        "jwst_f444w": 24.95
+      },
+      "apparent_mag": 26.57,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.0
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
+    {
+      "id": "TNG-DISC-04",
+      "ra": 53.122,
+      "dec": -27.805,
+      "redshift": 4.25,
+      "stellar_mass": 56000000000.0,
+      "log_mstar": 10.75,
+      "sfr": 45.0,
+      "av": 3.6,
+      "tau_diffuse": 3.31,
+      "tau_birth": 6.62,
+      "sentry_status": "PRISTINE",
+      "rarity_score": 5.05,
+      "discovery_profile": {
+        "classification": "HST_DARK_MONSTER",
+        "class_title": "HST-Dark / JWST-Bright Obscured Monster",
+        "rarity_sigma": 5.05,
+        "rarity_percentile": "Top 0.06% Dust-Enshrouded Beast",
+        "observed_phenomenon": "Completely undetectable in optical short bands (F090W > 30 mag), but blazing intensely in long-wavelength NIRCam (F444W = 22.1 mag).",
+        "hypotheses": {
+          "primary": "Optically-dark, dust-enshrouded starburst with extreme extinction (Av = 3.6 mag), representing the hidden component of cosmic star formation.",
+          "alternative": "High-redshift dusty submillimeter galaxy (SMG) transitioning into a massive elliptical."
+        },
+        "jwst_followup": {
+          "instrument": "MIRI",
+          "mode": "PRISM / CLEAR",
+          "exposure_time_s": 7200,
+          "science_goal": "Probe rest-frame mid-infrared PAH dust features at 7.7 \u03bcm and 11.3 \u03bcm to measure the hidden star formation rate."
+        }
+      },
+      "fluxes": {
+        "jwst_f090w": 1e-34,
+        "jwst_f150w": 2.5e-33,
+        "jwst_f200w": 1.8e-32,
+        "jwst_f277w": 2.1e-31,
+        "jwst_f356w": 1.8e-30,
+        "jwst_f444w": 5.2e-30
+      },
+      "mags": {
+        "jwst_f090w": 33.9,
+        "jwst_f150w": 30.4,
+        "jwst_f200w": 28.26,
+        "jwst_f277w": 25.59,
+        "jwst_f356w": 23.26,
+        "jwst_f444w": 22.11
+      },
+      "apparent_mag": 28.26,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.0
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
     {
       "id": "TNG-ANOM-01",
       "ra": 53.162,
@@ -3426,7 +4437,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.66
     },
     {
       "id": "TNG-0002",
@@ -3658,7 +4670,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.81
     },
     {
       "id": "TNG-0003",
@@ -3890,7 +4903,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.02
     },
     {
       "id": "TNG-0004",
@@ -4122,7 +5136,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.24
     },
     {
       "id": "TNG-0005",
@@ -4354,7 +5369,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.08
     },
     {
       "id": "TNG-0006",
@@ -4586,7 +5602,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.39
     },
     {
       "id": "TNG-0007",
@@ -4818,7 +5835,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.93
     },
     {
       "id": "TNG-0008",
@@ -5050,7 +6068,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.92
     },
     {
       "id": "TNG-0009",
@@ -5282,7 +6301,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.31
     },
     {
       "id": "TNG-0010",
@@ -5514,7 +6534,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.24
     },
     {
       "id": "TNG-0011",
@@ -5746,7 +6767,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.56
     },
     {
       "id": "TNG-0012",
@@ -5978,7 +7000,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.81
     },
     {
       "id": "TNG-0013",
@@ -6210,7 +7233,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.34
     },
     {
       "id": "TNG-0014",
@@ -6442,7 +7466,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.97
     },
     {
       "id": "TNG-0015",
@@ -6674,7 +7699,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.52
     },
     {
       "id": "TNG-0016",
@@ -6906,7 +7932,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.65
     },
     {
       "id": "TNG-0017",
@@ -7138,7 +8165,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.37
     },
     {
       "id": "TNG-0018",
@@ -7370,7 +8398,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.71
     },
     {
       "id": "TNG-0019",
@@ -7602,7 +8631,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.66
     },
     {
       "id": "TNG-0020",
@@ -7834,7 +8864,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.58
     },
     {
       "id": "TNG-0021",
@@ -8066,7 +9097,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.26
     },
     {
       "id": "TNG-0022",
@@ -8298,7 +9330,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.34
     },
     {
       "id": "TNG-0023",
@@ -8530,7 +9563,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.95
     },
     {
       "id": "TNG-0024",
@@ -8762,7 +9796,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.68
     },
     {
       "id": "TNG-0025",
@@ -8994,7 +10029,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.9
     },
     {
       "id": "TNG-0026",
@@ -9226,7 +10262,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.88
     },
     {
       "id": "TNG-0027",
@@ -9458,7 +10495,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.04
     },
     {
       "id": "TNG-0028",
@@ -9690,7 +10728,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.64
     },
     {
       "id": "TNG-0029",
@@ -9922,7 +10961,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.13
     },
     {
       "id": "TNG-0030",
@@ -10154,7 +11194,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.03
     },
     {
       "id": "TNG-0031",
@@ -10386,7 +11427,25 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 4.65,
+      "discovery_profile": {
+        "classification": "COSMIC_NOON_SUPER_STARBURST",
+        "class_title": "Cosmic Noon Super-Starburst (Top 0.1%)",
+        "rarity_sigma": 4.65,
+        "rarity_percentile": "Top 0.1% Extreme Starburst",
+        "observed_phenomenon": "Violent starburst producing 93.1 M\u2609/yr at z=2.27. Intense rest-frame UV radiation produces extreme blue color [F150W - F444W] = -2.96.",
+        "hypotheses": {
+          "primary": "Major gas-rich disk merger triggering catastrophic gravitational gas collapse and star formation at 50x Milky Way rate.",
+          "alternative": "Massive cold-stream accretion funneling pristine cosmological gas into a nuclear starburst core."
+        },
+        "jwst_followup": {
+          "instrument": "NIRSpec",
+          "mode": "G395H / F290LP",
+          "exposure_time_s": 3600,
+          "science_goal": "Resolve H\u03b1 and [N II] velocity dispersion to map merger kinematics and search for galactic superwind outflows."
+        }
+      }
     },
     {
       "id": "TNG-0032",
@@ -10618,7 +11677,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.77
     },
     {
       "id": "TNG-0033",
@@ -10850,7 +11910,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.35
     },
     {
       "id": "TNG-0034",
@@ -11082,7 +12143,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.29
     },
     {
       "id": "TNG-0035",
@@ -11314,7 +12376,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.08
     },
     {
       "id": "TNG-0036",
@@ -11546,7 +12609,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.74
     },
     {
       "id": "TNG-0037",
@@ -11778,7 +12842,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.03
     },
     {
       "id": "TNG-0038",
@@ -12010,7 +13075,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.46
     },
     {
       "id": "TNG-0039",
@@ -12242,7 +13308,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.09
     },
     {
       "id": "TNG-0040",
@@ -12474,7 +13541,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.53
     },
     {
       "id": "TNG-0041",
@@ -12706,7 +13774,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.2
     },
     {
       "id": "TNG-0042",
@@ -12938,7 +14007,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.9
     },
     {
       "id": "TNG-0043",
@@ -13170,7 +14240,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.61
     },
     {
       "id": "TNG-0044",
@@ -13402,7 +14473,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.03
     },
     {
       "id": "TNG-0045",
@@ -13634,7 +14706,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.95
     },
     {
       "id": "TNG-0046",
@@ -13866,7 +14939,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.94
     },
     {
       "id": "TNG-0047",
@@ -14098,7 +15172,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.95
     },
     {
       "id": "TNG-0048",
@@ -14330,7 +15405,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.36
     },
     {
       "id": "TNG-0049",
@@ -14562,7 +15638,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.15
     },
     {
       "id": "TNG-0050",
@@ -14794,7 +15871,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.96
     },
     {
       "id": "TNG-0051",
@@ -15026,7 +16104,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.71
     },
     {
       "id": "TNG-0052",
@@ -15258,7 +16337,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.34
     },
     {
       "id": "TNG-0053",
@@ -15490,7 +16570,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.81
     },
     {
       "id": "TNG-0054",
@@ -15722,7 +16803,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.02
     },
     {
       "id": "TNG-0055",
@@ -15954,7 +17036,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.5
     },
     {
       "id": "TNG-0056",
@@ -16186,7 +17269,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.7
     },
     {
       "id": "TNG-0057",
@@ -16418,7 +17502,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.54
     },
     {
       "id": "TNG-0058",
@@ -16650,7 +17735,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.71
     },
     {
       "id": "TNG-0059",
@@ -16882,7 +17968,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.37
     },
     {
       "id": "TNG-0060",
@@ -17114,7 +18201,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.37
     },
     {
       "id": "TNG-0061",
@@ -17346,7 +18434,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.24
     },
     {
       "id": "TNG-0062",
@@ -17578,7 +18667,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.81
     },
     {
       "id": "TNG-0063",
@@ -17810,7 +18900,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.49
     },
     {
       "id": "TNG-0064",
@@ -18042,7 +19133,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.7
     },
     {
       "id": "TNG-0065",
@@ -18274,7 +19366,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.1
     },
     {
       "id": "TNG-0066",
@@ -18506,7 +19599,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.19
     },
     {
       "id": "TNG-0067",
@@ -18738,7 +19832,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.88
     },
     {
       "id": "TNG-0068",
@@ -18970,7 +20065,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.9
     },
     {
       "id": "TNG-0069",
@@ -19202,7 +20298,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.02
     },
     {
       "id": "TNG-0070",
@@ -19434,7 +20531,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.37
     },
     {
       "id": "TNG-0071",
@@ -19666,7 +20764,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 6.23
     },
     {
       "id": "TNG-0072",
@@ -19898,7 +20997,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.39
     },
     {
       "id": "TNG-0073",
@@ -20130,7 +21230,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.49
     },
     {
       "id": "TNG-0074",
@@ -20362,7 +21463,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.26
     },
     {
       "id": "TNG-0075",
@@ -20594,7 +21696,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.49
     },
     {
       "id": "TNG-0076",
@@ -20826,7 +21929,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.3
     },
     {
       "id": "TNG-0077",
@@ -21058,7 +22162,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.49
     },
     {
       "id": "TNG-0078",
@@ -21290,7 +22395,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.81
     },
     {
       "id": "TNG-0079",
@@ -21522,7 +22628,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.31
     },
     {
       "id": "TNG-0080",
@@ -21754,7 +22861,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.01
     },
     {
       "id": "TNG-0081",
@@ -21986,7 +23094,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.05
     },
     {
       "id": "TNG-0082",
@@ -22218,7 +23327,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.87
     },
     {
       "id": "TNG-0083",
@@ -22450,7 +23560,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.15
     },
     {
       "id": "TNG-0084",
@@ -22682,7 +23793,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 6.35
     },
     {
       "id": "TNG-0085",
@@ -22914,7 +24026,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.13
     },
     {
       "id": "TNG-0086",
@@ -23146,7 +24259,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.62
     },
     {
       "id": "TNG-0087",
@@ -23378,7 +24492,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.61
     },
     {
       "id": "TNG-0088",
@@ -23610,7 +24725,25 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 4.25,
+      "discovery_profile": {
+        "classification": "EARLY_QUENCHED_GIANT",
+        "class_title": "Early Quenched \"Red & Dead\" Giant (z = 2.22)",
+        "rarity_sigma": 4.25,
+        "rarity_percentile": "Top 0.3% Quenched Titan",
+        "observed_phenomenon": "Massive galaxy (1.2\u00d710\u00b9\u00b9 M\u2609) at z=2.22 with near-zero star formation (SFR = 0.012 M\u2609/yr) and prominent 4000 \u00c5 break.",
+        "hypotheses": {
+          "primary": "Radio-mode supermassive black hole feedback injected kinetic energy, expelling all cold star-forming gas.",
+          "alternative": "Shock-heating of the massive dark matter halo preventing gas from cooling to form stars."
+        },
+        "jwst_followup": {
+          "instrument": "NIRSpec",
+          "mode": "PRISM / CLEAR",
+          "exposure_time_s": 5400,
+          "science_goal": "Measure post-starburst Balmer absorption lines (H\u03b4) to constrain the lookback epoch of star formation quenching."
+        }
+      }
     },
     {
       "id": "TNG-0089",
@@ -23842,7 +24975,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.11
     },
     {
       "id": "TNG-0090",
@@ -24074,7 +25208,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.96
     },
     {
       "id": "TNG-0091",
@@ -24306,7 +25441,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.91
     },
     {
       "id": "TNG-0092",
@@ -24538,7 +25674,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.22
     },
     {
       "id": "TNG-0093",
@@ -24770,7 +25907,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.97
     },
     {
       "id": "TNG-0094",
@@ -25002,7 +26140,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.39
     },
     {
       "id": "TNG-0095",
@@ -25234,7 +26373,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.44
     },
     {
       "id": "TNG-0096",
@@ -25466,7 +26606,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.13
     },
     {
       "id": "TNG-0097",
@@ -25698,7 +26839,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.81
     },
     {
       "id": "TNG-0098",
@@ -25930,7 +27072,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.58
     },
     {
       "id": "TNG-0099",
@@ -26162,7 +27305,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.64
     },
     {
       "id": "TNG-0100",
@@ -26394,7 +27538,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.61
     },
     {
       "id": "TNG-0101",
@@ -26626,7 +27771,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.83
     },
     {
       "id": "TNG-0102",
@@ -26858,7 +28004,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.79
     },
     {
       "id": "TNG-0103",
@@ -27090,7 +28237,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.04
     },
     {
       "id": "TNG-0104",
@@ -27322,7 +28470,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.16
     },
     {
       "id": "TNG-0105",
@@ -27554,7 +28703,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.0
     },
     {
       "id": "TNG-0106",
@@ -27786,7 +28936,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.01
     },
     {
       "id": "TNG-0107",
@@ -28018,7 +29169,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.9
     },
     {
       "id": "TNG-0108",
@@ -28250,7 +29402,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.4
     },
     {
       "id": "TNG-0109",
@@ -28482,7 +29635,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.3
     },
     {
       "id": "TNG-0110",
@@ -28714,7 +29868,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.37
     },
     {
       "id": "TNG-0111",
@@ -28946,7 +30101,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.64
     },
     {
       "id": "TNG-0112",
@@ -29178,7 +30334,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.65
     },
     {
       "id": "TNG-0113",
@@ -29410,7 +30567,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.16
     },
     {
       "id": "TNG-0114",
@@ -29642,7 +30800,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.04
     },
     {
       "id": "TNG-0115",
@@ -29874,7 +31033,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.69
     },
     {
       "id": "TNG-0116",
@@ -30106,7 +31266,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.31
     },
     {
       "id": "TNG-0117",
@@ -30338,7 +31499,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.77
     },
     {
       "id": "TNG-0118",
@@ -30570,7 +31732,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.01
     },
     {
       "id": "TNG-0119",
@@ -30802,7 +31965,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.09
     },
     {
       "id": "TNG-0120",
@@ -31034,7 +32198,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.96
     },
     {
       "id": "TNG-0121",
@@ -31266,7 +32431,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.77
     },
     {
       "id": "TNG-0122",
@@ -31498,7 +32664,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.79
     },
     {
       "id": "TNG-0123",
@@ -31730,7 +32897,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 6.7
     },
     {
       "id": "TNG-0124",
@@ -31962,7 +33130,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.16
     },
     {
       "id": "TNG-0125",
@@ -32194,7 +33363,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.89
     },
     {
       "id": "TNG-0126",
@@ -32426,7 +33596,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.02
     },
     {
       "id": "TNG-0127",
@@ -32658,7 +33829,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.13
     },
     {
       "id": "TNG-0128",
@@ -32890,7 +34062,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.88
     },
     {
       "id": "TNG-0129",
@@ -33122,7 +34295,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.47
     },
     {
       "id": "TNG-0130",
@@ -33354,7 +34528,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.95
     },
     {
       "id": "TNG-0131",
@@ -33586,7 +34761,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.59
     },
     {
       "id": "TNG-0132",
@@ -33818,7 +34994,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.35
     },
     {
       "id": "TNG-0133",
@@ -34050,7 +35227,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.67
     },
     {
       "id": "TNG-0134",
@@ -34282,7 +35460,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.42
     },
     {
       "id": "TNG-0135",
@@ -34514,7 +35693,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.8
     },
     {
       "id": "TNG-0136",
@@ -34746,7 +35926,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.37
     },
     {
       "id": "TNG-0137",
@@ -34978,7 +36159,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.86
     },
     {
       "id": "TNG-0138",
@@ -35210,7 +36392,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.74
     },
     {
       "id": "TNG-0139",
@@ -35442,7 +36625,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.98
     },
     {
       "id": "TNG-0140",
@@ -35674,7 +36858,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.92
     },
     {
       "id": "TNG-0141",
@@ -35906,7 +37091,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.0
     },
     {
       "id": "TNG-0142",
@@ -36138,7 +37324,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.41
     },
     {
       "id": "TNG-0143",
@@ -36370,7 +37557,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.07
     },
     {
       "id": "TNG-0144",
@@ -36602,7 +37790,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.1
     },
     {
       "id": "TNG-0145",
@@ -36834,7 +38023,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.94
     },
     {
       "id": "TNG-0146",
@@ -37066,7 +38256,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.77
     },
     {
       "id": "TNG-0147",
@@ -37298,7 +38489,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.14
     },
     {
       "id": "TNG-0148",
@@ -37530,7 +38722,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 6.95
     },
     {
       "id": "TNG-0149",
@@ -37762,7 +38955,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.93
     },
     {
       "id": "TNG-0150",
@@ -37994,7 +39188,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.44
     },
     {
       "id": "TNG-0151",
@@ -38226,7 +39421,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.33
     },
     {
       "id": "TNG-0152",
@@ -38458,7 +39654,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.66
     },
     {
       "id": "TNG-0153",
@@ -38690,7 +39887,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.22
     },
     {
       "id": "TNG-0154",
@@ -38922,7 +40120,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.95
     },
     {
       "id": "TNG-0155",
@@ -39154,7 +40353,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.2
     },
     {
       "id": "TNG-0156",
@@ -39386,7 +40586,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.43
     },
     {
       "id": "TNG-0157",
@@ -39618,7 +40819,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.68
     },
     {
       "id": "TNG-0158",
@@ -39850,7 +41052,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.03
     },
     {
       "id": "TNG-0159",
@@ -40082,7 +41285,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.23
     },
     {
       "id": "TNG-0160",
@@ -40314,7 +41518,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.95
     },
     {
       "id": "TNG-0161",
@@ -40546,7 +41751,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.63
     },
     {
       "id": "TNG-0162",
@@ -40778,7 +41984,25 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 4.4,
+      "discovery_profile": {
+        "classification": "ANCIENT_MASSIVE_TITAN",
+        "class_title": "Ancient Massive Titan (z = 3.14)",
+        "rarity_sigma": 4.4,
+        "rarity_percentile": "Top 0.2% Massive Titan",
+        "observed_phenomenon": "Most massive galaxy in the field (log M* = 11.48, ~300 billion solar masses) assembled when the universe was only 2 Gyr old.",
+        "hypotheses": {
+          "primary": "Rapid hierarchical clustering in an extreme cosmological dark matter peak (protocluster core progenitor).",
+          "alternative": "Hyper-efficient star formation in early dark matter halos driven by a top-heavy initial mass function."
+        },
+        "jwst_followup": {
+          "instrument": "NIRCam Wide-Field Slitless",
+          "mode": "F444W Grism",
+          "exposure_time_s": 7200,
+          "science_goal": "Map spatial distribution of companion satellite galaxies to confirm protocluster environment."
+        }
+      }
     },
     {
       "id": "TNG-0163",
@@ -41010,7 +42234,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.35
     },
     {
       "id": "TNG-0164",
@@ -41242,7 +42467,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.83
     },
     {
       "id": "TNG-0165",
@@ -41474,7 +42700,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.84
     },
     {
       "id": "TNG-0166",
@@ -41706,7 +42933,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.1
     },
     {
       "id": "TNG-0167",
@@ -41938,7 +43166,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.93
     },
     {
       "id": "TNG-0168",
@@ -42170,7 +43399,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.04
     },
     {
       "id": "TNG-0169",
@@ -42402,7 +43632,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.33
     },
     {
       "id": "TNG-0170",
@@ -42634,7 +43865,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.7
     },
     {
       "id": "TNG-0171",
@@ -42866,7 +44098,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.57
     },
     {
       "id": "TNG-0172",
@@ -43098,7 +44331,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.5
     },
     {
       "id": "TNG-0173",
@@ -43330,7 +44564,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.86
     },
     {
       "id": "TNG-0174",
@@ -43562,7 +44797,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.97
     },
     {
       "id": "TNG-0175",
@@ -43794,7 +45030,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.8
     },
     {
       "id": "TNG-0176",
@@ -44026,7 +45263,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.41
     },
     {
       "id": "TNG-0177",
@@ -44258,7 +45496,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.53
     },
     {
       "id": "TNG-0178",
@@ -44490,7 +45729,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.9
     },
     {
       "id": "TNG-0179",
@@ -44722,7 +45962,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.5
     },
     {
       "id": "TNG-0180",
@@ -44954,7 +46195,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.83
     },
     {
       "id": "TNG-0181",
@@ -45186,7 +46428,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.54
     },
     {
       "id": "TNG-0182",
@@ -45418,7 +46661,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.02
     },
     {
       "id": "TNG-0183",
@@ -45650,7 +46894,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.44
     },
     {
       "id": "TNG-0184",
@@ -45882,7 +47127,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.85
     },
     {
       "id": "TNG-0185",
@@ -46114,7 +47360,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.41
     },
     {
       "id": "TNG-0186",
@@ -46346,7 +47593,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.77
     },
     {
       "id": "TNG-0187",
@@ -46578,7 +47826,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.45
     },
     {
       "id": "TNG-0188",
@@ -46810,7 +48059,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.27
     },
     {
       "id": "TNG-0189",
@@ -47042,7 +48292,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.2
     },
     {
       "id": "TNG-0190",
@@ -47274,7 +48525,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.32
     },
     {
       "id": "TNG-0191",
@@ -47506,7 +48758,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.16
     },
     {
       "id": "TNG-0192",
@@ -47738,7 +48991,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.31
     },
     {
       "id": "TNG-0193",
@@ -47970,7 +49224,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.11
     },
     {
       "id": "TNG-0194",
@@ -48202,7 +49457,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.52
     },
     {
       "id": "TNG-0195",
@@ -48434,7 +49690,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.37
     },
     {
       "id": "TNG-0196",
@@ -48666,7 +49923,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.77
     },
     {
       "id": "TNG-0197",
@@ -48898,7 +50156,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.94
     },
     {
       "id": "TNG-0198",
@@ -49130,7 +50389,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.22
     },
     {
       "id": "TNG-0199",
@@ -49362,7 +50622,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.7
     },
     {
       "id": "TNG-0200",
@@ -49594,7 +50855,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.68
     },
     {
       "id": "TNG-0201",
@@ -49826,7 +51088,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.65
     },
     {
       "id": "TNG-0202",
@@ -50058,7 +51321,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.37
     },
     {
       "id": "TNG-0203",
@@ -50290,7 +51554,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.17
     },
     {
       "id": "TNG-0204",
@@ -50522,7 +51787,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.38
     },
     {
       "id": "TNG-0205",
@@ -50754,7 +52020,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.92
     },
     {
       "id": "TNG-0206",
@@ -50986,7 +52253,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.91
     },
     {
       "id": "TNG-0207",
@@ -51218,7 +52486,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.63
     },
     {
       "id": "TNG-0208",
@@ -51450,7 +52719,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.1
     },
     {
       "id": "TNG-0209",
@@ -51682,7 +52952,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.85
     },
     {
       "id": "TNG-0210",
@@ -51914,7 +53185,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.96
     },
     {
       "id": "TNG-0211",
@@ -52146,7 +53418,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.09
     },
     {
       "id": "TNG-0212",
@@ -52378,7 +53651,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.6
     },
     {
       "id": "TNG-0213",
@@ -52610,7 +53884,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.64
     },
     {
       "id": "TNG-0214",
@@ -52842,7 +54117,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.25
     },
     {
       "id": "TNG-0215",
@@ -53074,7 +54350,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.0
     },
     {
       "id": "TNG-0216",
@@ -53306,7 +54583,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.57
     },
     {
       "id": "TNG-0217",
@@ -53538,7 +54816,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.48
     },
     {
       "id": "TNG-0218",
@@ -53770,7 +55049,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.73
     },
     {
       "id": "TNG-0219",
@@ -54002,7 +55282,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.34
     },
     {
       "id": "TNG-0220",
@@ -54234,7 +55515,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.95
     },
     {
       "id": "TNG-0221",
@@ -54466,7 +55748,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.46
     },
     {
       "id": "TNG-0222",
@@ -54698,7 +55981,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.05
     },
     {
       "id": "TNG-0223",
@@ -54930,7 +56214,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.59
     },
     {
       "id": "TNG-0224",
@@ -55162,7 +56447,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.19
     },
     {
       "id": "TNG-0225",
@@ -55394,7 +56680,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.54
     },
     {
       "id": "TNG-0226",
@@ -55626,7 +56913,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.43
     },
     {
       "id": "TNG-0227",
@@ -55858,7 +57146,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.48
     },
     {
       "id": "TNG-0228",
@@ -56090,7 +57379,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.86
     },
     {
       "id": "TNG-0229",
@@ -56322,7 +57612,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.38
     },
     {
       "id": "TNG-0230",
@@ -56554,7 +57845,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.34
     },
     {
       "id": "TNG-0231",
@@ -56786,7 +58078,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.06
     },
     {
       "id": "TNG-0232",
@@ -57018,7 +58311,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.45
     },
     {
       "id": "TNG-0233",
@@ -57250,7 +58544,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.47
     },
     {
       "id": "TNG-0234",
@@ -57482,7 +58777,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.7
     },
     {
       "id": "TNG-0235",
@@ -57714,7 +59010,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.53
     },
     {
       "id": "TNG-0236",
@@ -57946,7 +59243,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.36
     },
     {
       "id": "TNG-0237",
@@ -58178,7 +59476,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.46
     },
     {
       "id": "TNG-0238",
@@ -58410,7 +59709,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.32
     },
     {
       "id": "TNG-0239",
@@ -58642,7 +59942,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.83
     },
     {
       "id": "TNG-0240",
@@ -58874,7 +60175,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.83
     },
     {
       "id": "TNG-0241",
@@ -59106,7 +60408,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 4.39
     },
     {
       "id": "TNG-0242",
@@ -59338,7 +60641,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.21
     },
     {
       "id": "TNG-0243",
@@ -59570,7 +60874,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.47
     },
     {
       "id": "TNG-0244",
@@ -59802,7 +61107,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.75
     },
     {
       "id": "TNG-0245",
@@ -60034,7 +61340,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.68
     },
     {
       "id": "TNG-0246",
@@ -60266,7 +61573,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.17
     },
     {
       "id": "TNG-0247",
@@ -60498,7 +61806,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.22
     },
     {
       "id": "TNG-0248",
@@ -60730,7 +62039,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.08
     },
     {
       "id": "TNG-0249",
@@ -60962,7 +62272,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.34
     },
     {
       "id": "TNG-0250",
@@ -61194,7 +62505,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.96
     },
     {
       "id": "TNG-0251",
@@ -61426,7 +62738,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.91
     },
     {
       "id": "TNG-0252",
@@ -61658,7 +62971,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.74
     },
     {
       "id": "TNG-0253",
@@ -61890,7 +63204,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.31
     },
     {
       "id": "TNG-0254",
@@ -62122,7 +63437,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.2
     },
     {
       "id": "TNG-0255",
@@ -62354,7 +63670,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.96
     },
     {
       "id": "TNG-0256",
@@ -62586,7 +63903,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.25
     },
     {
       "id": "TNG-0257",
@@ -62818,7 +64136,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.76
     },
     {
       "id": "TNG-0258",
@@ -63050,7 +64369,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.03
     },
     {
       "id": "TNG-0259",
@@ -63282,7 +64602,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.8
     },
     {
       "id": "TNG-0260",
@@ -63514,7 +64835,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.08
     },
     {
       "id": "TNG-0261",
@@ -63746,7 +65068,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.68
     },
     {
       "id": "TNG-0262",
@@ -63978,7 +65301,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.28
     },
     {
       "id": "TNG-0263",
@@ -64210,7 +65534,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.55
     },
     {
       "id": "TNG-0264",
@@ -64442,7 +65767,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.24
     },
     {
       "id": "TNG-0265",
@@ -64674,7 +66000,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.9
     },
     {
       "id": "TNG-0266",
@@ -64906,7 +66233,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.52
     },
     {
       "id": "TNG-0267",
@@ -65138,7 +66466,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.18
     },
     {
       "id": "TNG-0268",
@@ -65370,7 +66699,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.76
     },
     {
       "id": "TNG-0269",
@@ -65602,7 +66932,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.4
     },
     {
       "id": "TNG-0270",
@@ -65834,7 +67165,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.64
     },
     {
       "id": "TNG-0271",
@@ -66066,7 +67398,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.49
     },
     {
       "id": "TNG-0272",
@@ -66298,7 +67631,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.22
     },
     {
       "id": "TNG-0273",
@@ -66530,7 +67864,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.85
     },
     {
       "id": "TNG-0274",
@@ -66762,7 +68097,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.43
     },
     {
       "id": "TNG-0275",
@@ -66994,7 +68330,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.19
     },
     {
       "id": "TNG-0276",
@@ -67226,7 +68563,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.87
     },
     {
       "id": "TNG-0277",
@@ -67458,7 +68796,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.27
     },
     {
       "id": "TNG-0278",
@@ -67690,7 +69029,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.03
     },
     {
       "id": "TNG-0279",
@@ -67922,7 +69262,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.77
     },
     {
       "id": "TNG-0280",
@@ -68154,7 +69495,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 6.16
     },
     {
       "id": "TNG-0281",
@@ -68386,7 +69728,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.7
     },
     {
       "id": "TNG-0282",
@@ -68618,7 +69961,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.59
     },
     {
       "id": "TNG-0283",
@@ -68850,7 +70194,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.7
     },
     {
       "id": "TNG-0284",
@@ -69082,7 +70427,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.72
     },
     {
       "id": "TNG-0285",
@@ -69314,7 +70660,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.15
     },
     {
       "id": "TNG-0286",
@@ -69546,7 +70893,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.04
     },
     {
       "id": "TNG-0287",
@@ -69778,7 +71126,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.57
     },
     {
       "id": "TNG-0288",
@@ -70010,7 +71359,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.97
     },
     {
       "id": "TNG-0289",
@@ -70242,7 +71592,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.04
     },
     {
       "id": "TNG-0290",
@@ -70474,7 +71825,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.27
     },
     {
       "id": "TNG-0291",
@@ -70706,7 +72058,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.89
     },
     {
       "id": "TNG-0292",
@@ -70938,7 +72291,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.24
     },
     {
       "id": "TNG-0293",
@@ -71170,7 +72524,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.4
     },
     {
       "id": "TNG-0294",
@@ -71402,7 +72757,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.89
     },
     {
       "id": "TNG-0295",
@@ -71634,7 +72990,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.05
     },
     {
       "id": "TNG-0296",
@@ -71866,7 +73223,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.9
     },
     {
       "id": "TNG-0297",
@@ -72098,7 +73456,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.69
     },
     {
       "id": "TNG-0298",
@@ -72330,7 +73689,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.98
     },
     {
       "id": "TNG-0299",
@@ -72562,7 +73922,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.13
     },
     {
       "id": "TNG-0300",
@@ -72794,7 +74155,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.1
     },
     {
       "id": "TNG-0301",
@@ -73026,7 +74388,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.75
     },
     {
       "id": "TNG-0302",
@@ -73258,7 +74621,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.92
     },
     {
       "id": "TNG-0303",
@@ -73490,7 +74854,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.93
     },
     {
       "id": "TNG-0304",
@@ -73722,7 +75087,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.57
     },
     {
       "id": "TNG-0305",
@@ -73954,7 +75320,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.48
     },
     {
       "id": "TNG-0306",
@@ -74186,7 +75553,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.99
     },
     {
       "id": "TNG-0307",
@@ -74418,7 +75786,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.62
     },
     {
       "id": "TNG-0308",
@@ -74650,7 +76019,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.34
     },
     {
       "id": "TNG-0309",
@@ -74882,7 +76252,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.61
     },
     {
       "id": "TNG-0310",
@@ -75114,7 +76485,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.37
     },
     {
       "id": "TNG-0311",
@@ -75346,7 +76718,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.69
     },
     {
       "id": "TNG-0312",
@@ -75578,7 +76951,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.57
     },
     {
       "id": "TNG-0313",
@@ -75810,7 +77184,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.0
     },
     {
       "id": "TNG-0314",
@@ -76042,7 +77417,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.5
     },
     {
       "id": "TNG-0315",
@@ -76274,7 +77650,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.05
     },
     {
       "id": "TNG-0316",
@@ -76506,7 +77883,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.65
     },
     {
       "id": "TNG-0317",
@@ -76738,7 +78116,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.84
     },
     {
       "id": "TNG-0318",
@@ -76970,7 +78349,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.78
     },
     {
       "id": "TNG-0319",
@@ -77202,7 +78582,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.34
     },
     {
       "id": "TNG-0320",
@@ -77434,7 +78815,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.38
     },
     {
       "id": "TNG-0321",
@@ -77666,7 +79048,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.5
     },
     {
       "id": "TNG-0322",
@@ -77898,7 +79281,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.82
     },
     {
       "id": "TNG-0323",
@@ -78130,7 +79514,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.76
     },
     {
       "id": "TNG-0324",
@@ -78362,7 +79747,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.33
     },
     {
       "id": "TNG-0325",
@@ -78594,7 +79980,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.14
     },
     {
       "id": "TNG-0326",
@@ -78826,7 +80213,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.56
     },
     {
       "id": "TNG-0327",
@@ -79058,7 +80446,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.58
     },
     {
       "id": "TNG-0328",
@@ -79290,7 +80679,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.47
     },
     {
       "id": "TNG-0329",
@@ -79522,7 +80912,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 4.05
     },
     {
       "id": "TNG-0330",
@@ -79754,7 +81145,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.44
     },
     {
       "id": "TNG-0331",
@@ -79986,7 +81378,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.63
     },
     {
       "id": "TNG-0332",
@@ -80218,7 +81611,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.54
     },
     {
       "id": "TNG-0333",
@@ -80450,7 +81844,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.88
     },
     {
       "id": "TNG-0334",
@@ -80682,7 +82077,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.9
     },
     {
       "id": "TNG-0335",
@@ -80914,7 +82310,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.02
     },
     {
       "id": "TNG-0336",
@@ -81146,7 +82543,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.16
     },
     {
       "id": "TNG-0337",
@@ -81378,7 +82776,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.74
     },
     {
       "id": "TNG-0338",
@@ -81610,7 +83009,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.82
     },
     {
       "id": "TNG-0339",
@@ -81842,7 +83242,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.33
     },
     {
       "id": "TNG-0340",
@@ -82074,7 +83475,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.85
     },
     {
       "id": "TNG-0341",
@@ -82306,7 +83708,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.99
     },
     {
       "id": "TNG-0342",
@@ -82538,7 +83941,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.83
     },
     {
       "id": "TNG-0343",
@@ -82770,7 +84174,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.64
     },
     {
       "id": "TNG-0344",
@@ -83002,7 +84407,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.57
     },
     {
       "id": "TNG-0345",
@@ -83234,7 +84640,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.6
     },
     {
       "id": "TNG-0346",
@@ -83466,7 +84873,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.14
     },
     {
       "id": "TNG-0347",
@@ -83698,7 +85106,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.55
     },
     {
       "id": "TNG-0348",
@@ -83930,7 +85339,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.85
     },
     {
       "id": "TNG-0349",
@@ -84162,7 +85572,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.27
     },
     {
       "id": "TNG-0350",
@@ -84394,7 +85805,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.62
     },
     {
       "id": "TNG-0351",
@@ -84626,7 +86038,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.95
     },
     {
       "id": "TNG-0352",
@@ -84858,7 +86271,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.53
     },
     {
       "id": "TNG-0353",
@@ -85090,7 +86504,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.62
     },
     {
       "id": "TNG-0354",
@@ -85322,7 +86737,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.32
     },
     {
       "id": "TNG-0355",
@@ -85554,7 +86970,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.66
     },
     {
       "id": "TNG-0356",
@@ -85786,7 +87203,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.17
     },
     {
       "id": "TNG-0357",
@@ -86018,7 +87436,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.29
     },
     {
       "id": "TNG-0358",
@@ -86250,7 +87669,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.39
     },
     {
       "id": "TNG-0359",
@@ -86482,7 +87902,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.32
     },
     {
       "id": "TNG-0360",
@@ -86714,7 +88135,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.23
     },
     {
       "id": "TNG-0361",
@@ -86946,7 +88368,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.79
     },
     {
       "id": "TNG-0362",
@@ -87178,7 +88601,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.25
     },
     {
       "id": "TNG-0363",
@@ -87410,7 +88834,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.13
     },
     {
       "id": "TNG-0364",
@@ -87642,7 +89067,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.15
     },
     {
       "id": "TNG-0365",
@@ -87874,7 +89300,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.17
     },
     {
       "id": "TNG-0366",
@@ -88106,7 +89533,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.87
     },
     {
       "id": "TNG-0367",
@@ -88338,7 +89766,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.95
     },
     {
       "id": "TNG-0368",
@@ -88570,7 +89999,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.33
     },
     {
       "id": "TNG-0369",
@@ -88802,7 +90232,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.69
     },
     {
       "id": "TNG-0370",
@@ -89034,7 +90465,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.87
     },
     {
       "id": "TNG-0371",
@@ -89266,7 +90698,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.61
     },
     {
       "id": "TNG-0372",
@@ -89498,7 +90931,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.3
     },
     {
       "id": "TNG-0373",
@@ -89730,7 +91164,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.12
     },
     {
       "id": "TNG-0374",
@@ -89962,7 +91397,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.19
     },
     {
       "id": "TNG-0375",
@@ -90194,7 +91630,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.49
     },
     {
       "id": "TNG-0376",
@@ -90426,7 +91863,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.9
     },
     {
       "id": "TNG-0377",
@@ -90658,7 +92096,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.75
     },
     {
       "id": "TNG-0378",
@@ -90890,7 +92329,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.7
     },
     {
       "id": "TNG-0379",
@@ -91122,7 +92562,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.86
     },
     {
       "id": "TNG-0380",
@@ -91354,7 +92795,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.84
     },
     {
       "id": "TNG-0381",
@@ -91586,7 +93028,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.18
     },
     {
       "id": "TNG-0382",
@@ -91818,7 +93261,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.32
     },
     {
       "id": "TNG-0383",
@@ -92050,7 +93494,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.07
     },
     {
       "id": "TNG-0384",
@@ -92282,7 +93727,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.13
     },
     {
       "id": "TNG-0385",
@@ -92514,7 +93960,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.93
     },
     {
       "id": "TNG-0386",
@@ -92746,7 +94193,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.97
     },
     {
       "id": "TNG-0387",
@@ -92978,7 +94426,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.5
     },
     {
       "id": "TNG-0388",
@@ -93210,7 +94659,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.21
     },
     {
       "id": "TNG-0389",
@@ -93442,7 +94892,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.43
     },
     {
       "id": "TNG-0390",
@@ -93674,7 +95125,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.59
     },
     {
       "id": "TNG-0391",
@@ -93906,7 +95358,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.85
     },
     {
       "id": "TNG-0392",
@@ -94138,7 +95591,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.72
     },
     {
       "id": "TNG-0393",
@@ -94370,7 +95824,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.08
     },
     {
       "id": "TNG-0394",
@@ -94602,7 +96057,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.85
     },
     {
       "id": "TNG-0395",
@@ -94834,7 +96290,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.83
     },
     {
       "id": "TNG-0396",
@@ -95066,7 +96523,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.55
     },
     {
       "id": "TNG-0397",
@@ -95298,7 +96756,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.73
     },
     {
       "id": "TNG-0398",
@@ -95530,7 +96989,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.13
     },
     {
       "id": "TNG-0399",
@@ -95762,7 +97222,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.05
     },
     {
       "id": "TNG-0400",
@@ -95994,7 +97455,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.75
     },
     {
       "id": "TNG-0401",
@@ -96226,7 +97688,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.32
     },
     {
       "id": "TNG-0402",
@@ -96458,7 +97921,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.32
     },
     {
       "id": "TNG-0403",
@@ -96690,7 +98154,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.37
     },
     {
       "id": "TNG-0404",
@@ -96922,7 +98387,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.82
     },
     {
       "id": "TNG-0405",
@@ -97154,7 +98620,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.52
     },
     {
       "id": "TNG-0406",
@@ -97386,7 +98853,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.68
     },
     {
       "id": "TNG-0407",
@@ -97618,7 +99086,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.65
     },
     {
       "id": "TNG-0408",
@@ -97850,7 +99319,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.48
     },
     {
       "id": "TNG-0409",
@@ -98082,7 +99552,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.41
     },
     {
       "id": "TNG-0410",
@@ -98314,7 +99785,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.78
     },
     {
       "id": "TNG-0411",
@@ -98546,7 +100018,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.89
     },
     {
       "id": "TNG-0412",
@@ -98778,7 +100251,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.41
     },
     {
       "id": "TNG-0413",
@@ -99010,7 +100484,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.18
     },
     {
       "id": "TNG-0414",
@@ -99242,7 +100717,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.06
     },
     {
       "id": "TNG-0415",
@@ -99474,7 +100950,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 6.28
     },
     {
       "id": "TNG-0416",
@@ -99706,7 +101183,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.62
     },
     {
       "id": "TNG-0417",
@@ -99938,7 +101416,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.65
     },
     {
       "id": "TNG-0418",
@@ -100170,7 +101649,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.74
     },
     {
       "id": "TNG-0419",
@@ -100402,7 +101882,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.76
     },
     {
       "id": "TNG-0420",
@@ -100634,7 +102115,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.0
     },
     {
       "id": "TNG-0421",
@@ -100866,7 +102348,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.97
     },
     {
       "id": "TNG-0422",
@@ -101098,7 +102581,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.3
     },
     {
       "id": "TNG-0423",
@@ -101330,7 +102814,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.89
     },
     {
       "id": "TNG-0424",
@@ -101562,7 +103047,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.97
     },
     {
       "id": "TNG-0425",
@@ -101794,7 +103280,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.31
     },
     {
       "id": "TNG-0426",
@@ -102026,7 +103513,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.09
     },
     {
       "id": "TNG-0427",
@@ -102258,7 +103746,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.59
     },
     {
       "id": "TNG-0428",
@@ -102490,7 +103979,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.57
     },
     {
       "id": "TNG-0429",
@@ -102722,7 +104212,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.07
     },
     {
       "id": "TNG-0430",
@@ -102954,7 +104445,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.0
     },
     {
       "id": "TNG-0431",
@@ -103186,7 +104678,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.96
     },
     {
       "id": "TNG-0432",
@@ -103418,7 +104911,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.54
     },
     {
       "id": "TNG-0433",
@@ -103650,7 +105144,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.23
     },
     {
       "id": "TNG-0434",
@@ -103882,7 +105377,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.27
     },
     {
       "id": "TNG-0435",
@@ -104114,7 +105610,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.62
     },
     {
       "id": "TNG-0436",
@@ -104346,7 +105843,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.86
     },
     {
       "id": "TNG-0437",
@@ -104578,7 +106076,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.19
     },
     {
       "id": "TNG-0438",
@@ -104810,7 +106309,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.69
     },
     {
       "id": "TNG-0439",
@@ -105042,7 +106542,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.9
     },
     {
       "id": "TNG-0440",
@@ -105274,7 +106775,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.54
     },
     {
       "id": "TNG-0441",
@@ -105506,7 +107008,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.07
     },
     {
       "id": "TNG-0442",
@@ -105738,7 +107241,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.91
     },
     {
       "id": "TNG-0443",
@@ -105970,7 +107474,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.27
     },
     {
       "id": "TNG-0444",
@@ -106202,7 +107707,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.54
     },
     {
       "id": "TNG-0445",
@@ -106434,7 +107940,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.04
     },
     {
       "id": "TNG-0446",
@@ -106666,7 +108173,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.04
     },
     {
       "id": "TNG-0447",
@@ -106898,7 +108406,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.03
     },
     {
       "id": "TNG-0448",
@@ -107130,7 +108639,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.92
     },
     {
       "id": "TNG-0449",
@@ -107362,7 +108872,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.64
     },
     {
       "id": "TNG-0450",
@@ -107594,7 +109105,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.36
     },
     {
       "id": "TNG-0451",
@@ -107826,7 +109338,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.05
     },
     {
       "id": "TNG-0452",
@@ -108058,7 +109571,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.03
     },
     {
       "id": "TNG-0453",
@@ -108290,7 +109804,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.63
     },
     {
       "id": "TNG-0454",
@@ -108522,7 +110037,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.95
     },
     {
       "id": "TNG-0455",
@@ -108754,7 +110270,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.28
     },
     {
       "id": "TNG-0456",
@@ -108986,7 +110503,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.9
     },
     {
       "id": "TNG-0457",
@@ -109218,7 +110736,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.75
     },
     {
       "id": "TNG-0458",
@@ -109450,7 +110969,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.74
     },
     {
       "id": "TNG-0459",
@@ -109682,7 +111202,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 6.54
     },
     {
       "id": "TNG-0460",
@@ -109914,7 +111435,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.44
     },
     {
       "id": "TNG-0461",
@@ -110146,7 +111668,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.25
     },
     {
       "id": "TNG-0462",
@@ -110378,7 +111901,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.02
     },
     {
       "id": "TNG-0463",
@@ -110610,7 +112134,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.78
     },
     {
       "id": "TNG-0464",
@@ -110842,7 +112367,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.15
     },
     {
       "id": "TNG-0465",
@@ -111074,7 +112600,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.13
     },
     {
       "id": "TNG-0466",
@@ -111306,7 +112833,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.9
     },
     {
       "id": "TNG-0467",
@@ -111538,7 +113066,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.44
     },
     {
       "id": "TNG-0468",
@@ -111770,7 +113299,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.55
     },
     {
       "id": "TNG-0469",
@@ -112002,7 +113532,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.85
     },
     {
       "id": "TNG-0470",
@@ -112234,7 +113765,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.92
     },
     {
       "id": "TNG-0471",
@@ -112466,7 +113998,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 5.6
     },
     {
       "id": "TNG-0472",
@@ -112698,7 +114231,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.5
     },
     {
       "id": "TNG-0473",
@@ -112930,7 +114464,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.2
     },
     {
       "id": "TNG-0474",
@@ -113162,7 +114697,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.95
     },
     {
       "id": "TNG-0475",
@@ -113394,7 +114930,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.99
     },
     {
       "id": "TNG-0476",
@@ -113626,7 +115163,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.22
     },
     {
       "id": "TNG-0477",
@@ -113858,7 +115396,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.04
     },
     {
       "id": "TNG-0478",
@@ -114090,7 +115629,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 4.31
     },
     {
       "id": "TNG-0479",
@@ -114322,7 +115862,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.35
     },
     {
       "id": "TNG-0480",
@@ -114554,7 +116095,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.23
     },
     {
       "id": "TNG-0481",
@@ -114786,7 +116328,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.42
     },
     {
       "id": "TNG-0482",
@@ -115018,7 +116561,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.96
     },
     {
       "id": "TNG-0483",
@@ -115250,7 +116794,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.64
     },
     {
       "id": "TNG-0484",
@@ -115482,7 +117027,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.5
     },
     {
       "id": "TNG-0485",
@@ -115714,7 +117260,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.07
     },
     {
       "id": "TNG-0486",
@@ -115946,7 +117493,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.06
     },
     {
       "id": "TNG-0487",
@@ -116178,7 +117726,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.19
     },
     {
       "id": "TNG-0488",
@@ -116410,7 +117959,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 0.93
     },
     {
       "id": "TNG-0489",
@@ -116642,7 +118192,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.37
     },
     {
       "id": "TNG-0490",
@@ -116874,7 +118425,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.4
     },
     {
       "id": "TNG-0491",
@@ -117106,7 +118658,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.38
     },
     {
       "id": "TNG-0492",
@@ -117338,7 +118891,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.0
     },
     {
       "id": "TNG-0493",
@@ -117570,7 +119124,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.54
     },
     {
       "id": "TNG-0494",
@@ -117802,7 +119357,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.22
     },
     {
       "id": "TNG-0495",
@@ -118034,7 +119590,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.16
     },
     {
       "id": "TNG-0496",
@@ -118266,7 +119823,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.04
     },
     {
       "id": "TNG-0497",
@@ -118498,7 +120056,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.39
     },
     {
       "id": "TNG-0498",
@@ -118730,7 +120289,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 3.56
     },
     {
       "id": "TNG-0499",
@@ -118962,7 +120522,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 1.77
     },
     {
       "id": "TNG-0500",
@@ -119194,7 +120755,8 @@
           "wave": 23689.9,
           "flux": 0.0
         }
-      ]
+      ],
+      "rarity_score": 2.38
     }
   ]
 }

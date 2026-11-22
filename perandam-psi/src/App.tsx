@@ -16,6 +16,7 @@ export const App: React.FC = () => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [colorMode, setColorMode] = useState<SkyColorMode>('rgb');
+  const [discoveryMode, setDiscoveryMode] = useState<boolean>(false);
 
   // Check connection to local SpecSynth HTTP bridge (localhost:8000)
   useEffect(() => {
@@ -75,6 +76,8 @@ export const App: React.FC = () => {
         onSelectGalaxy={handleSelectById}
         onOpenGuide={() => setIsGuideOpen(true)}
         galaxies={galaxies}
+        discoveryMode={discoveryMode}
+        onToggleDiscoveryMode={() => setDiscoveryMode((prev) => !prev)}
       />
 
       {/* Beginner & Student Guide Modal */}
@@ -93,6 +96,7 @@ export const App: React.FC = () => {
             fieldRadius={manifest.field_center.radius_deg}
             resetTrigger={resetTrigger}
             colorMode={colorMode}
+            discoveryMode={discoveryMode}
           />
 
           {/* Floating Field Summary Badge (Bottom Left) */}

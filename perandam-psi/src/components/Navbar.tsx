@@ -6,6 +6,7 @@ import {
   Compass,
   GraduationCap,
   Palette,
+  Sparkles,
 } from 'lucide-react';
 import { Galaxy, SkyColorMode } from '../types/galaxy';
 
@@ -19,6 +20,8 @@ interface NavbarProps {
   onSelectGalaxy: (id: string) => void;
   onOpenGuide: () => void;
   galaxies: Galaxy[];
+  discoveryMode: boolean;
+  onToggleDiscoveryMode: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -31,9 +34,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectGalaxy,
   onOpenGuide,
   galaxies,
+  discoveryMode,
+  onToggleDiscoveryMode,
 }) => {
+  const discoveries = galaxies.filter((g) => Boolean(g.discovery_profile));
   const anomalies = galaxies.filter((g) => g.sentry_status === 'ANOMALY');
-  const validGalaxies = galaxies.filter((g) => g.sentry_status !== 'ANOMALY');
+  const standardGalaxies = galaxies.filter((g) => !g.discovery_profile && g.sentry_status !== 'ANOMALY');
   return (
     <header className="h-14 bg-cosmos-900/90 backdrop-blur border-b border-cosmos-700/80 px-4 flex items-center justify-between z-30 select-none">
       {/* Brand & Signature Mark */}
@@ -77,6 +83,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           </select>
         </div>
 
+        {/* 🔭 Discovery Mode Toggle */}
+        <button
+          onClick={onToggleDiscoveryMode}
+          title="Toggle Frontier Discovery Mining Mode"
+          className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs border rounded-lg font-semibold transition-all cursor-pointer ${
+            discoveryMode
+              ? 'bg-purple-900/80 border-purple-500 text-purple-200 shadow-lg shadow-purple-900/40 ring-1 ring-purple-400/50'
+              : 'bg-cosmos-950/80 hover:bg-cosmos-800 border-cosmos-700 text-slate-300'
+          }`}
+        >
+          <Sparkles className={`w-3.5 h-3.5 ${discoveryMode ? 'text-purple-300 animate-pulse' : 'text-purple-400'}`} />
+          <span className="hidden sm:inline">Discovery</span>
+          {discoveryMode && (
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+          )}
+        </button>
+
         {/* Galaxy Jump Selector */}
         <div className="flex items-center space-x-2 bg-cosmos-950/80 border border-cosmos-700 rounded-lg px-2.5 py-1 text-xs">
           <Telescope className="w-3.5 h-3.5 text-cyan-400" />
@@ -88,6 +111,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             <option value="" disabled className="bg-cosmos-900">
               Jump to Galaxy ({nGalaxies})...
             </option>
+            {discoveries.length > 0 && (
+              <optgroup label={`✨ Frontier Discoveries & Extrema (${discoveries.length})`}>
+                {discoveries.map((g) => (
+                  <option key={g.id} value={g.id} className="bg-cosmos-900 text-purple-300 font-mono">
+                    ✨ {g.id} — {g.discovery_profile?.class_title.split('(')[0].trim()} ({g.rarity_score?.toFixed(1)}σ)
+                  </option>
+                ))}
+              </optgroup>
+            )}
             {anomalies.length > 0 && (
               <optgroup label={`⚠️ QC Failed Anomalies (${anomalies.length})`}>
                 {anomalies.map((g) => (
@@ -97,8 +129,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ))}
               </optgroup>
             )}
-            <optgroup label={`Validated TNG Galaxies (${validGalaxies.length})`}>
-              {validGalaxies.slice(0, 100).map((g) => (
+            <optgroup label={`Standard Galaxies (${standardGalaxies.length})`}>
+              {standardGalaxies.slice(0, 100).map((g) => (
                 <option key={g.id} value={g.id} className="bg-cosmos-900 text-slate-200">
                   {g.id} (z={g.redshift.toFixed(2)}, logM={g.log_mstar.toFixed(1)})
                 </option>
