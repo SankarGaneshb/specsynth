@@ -211,7 +211,7 @@ print("Executing in-flight GEMM filter projection...")
       </div>
 
       {/* Main Scientific Visualization Panel (Dominant View) */}
-      <div className="p-3.5 flex-1 overflow-y-auto space-y-3.5">
+      <div className="p-2.5 flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-cosmos-800">
         {/* Discovery Hypothesis & Inference Card */}
         {galaxy.discovery_profile && (
           <DiscoveryHypothesisCard
@@ -298,88 +298,88 @@ print("Executing in-flight GEMM filter projection...")
           </div>
         )}
 
-        {/* Supporting Physical Parameters Grid */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2.5">
-            <div className="text-slate-400 text-[10px] uppercase font-semibold">Stellar Mass</div>
-            <div className="text-sm font-bold text-indigo-300 mt-0.5">
-              10<sup>{galaxy.log_mstar.toFixed(2)}</sup> <span className="text-xs font-normal text-slate-400">M☉</span>
+        {/* Supporting Physical Parameters: Single Compact Row */}
+        <div className="grid grid-cols-4 gap-1.5 text-xs">
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
+            <div className="text-slate-400 text-[9px] uppercase font-semibold">Mass</div>
+            <div className="text-xs font-bold text-indigo-300">
+              10<sup>{galaxy.log_mstar.toFixed(2)}</sup> <span className="text-[9px] font-normal text-slate-400">M☉</span>
             </div>
           </div>
 
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2.5">
-            <div className="text-slate-400 text-[10px] uppercase font-semibold">Redshift z</div>
-            <div className="text-sm font-bold text-amber-300 mt-0.5">
-              {currentZ.toFixed(2)}{' '}
-              {isZEdited && <span className="text-[9px] text-amber-400 font-normal">(Forward Model)</span>}
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
+            <div className="text-slate-400 text-[9px] uppercase font-semibold">Redshift</div>
+            <div className="text-xs font-bold text-amber-300">
+              z={currentZ.toFixed(2)}
             </div>
           </div>
 
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2.5">
-            <div className="text-slate-400 text-[10px] uppercase font-semibold">SFR ψ(t)</div>
-            <div className="text-sm font-bold text-cyan-300 mt-0.5">
-              {galaxy.sfr.toFixed(2)} <span className="text-xs font-normal text-slate-400">M☉/yr</span>
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
+            <div className="text-slate-400 text-[9px] uppercase font-semibold">SFR</div>
+            <div className="text-xs font-bold text-cyan-300 truncate">
+              {galaxy.sfr.toFixed(1)} <span className="text-[9px] font-normal text-slate-400">M☉/yr</span>
             </div>
           </div>
 
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2.5">
-            <div className="text-slate-400 text-[10px] uppercase font-semibold">Dust Attenuation Av</div>
-            <div className="text-sm font-bold text-rose-300 mt-0.5">
-              {currentAv.toFixed(2)} <span className="text-xs font-normal text-slate-400">mag</span>{' '}
-              {isAvEdited && <span className="text-[9px] text-rose-400 font-normal">(Forward Model)</span>}
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
+            <div className="text-slate-400 text-[9px] uppercase font-semibold">Dust Av</div>
+            <div className="text-xs font-bold text-rose-300">
+              {currentAv.toFixed(2)} <span className="text-[9px] font-normal text-slate-400">mag</span>
             </div>
           </div>
         </div>
 
-        {/* Supporting Interactive Controls Deck (Underneath the Science) */}
-        <div className="p-3 bg-cosmos-950/70 border border-cosmos-800 rounded-xl space-y-2.5">
+        {/* Supporting Interactive Controls Deck: 2-Column Compact Grid */}
+        <div className="p-2.5 bg-cosmos-950/70 border border-cosmos-800 rounded-xl space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-300">
               <Sliders className="w-3.5 h-3.5 text-amber-400" />
-              <span>Forward-Modeling Controls</span>
+              <span className="text-[11px]">Forward-Modeling Parameters</span>
             </div>
             {(isZEdited || isAvEdited) && (
               <button
                 onClick={handleResetSliders}
                 className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
               >
-                Reset to TNG Origin
+                Reset
               </button>
             )}
           </div>
 
-          {/* Redshift Slider */}
-          <div>
-            <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-              <span>Redshift (z)</span>
-              <span className="font-mono text-slate-200">z = {currentZ.toFixed(2)}</span>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Redshift Slider */}
+            <div>
+              <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                <span>Redshift (z)</span>
+                <span className="font-mono text-amber-300">z = {currentZ.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max="10.0"
+                step="0.05"
+                value={currentZ}
+                onChange={(e) => handleSliderChange(parseFloat(e.target.value), null)}
+                className="w-full h-1.5 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+              />
             </div>
-            <input
-              type="range"
-              min="0.1"
-              max="10.0"
-              step="0.05"
-              value={currentZ}
-              onChange={(e) => handleSliderChange(parseFloat(e.target.value), null)}
-              className="w-full h-1.5 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
-            />
-          </div>
 
-          {/* Dust Av Slider */}
-          <div>
-            <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-              <span>Dust Attenuation (Av)</span>
-              <span className="font-mono text-slate-200">{currentAv.toFixed(2)} mag</span>
+            {/* Dust Av Slider */}
+            <div>
+              <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                <span>Dust (Av)</span>
+                <span className="font-mono text-rose-300">{currentAv.toFixed(2)} mag</span>
+              </div>
+              <input
+                type="range"
+                min="0.0"
+                max="3.0"
+                step="0.05"
+                value={currentAv}
+                onChange={(e) => handleSliderChange(null, parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-rose-400"
+              />
             </div>
-            <input
-              type="range"
-              min="0.0"
-              max="3.0"
-              step="0.05"
-              value={currentAv}
-              onChange={(e) => handleSliderChange(null, parseFloat(e.target.value))}
-              className="w-full h-1.5 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-rose-400"
-            />
           </div>
         </div>
       </div>

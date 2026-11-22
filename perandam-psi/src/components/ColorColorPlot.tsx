@@ -56,10 +56,10 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
   const minY = Math.min(-3.5, Math.floor(activePos.colorY - 0.5));
   const maxY = Math.max(4.0, Math.ceil(activePos.colorY + 0.5));
 
-  // Dimensions & Scale
+  // Dimensions & Scale (Streamlined for zero vertical scroll)
   const svgWidth = 440;
-  const svgHeight = 280;
-  const padding = { top: 25, right: 20, bottom: 45, left: 52 };
+  const svgHeight = 220;
+  const padding = { top: 20, right: 20, bottom: 40, left: 52 };
 
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
