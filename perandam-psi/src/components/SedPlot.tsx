@@ -54,10 +54,10 @@ export const SedPlot: React.FC<SedPlotProps> = ({
   const logMaxFlux = Math.log10(baselineMaxFlux * 1.5);
   const logMinFlux = logMaxFlux - 4.5;
 
-  // SVG dimensions
+  // SVG dimensions (Streamlined for zero vertical scroll)
   const svgWidth = 440;
-  const svgHeight = 220;
-  const padding = { top: 25, right: 20, bottom: 35, left: 52 };
+  const svgHeight = 200;
+  const padding = { top: 20, right: 18, bottom: 32, left: 48 };
 
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
@@ -115,9 +115,9 @@ export const SedPlot: React.FC<SedPlotProps> = ({
   }
 
   return (
-    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3 select-none">
+    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-2 select-none">
       {/* Non-overlapping structured header */}
-      <div className="mb-2.5">
+      <div className="mb-1.5">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold text-slate-200">Rest-Frame SED & Filter Bandpasses</span>
           <span className="text-[10px] text-slate-400 font-mono bg-cosmos-900 px-2 py-0.5 rounded border border-cosmos-800">

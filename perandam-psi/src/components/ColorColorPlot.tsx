@@ -58,8 +58,8 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
 
   // Dimensions & Scale (Streamlined for zero vertical scroll)
   const svgWidth = 440;
-  const svgHeight = 220;
-  const padding = { top: 20, right: 20, bottom: 40, left: 52 };
+  const svgHeight = 200;
+  const padding = { top: 18, right: 18, bottom: 35, left: 48 };
 
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
@@ -110,9 +110,9 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
   const vecEnd = { x: toScreenX(refVecEnd.colorX), y: toScreenY(refVecEnd.colorY) };
 
   return (
-    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3 select-none">
+    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-2 select-none">
       {/* Title & Methodology Badge */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center space-x-2">
           <span className="text-xs font-semibold text-slate-200">Color-Color Space (JOSS Fig. 3 Track)</span>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60">
