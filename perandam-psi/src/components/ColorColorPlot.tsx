@@ -47,30 +47,44 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
     return { colorX, colorY };
   };
 
-  // Dimensions & Scale (AB color ranges: X ∈ [-1.0, 2.5], Y ∈ [-1.0, 4.0])
+  // Dynamic scale calculation based on active galaxy position and astronomical distribution
+  const activePos = getColors(selectedGalaxy, currentZ, currentAv);
+
+  // Compute adaptive bounds to guarantee the active galaxy and track are always inside
+  const minX = Math.min(-1.5, Math.floor(activePos.colorX - 0.5));
+  const maxX = Math.max(2.5, Math.ceil(activePos.colorX + 0.5));
+  const minY = Math.min(-3.5, Math.floor(activePos.colorY - 0.5));
+  const maxY = Math.max(4.0, Math.ceil(activePos.colorY + 0.5));
+
+  // Dimensions & Scale
   const svgWidth = 440;
-  const svgHeight = 260;
-  const padding = { top: 30, right: 25, bottom: 42, left: 52 };
+  const svgHeight = 280;
+  const padding = { top: 25, right: 20, bottom: 45, left: 52 };
 
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
 
-  const minX = -0.8;
-  const maxX = 2.2;
-  const minY = -0.5;
-  const maxY = 3.8;
-
   const toScreenX = (val: number) =>
     padding.left + ((val - minX) / (maxX - minX)) * plotWidth;
 
-  // In astronomy CMDs, Y is usually plotted normal or inverted. Here, redder (higher color index) goes up
   const toScreenY = (val: number) =>
     padding.top + plotHeight - ((val - minY) / (maxY - minY)) * plotHeight;
 
-  // Current active galaxy position
-  const activePos = getColors(selectedGalaxy, currentZ, currentAv);
   const activeScreenX = toScreenX(activePos.colorX);
   const activeScreenY = toScreenY(activePos.colorY);
+
+  // Generate nice round tick intervals
+  const xTicks: number[] = [];
+  const xStep = maxX - minX > 5 ? 1.0 : 0.5;
+  for (let v = Math.ceil(minX / xStep) * xStep; v <= maxX; v += xStep) {
+    xTicks.push(Math.round(v * 10) / 10);
+  }
+
+  const yTicks: number[] = [];
+  const yStep = maxY - minY > 8 ? 2.0 : 1.0;
+  for (let v = Math.ceil(minY / yStep) * yStep; v <= maxY; v += yStep) {
+    yTicks.push(Math.round(v * 10) / 10);
+  }
 
   // Compute Redshift Evolutionary Track (z from 0.2 to 8.5)
   const zSamples = [0.2, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 3.5, 4.2, 5.0, 6.0, 7.0, 8.2];
@@ -90,7 +104,7 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
   }, '');
 
   // Dust Reddening Vector (Av = +1.0 mag arrow starting from reference point)
-  const refVecPt = { colorX: 0.2, colorY: 0.5 };
+  const refVecPt = { colorX: minX + 0.3 * (maxX - minX), colorY: minY + 0.6 * (maxY - minY) };
   const refVecEnd = { colorX: refVecPt.colorX + 0.35, colorY: refVecPt.colorY + 0.85 };
   const vecStart = { x: toScreenX(refVecPt.colorX), y: toScreenY(refVecPt.colorY) };
   const vecEnd = { x: toScreenX(refVecEnd.colorX), y: toScreenY(refVecEnd.colorY) };
@@ -110,9 +124,31 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
         </span>
       </div>
 
-      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-visible">
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-hidden">
+        <defs>
+          <clipPath id="color-plot-clip">
+            <rect
+              x={padding.left}
+              y={padding.top}
+              width={plotWidth}
+              height={plotHeight}
+            />
+          </clipPath>
+        </defs>
+
+        {/* Plot Background Area */}
+        <rect
+          x={padding.left}
+          y={padding.top}
+          width={plotWidth}
+          height={plotHeight}
+          fill="#090d1a"
+          stroke="#1e293b"
+          strokeWidth={1}
+        />
+
         {/* Grid lines */}
-        {[-0.5, 0.0, 0.5, 1.0, 1.5, 2.0].map((xVal) => (
+        {xTicks.map((xVal) => (
           <g key={`grid-x-${xVal}`}>
             <line
               x1={toScreenX(xVal)}
@@ -135,7 +171,7 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
           </g>
         ))}
 
-        {[0.0, 1.0, 2.0, 3.0].map((yVal) => (
+        {yTicks.map((yVal) => (
           <g key={`grid-y-${yVal}`}>
             <line
               x1={padding.left}
@@ -158,113 +194,121 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
           </g>
         ))}
 
-        {/* Population Scatter (Background IllustrisTNG Sample) */}
-        {allGalaxies.map((g) => {
-          const pt = getColors(g, g.redshift, g.av);
-          const px = toScreenX(pt.colorX);
-          const py = toScreenY(pt.colorY);
-          if (px < padding.left || px > padding.left + plotWidth || py < padding.top || py > padding.top + plotHeight) {
-            return null;
-          }
-          return (
-            <circle
-              key={`pop-${g.id}`}
-              cx={px}
-              cy={py}
-              r={1.8}
-              fill="#334155"
-              fillOpacity={0.45}
-            />
-          );
-        })}
+        {/* Data Group clipped to chart boundaries */}
+        <g clipPath="url(#color-plot-clip)">
+          {/* Population Scatter (Background IllustrisTNG Sample) */}
+          {allGalaxies.map((g) => {
+            const pt = getColors(g, g.redshift, g.av);
+            const px = toScreenX(pt.colorX);
+            const py = toScreenY(pt.colorY);
+            if (px < padding.left || px > padding.left + plotWidth || py < padding.top || py > padding.top + plotHeight) {
+              return null;
+            }
+            return (
+              <circle
+                key={`pop-${g.id}`}
+                cx={px}
+                cy={py}
+                r={1.8}
+                fill="#334155"
+                fillOpacity={0.45}
+              />
+            );
+          })}
 
-        {/* Evolutionary Redshift Trajectory Track */}
-        <path
-          d={trackPathD}
-          fill="none"
-          stroke="#4f46e5"
-          strokeWidth={3}
-          strokeOpacity={0.3}
-        />
-        <path
-          d={trackPathD}
-          fill="none"
-          stroke="#818cf8"
-          strokeWidth={1.8}
-          strokeDasharray="3,2"
-        />
+          {/* Evolutionary Redshift Trajectory Track */}
+          <path
+            d={trackPathD}
+            fill="none"
+            stroke="#4f46e5"
+            strokeWidth={3}
+            strokeOpacity={0.3}
+          />
+          <path
+            d={trackPathD}
+            fill="none"
+            stroke="#818cf8"
+            strokeWidth={1.8}
+            strokeDasharray="3,2"
+          />
 
-        {/* Track Milestone Redshift Waypoint Dots */}
-        {trackPoints.map((pt, idx) => (
-          <g key={`wp-${idx}`}>
-            <circle
-              cx={pt.x}
-              cy={pt.y}
-              r={2.2}
-              fill="#c7d2fe"
-              stroke="#4338ca"
-              strokeWidth={1}
+          {/* Track Milestone Redshift Waypoint Dots */}
+          {trackPoints.map((pt, idx) => {
+            const isInside = pt.x >= padding.left && pt.x <= padding.left + plotWidth && pt.y >= padding.top && pt.y <= padding.top + plotHeight;
+            if (!isInside) return null;
+            const isMilestone = [0.5, 2.0, 5.0, 8.0].some((target) => Math.abs(pt.z - target) < 0.25);
+            return (
+              <g key={`wp-${idx}`}>
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={2.2}
+                  fill="#c7d2fe"
+                  stroke="#4338ca"
+                  strokeWidth={1}
+                />
+                {isMilestone && (
+                  <text
+                    x={pt.x + 4}
+                    y={pt.y - 3}
+                    fill="#a5b4fc"
+                    fontSize="7.5"
+                    fontFamily="monospace"
+                    fontWeight="bold"
+                  >
+                    z={pt.z.toFixed(1)}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Dust Reddening Vector Arrow */}
+          <g opacity={0.85}>
+            <line
+              x1={vecStart.x}
+              y1={vecStart.y}
+              x2={vecEnd.x}
+              y2={vecEnd.y}
+              stroke="#fb7185"
+              strokeWidth={1.8}
             />
-            {[0.5, 2.0, 5.0, 8.0].some((target) => Math.abs(pt.z - target) < 0.25) && (
-              <text
-                x={pt.x + 4}
-                y={pt.y - 3}
-                fill="#a5b4fc"
-                fontSize="7.5"
-                fontFamily="monospace"
-                fontWeight="bold"
-              >
-                z={pt.z.toFixed(1)}
-              </text>
-            )}
+            <polygon
+              points={`${vecEnd.x},${vecEnd.y} ${vecEnd.x - 5},${vecEnd.y + 2} ${vecEnd.x - 2},${vecEnd.y + 5}`}
+              fill="#fb7185"
+            />
+            <text
+              x={vecStart.x - 4}
+              y={vecStart.y - 4}
+              fill="#fb7185"
+              fontSize="8"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              Av = +1.0
+            </text>
           </g>
-        ))}
 
-        {/* Dust Reddening Vector Arrow */}
-        <g opacity={0.85}>
-          <line
-            x1={vecStart.x}
-            y1={vecStart.y}
-            x2={vecEnd.x}
-            y2={vecEnd.y}
-            stroke="#fb7185"
+          {/* Active Galaxy Highlight Marker */}
+          <circle
+            cx={activeScreenX}
+            cy={activeScreenY}
+            r={7}
+            fill="#f59e0b"
+            fillOpacity={0.3}
+            stroke="#f59e0b"
+            strokeWidth={2}
+            className="animate-ping"
+          />
+          <circle
+            cx={activeScreenX}
+            cy={activeScreenY}
+            r={5}
+            fill="#fbbf24"
+            stroke="#ffffff"
             strokeWidth={1.8}
           />
-          <polygon
-            points={`${vecEnd.x},${vecEnd.y} ${vecEnd.x - 5},${vecEnd.y + 2} ${vecEnd.x - 2},${vecEnd.y + 5}`}
-            fill="#fb7185"
-          />
-          <text
-            x={vecStart.x - 4}
-            y={vecStart.y - 4}
-            fill="#fb7185"
-            fontSize="8"
-            fontFamily="monospace"
-            fontWeight="bold"
-          >
-            Av = +1.0
-          </text>
         </g>
-
-        {/* Active Galaxy Highlight Marker */}
-        <circle
-          cx={activeScreenX}
-          cy={activeScreenY}
-          r={7}
-          fill="#f59e0b"
-          fillOpacity={0.3}
-          stroke="#f59e0b"
-          strokeWidth={2}
-          className="animate-ping"
-        />
-        <circle
-          cx={activeScreenX}
-          cy={activeScreenY}
-          r={5}
-          fill="#fbbf24"
-          stroke="#ffffff"
-          strokeWidth={1.8}
-        />
 
         {/* Axis Labels */}
         <text
