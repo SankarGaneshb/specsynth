@@ -31,6 +31,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredGalaxy, setHoveredGalaxy] = useState<Galaxy | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
   // Reset view to center on trigger
   useEffect(() => {
@@ -132,8 +133,8 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     let animId: number;
 
     const render = () => {
-      const width = canvas.width;
-      const height = canvas.height;
+      const width = canvas.width || canvas.parentElement?.clientWidth || window.innerWidth;
+      const height = canvas.height || canvas.parentElement?.clientHeight || window.innerHeight;
 
       // 1. Deep Space Background
       ctx.fillStyle = '#03050c';
@@ -292,15 +293,21 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     fieldRadius,
     projectCoordinates,
     getGalaxyColor,
+    canvasSize,
   ]);
 
-  // Window Resize Listener
+  // Window Resize Listener & Dimensions Sync
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
-      canvas.height = canvas.parentElement?.clientHeight || window.innerHeight;
+      const w = canvas.parentElement?.clientWidth || window.innerWidth;
+      const h = canvas.parentElement?.clientHeight || window.innerHeight;
+      if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
+        canvas.width = w;
+        canvas.height = h;
+        setCanvasSize({ width: w, height: h });
+      }
     };
     handleResize();
     window.addEventListener('resize', handleResize);

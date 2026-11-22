@@ -64,11 +64,19 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
                 elif subpath.endswith(".ico"):
                     content_type = "image/x-icon"
                 self._set_cors_headers(200, content_type=content_type)
+                if subpath.endswith("index.html") or subpath == "index.html":
+                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 with open(target_file, "rb") as f:
                     self.wfile.write(f.read())
                 return
+            elif subpath.startswith("assets/") or "." in subpath:
+                # Do NOT serve index.html for missing static assets (causes JS MIME type error)
+                self._set_cors_headers(404, content_type="text/plain")
+                self.wfile.write(f"Asset '{subpath}' not found".encode("utf-8"))
+                return
             elif index_file.exists():
                 self._set_cors_headers(200, content_type="text/html")
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 with open(index_file, "rb") as f:
                     self.wfile.write(f.read())
                 return
