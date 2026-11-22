@@ -33,6 +33,9 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const currentZ = sliderZ !== null ? sliderZ : galaxy.redshift;
   const currentAv = sliderAv !== null ? sliderAv : galaxy.av;
 
+  const isZEdited = sliderZ !== null && Math.abs(sliderZ - galaxy.redshift) > 0.01;
+  const isAvEdited = sliderAv !== null && Math.abs(sliderAv - galaxy.av) > 0.01;
+
   // Recompute fluxes & magnitudes for JWST bands when Av or z is changed
   const deltaAv = currentAv - galaxy.av;
   const currentFluxes: Record<string, number> = {};
@@ -143,7 +146,7 @@ print(f"Synthesizing {galaxy.id} at z={redshift}...")
           <div className="text-slate-400 text-[10px] uppercase font-semibold">Redshift z</div>
           <div className="text-base font-bold text-amber-300 mt-0.5">
             {currentZ.toFixed(2)}{' '}
-            {sliderZ !== null && <span className="text-[10px] text-amber-400 font-normal">(edited)</span>}
+            {isZEdited && <span className="text-[10px] text-amber-400 font-normal">(edited)</span>}
           </div>
         </div>
 
@@ -157,7 +160,8 @@ print(f"Synthesizing {galaxy.id} at z={redshift}...")
         <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2.5">
           <div className="text-slate-400 text-[10px] uppercase font-semibold">Dust Attenuation Av</div>
           <div className="text-base font-bold text-rose-300 mt-0.5">
-            {currentAv.toFixed(2)} <span className="text-xs font-normal text-slate-400">mag</span>
+            {currentAv.toFixed(2)} <span className="text-xs font-normal text-slate-400">mag</span>{' '}
+            {isAvEdited && <span className="text-[10px] text-rose-400 font-normal">(edited)</span>}
           </div>
         </div>
       </div>
@@ -169,7 +173,7 @@ print(f"Synthesizing {galaxy.id} at z={redshift}...")
             <Sliders className="w-3.5 h-3.5 text-amber-400" />
             <span>Interactive Forward-Modeling Controls</span>
           </div>
-          {(sliderZ !== null || sliderAv !== null) && (
+          {(isZEdited || isAvEdited) && (
             <button
               onClick={handleResetSliders}
               className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
