@@ -7,6 +7,8 @@ import {
   GraduationCap,
   Palette,
   Sparkles,
+  AlertTriangle,
+  ShieldCheck,
 } from 'lucide-react';
 import { Galaxy, SkyColorMode } from '../types/galaxy';
 
@@ -37,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   discoveryMode,
   onToggleDiscoveryMode,
 }) => {
+  const selectedGalaxy = galaxies.find((g) => g.id === selectedId);
   const discoveries = galaxies.filter((g) => Boolean(g.discovery_profile));
   const anomalies = galaxies.filter((g) => g.sentry_status === 'ANOMALY');
   const standardGalaxies = galaxies.filter((g) => !g.discovery_profile && g.sentry_status !== 'ANOMALY');
@@ -160,14 +163,42 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right Stats & Scientific QA / Engine Status */}
       <div className="flex items-center space-x-2.5 text-xs">
-        {/* Validated Physical QA Badge */}
-        <div
-          title="Passed 4-tier physical invariants: non-negative fluxes, D4000 break bounds, sub-Hubble stellar ages"
-          className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-700/50 text-emerald-300"
-        >
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-          <span>QC Passed: Validated</span>
-        </div>
+        {/* Dynamic Scientific QA & Sentry Status Badge */}
+        {selectedGalaxy ? (
+          selectedGalaxy.discovery_profile ? (
+            <div
+              title={`Frontier Discovery Candidate: ${selectedGalaxy.discovery_profile.class_title}`}
+              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-purple-950/80 border border-purple-500/70 text-purple-200 shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+              <span>Frontier Discovery: {selectedGalaxy.discovery_profile.rarity_sigma.toFixed(1)}σ</span>
+            </div>
+          ) : selectedGalaxy.sentry_status === 'ANOMALY' ? (
+            <div
+              title={`Sentry Physical Invariant Violation: ${selectedGalaxy.qc_failure_title || selectedGalaxy.qc_failure_code || 'Quarantined'}`}
+              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-rose-950/90 border border-rose-600/80 text-rose-300 shadow-sm animate-pulse"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              <span>QC Flag: Anomaly ({selectedGalaxy.qc_failure_code || 'Flagged'})</span>
+            </div>
+          ) : (
+            <div
+              title="Passed 4-tier physical invariants: non-negative fluxes, D4000 break bounds, sub-Hubble stellar ages"
+              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-700/50 text-emerald-300"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>QC Passed: Validated</span>
+            </div>
+          )
+        ) : (
+          <div
+            title={`Field Sentry Status: ${galaxies.length - anomalies.length} pristine objects, ${anomalies.length} quarantined anomalies`}
+            className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-300"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Field QA: {anomalies.length > 0 ? `${anomalies.length} Anomalies Flagged` : 'All Pristine'}</span>
+          </div>
+        )}
 
         {/* Engine Connectivity Indicator */}
         <div
