@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Galaxy } from '../types/galaxy';
+import { Galaxy, SkyColorMode } from '../types/galaxy';
 
 interface SkyCanvasProps {
   galaxies: Galaxy[];
@@ -9,6 +9,7 @@ interface SkyCanvasProps {
   centerDec: number;
   fieldRadius: number;
   resetTrigger: number;
+  colorMode?: SkyColorMode;
 }
 
 export const SkyCanvas: React.FC<SkyCanvasProps> = ({
@@ -19,6 +20,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
   centerDec,
   fieldRadius,
   resetTrigger,
+  colorMode = 'rgb',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -55,27 +57,70 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     [centerRa, centerDec, fieldRadius]
   );
 
-  // Compute color from fluxes (RGB composite from NIRCam F444W, F200W, F090W)
-  const getGalaxyColor = useCallback((g: Galaxy) => {
-    const rFlux = g.fluxes['jwst_f444w'] || 1e-32;
-    const gFlux = g.fluxes['jwst_f200w'] || 1e-32;
-    const bFlux = g.fluxes['jwst_f090w'] || 1e-32;
+  // Compute color based on scientific mode
+  const getGalaxyColor = useCallback(
+    (g: Galaxy) => {
+      if (colorMode === 'redshift') {
+        // Cosmological Redshift Colormap: z in [0.2, 8.5]
+        const t = Math.max(0, Math.min(1, (g.redshift - 0.2) / 8.0));
+        if (t < 0.3) {
+          const f = t / 0.3;
+          const r = Math.round(56 + f * (52 - 56));
+          const gr = Math.round(189 + f * (211 - 189));
+          const b = Math.round(248 + f * (153 - 248));
+          return `rgb(${r}, ${gr}, ${b})`;
+        } else if (t < 0.65) {
+          const f = (t - 0.3) / 0.35;
+          const r = Math.round(52 + f * (251 - 52));
+          const gr = Math.round(211 + f * (191 - 211));
+          const b = Math.round(153 + f * (36 - 153));
+          return `rgb(${r}, ${gr}, ${b})`;
+        } else {
+          const f = (t - 0.65) / 0.35;
+          const r = Math.round(251 + f * (244 - 251));
+          const gr = Math.round(191 + f * (63 - 191));
+          const b = Math.round(36 + f * (94 - 36));
+          return `rgb(${r}, ${gr}, ${b})`;
+        }
+      } else if (colorMode === 'ssfr') {
+        // Specific Star Formation Rate (Bimodality)
+        const logSSFR = Math.log10(Math.max(1e-13, g.sfr / g.stellar_mass));
+        if (logSSFR > -10.0) {
+          return 'rgb(96, 165, 250)'; // Star-forming blue cloud
+        } else if (logSSFR > -10.8) {
+          return 'rgb(52, 211, 153)'; // Green Valley
+        } else {
+          return 'rgb(244, 63, 94)'; // Quiescent red sequence
+        }
+      } else if (colorMode === 'mass') {
+        // Stellar Mass log M* in [7.5, 11.5]
+        const t = Math.max(0, Math.min(1, (g.log_mstar - 7.5) / 4.0));
+        const r = Math.round(129 + t * (254 - 129));
+        const gr = Math.round(140 + t * (240 - 140));
+        const b = Math.round(248 - t * 110);
+        return `rgb(${r}, ${gr}, ${b})`;
+      } else {
+        // True Astronomical RGB Composite from NIRCam F444W, F200W, F090W
+        const rFlux = g.fluxes['jwst_f444w'] || 1e-32;
+        const gFlux = g.fluxes['jwst_f200w'] || 1e-32;
+        const bFlux = g.fluxes['jwst_f090w'] || 1e-32;
 
-    const maxFlux = Math.max(rFlux, gFlux, bFlux);
-    if (maxFlux <= 0) return 'rgba(200, 220, 255, 0.8)';
+        const maxFlux = Math.max(rFlux, gFlux, bFlux);
+        if (maxFlux <= 0) return 'rgba(200, 220, 255, 0.8)';
 
-    // Normalizing with gentle power-law curve to emphasize color differences
-    const r = Math.min(255, Math.floor(255 * Math.pow(rFlux / maxFlux, 0.4)));
-    const gCol = Math.min(255, Math.floor(255 * Math.pow(gFlux / maxFlux, 0.4)));
-    const b = Math.min(255, Math.floor(255 * Math.pow(bFlux / maxFlux, 0.4)));
+        const r = Math.min(255, Math.floor(255 * Math.pow(rFlux / maxFlux, 0.4)));
+        const gCol = Math.min(255, Math.floor(255 * Math.pow(gFlux / maxFlux, 0.4)));
+        const b = Math.min(255, Math.floor(255 * Math.pow(bFlux / maxFlux, 0.4)));
 
-    // Ensure galaxies don't look completely dim
-    const boost = Math.max(r, gCol, b);
-    const minLum = 180;
-    const factor = boost > 0 && boost < minLum ? minLum / boost : 1;
+        const boost = Math.max(r, gCol, b);
+        const minLum = 180;
+        const factor = boost > 0 && boost < minLum ? minLum / boost : 1;
 
-    return `rgb(${Math.min(255, Math.floor(r * factor))}, ${Math.min(255, Math.floor(gCol * factor))}, ${Math.min(255, Math.floor(b * factor))})`;
-  }, []);
+        return `rgb(${Math.min(255, Math.floor(r * factor))}, ${Math.min(255, Math.floor(gCol * factor))}, ${Math.min(255, Math.floor(b * factor))})`;
+      }
+    },
+    [colorMode]
+  );
 
   // Main Render Loop
   useEffect(() => {
@@ -174,7 +219,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
           ctx.arc(x, y, currentRadius * 4 + 4, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Reticle tick crosshairs
+          // Crosshairs
           const rSize = currentRadius * 4 + 10;
           ctx.beginPath();
           ctx.moveTo(x - rSize, y);
@@ -201,7 +246,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
       }
 
       // 4. Astrometric Scale Bar (bottom left)
-      const scaleBarArcmin = 1.0; // 1 arcminute
+      const scaleBarArcmin = 1.0;
       const scaleBarDeg = scaleBarArcmin / 60.0;
       const baseScale = Math.min(width, height) / (2.2 * fieldRadius);
       const scaleBarPx = scaleBarDeg * baseScale * zoom;
@@ -249,7 +294,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Mouse Drag / Pan Handlers
+  // Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDragging(true);
     setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
@@ -275,7 +320,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     const width = canvas.width;
     const height = canvas.height;
     let found: Galaxy | null = null;
-    let closestDist = 20; // 20px hit tolerance
+    let closestDist = 20;
 
     for (const g of galaxies) {
       const { x, y } = projectCoordinates(g.ra, g.dec, width, height, zoom, offset);
@@ -290,13 +335,12 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
   const handleMouseUp = () => setIsDragging(false);
 
-  // Wheel Zoom Handler
+  // Wheel Zoom
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
     const newZoom = Math.max(0.5, Math.min(25.0, zoom * zoomFactor));
 
-    // Zoom centered on cursor position
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -314,7 +358,6 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     setZoom(newZoom);
   };
 
-  // Click Selection Handler
   const handleClick = () => {
     if (hoveredGalaxy) {
       onSelectGalaxy(hoveredGalaxy);
@@ -353,13 +396,67 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
             <span>•</span>
             <span>SFR = {hoveredGalaxy.sfr.toFixed(2)} M☉/yr</span>
           </div>
-          <div className="text-slate-400 text-[10px] mt-0.5">Click to inspect in PSI Explorer</div>
+          <div className="text-slate-400 text-[10px] mt-0.5">Click to inspect in Scientific Workspace</div>
         </div>
       )}
 
-      {/* On-screen Navigation Hints */}
-      <div className="absolute bottom-4 right-4 bg-cosmos-950/80 border border-cosmos-800 rounded-lg px-3 py-1.5 text-[11px] text-slate-400 pointer-events-none backdrop-blur">
-        <span>Drag to pan • Scroll to zoom ({(zoom).toFixed(1)}×)</span>
+      {/* Scientific Colorbar Overlay */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end space-y-1.5 pointer-events-none">
+        {colorMode === 'redshift' && (
+          <div className="bg-cosmos-950/90 border border-cosmos-800 rounded-lg p-2 text-[10px] text-slate-300 backdrop-blur shadow-lg">
+            <div className="font-semibold text-slate-200 mb-1">Color: Cosmological Redshift (z)</div>
+            <div className="w-48 h-2 rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 via-amber-400 to-rose-500" />
+            <div className="flex justify-between font-mono text-[9px] text-slate-400 mt-1">
+              <span>z = 0.2</span>
+              <span>z = 2.0</span>
+              <span>z = 5.0</span>
+              <span>z = 8.5</span>
+            </div>
+          </div>
+        )}
+
+        {colorMode === 'ssfr' && (
+          <div className="bg-cosmos-950/90 border border-cosmos-800 rounded-lg p-2 text-[10px] text-slate-300 backdrop-blur shadow-lg">
+            <div className="font-semibold text-slate-200 mb-1">Color: Specific SFR (Bimodality)</div>
+            <div className="flex items-center space-x-2 text-[9px] font-mono">
+              <span className="flex items-center space-x-1">
+                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                <span>Star-Forming</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span>Green Valley</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span>Quiescent</span>
+              </span>
+            </div>
+          </div>
+        )}
+
+        {colorMode === 'mass' && (
+          <div className="bg-cosmos-950/90 border border-cosmos-800 rounded-lg p-2 text-[10px] text-slate-300 backdrop-blur shadow-lg">
+            <div className="font-semibold text-slate-200 mb-1">Color: Stellar Mass (log M*)</div>
+            <div className="w-44 h-2 rounded-full bg-gradient-to-r from-indigo-400 via-amber-400 to-yellow-200" />
+            <div className="flex justify-between font-mono text-[9px] text-slate-400 mt-1">
+              <span>10⁷·⁵ M☉</span>
+              <span>10⁹·⁵</span>
+              <span>10¹¹·⁵ M☉</span>
+            </div>
+          </div>
+        )}
+
+        {colorMode === 'rgb' && (
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg px-2.5 py-1 text-[10px] text-slate-400 backdrop-blur">
+            <span className="text-rose-400">R: F444W</span> • <span className="text-emerald-400">G: F200W</span> • <span className="text-sky-400">B: F090W</span>
+          </div>
+        )}
+
+        {/* Navigation Hints */}
+        <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg px-2.5 py-1 text-[10px] text-slate-400 backdrop-blur">
+          <span>Drag to pan • Scroll to zoom ({(zoom).toFixed(1)}×)</span>
+        </div>
       </div>
     </div>
   );

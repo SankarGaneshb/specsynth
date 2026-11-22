@@ -1,3 +1,5 @@
+export type SkyColorMode = 'rgb' | 'redshift' | 'ssfr' | 'mass';
+
 export interface SedPoint {
   wave: number;
   flux: number;

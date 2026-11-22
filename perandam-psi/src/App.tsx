@@ -3,7 +3,7 @@ import { Navbar } from './components/Navbar';
 import { SkyCanvas } from './components/SkyCanvas';
 import { GalaxyInspector } from './components/GalaxyInspector';
 import { GuideModal } from './components/GuideModal';
-import { Galaxy, CatalogManifest } from './types/galaxy';
+import { Galaxy, CatalogManifest, SkyColorMode } from './types/galaxy';
 import rawManifest from './data/tng_jwst_deep_field.json';
 import { Sparkles } from 'lucide-react';
 
@@ -15,6 +15,7 @@ export const App: React.FC = () => {
   const [resetTrigger, setResetTrigger] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
+  const [colorMode, setColorMode] = useState<SkyColorMode>('rgb');
 
   // Check connection to local SpecSynth HTTP bridge (localhost:8000)
   useEffect(() => {
@@ -56,6 +57,7 @@ export const App: React.FC = () => {
 
   const handleUpdateGalaxy = (updated: Galaxy) => {
     setGalaxies((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setSelectedGalaxy(updated);
   };
 
   const galaxyIds = manifest.galaxies.map((g) => g.id);
@@ -67,6 +69,8 @@ export const App: React.FC = () => {
         nGalaxies={galaxies.length}
         selectedId={selectedGalaxy?.id || null}
         isConnected={isConnected}
+        colorMode={colorMode}
+        onChangeColorMode={setColorMode}
         onResetView={() => setResetTrigger((prev) => prev + 1)}
         onSelectGalaxy={handleSelectById}
         onOpenGuide={() => setIsGuideOpen(true)}
@@ -88,6 +92,7 @@ export const App: React.FC = () => {
             centerDec={manifest.field_center.dec}
             fieldRadius={manifest.field_center.radius_deg}
             resetTrigger={resetTrigger}
+            colorMode={colorMode}
           />
 
           {/* Floating Field Summary Badge (Bottom Left) */}
@@ -105,6 +110,7 @@ export const App: React.FC = () => {
         {selectedGalaxy && (
           <GalaxyInspector
             galaxy={selectedGalaxy}
+            allGalaxies={galaxies}
             filters={manifest.filters}
             onClose={() => setSelectedGalaxy(null)}
             onUpdateGalaxy={handleUpdateGalaxy}
