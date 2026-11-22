@@ -264,6 +264,7 @@ print(f"Synthesizing {galaxy.id} at z={redshift}...")
             sed={galaxy.sed}
             filters={filters}
             redshift={currentZ}
+            originalZ={galaxy.redshift}
             dustAv={currentAv}
             originalAv={galaxy.av}
           />
