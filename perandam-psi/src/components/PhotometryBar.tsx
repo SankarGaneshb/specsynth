@@ -20,28 +20,30 @@ export const PhotometryBar: React.FC<PhotometryBarProps> = ({ mags }) => {
   const maxMag = Math.max(...validMags, 30);
 
   return (
-    <div className="bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3 select-none">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-slate-300">Synthetic JWST NIRCam Photometry</span>
-        <span className="text-[10px] text-slate-400 font-mono">AB Magnitudes</span>
+    <div className="bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3.5 select-none shadow-md">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-bold text-slate-100">Synthetic JWST NIRCam Photometry</span>
+        <span className="text-xs text-slate-400 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800">
+          AB Magnitudes
+        </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {bands.map((b) => {
           const mag = mags[b.key] || 99.0;
           // Width based on brightness: brighter (lower mag) = wider bar
           const pct = Math.max(10, Math.min(100, ((maxMag - mag) / (maxMag - minMag + 0.1)) * 90 + 10));
 
           return (
-            <div key={b.key} className="flex items-center space-x-2 text-xs">
-              <span className="w-24 text-[11px] text-slate-400 font-mono">{b.label}</span>
-              <div className="flex-1 bg-cosmos-900 rounded-full h-3 overflow-hidden border border-cosmos-800">
+            <div key={b.key} className="flex items-center space-x-3 text-xs">
+              <span className="w-28 text-xs text-slate-300 font-mono font-medium">{b.label}</span>
+              <div className="flex-1 bg-cosmos-900 rounded-full h-3.5 overflow-hidden border border-cosmos-800/80">
                 <div
                   style={{ width: `${pct}%` }}
-                  className={`h-full rounded-full ${b.color} transition-all duration-300 opacity-80`}
+                  className={`h-full rounded-full ${b.color} transition-all duration-300 opacity-85 shadow-sm`}
                 />
               </div>
-              <span className="w-14 text-right font-mono text-[11px] text-slate-200">
+              <span className="w-16 text-right font-mono text-xs font-bold text-slate-100">
                 {mag < 50 ? `${mag.toFixed(2)}` : 'undetected'}
               </span>
             </div>

@@ -54,10 +54,10 @@ export const SedPlot: React.FC<SedPlotProps> = ({
   const logMaxFlux = Math.log10(baselineMaxFlux * 1.5);
   const logMinFlux = logMaxFlux - 4.5;
 
-  // SVG dimensions (Streamlined for zero vertical scroll)
+  // SVG dimensions (Comfortable proportions filling available vertical height)
   const svgWidth = 440;
-  const svgHeight = 200;
-  const padding = { top: 20, right: 18, bottom: 32, left: 48 };
+  const svgHeight = 240;
+  const padding = { top: 24, right: 18, bottom: 38, left: 54 };
 
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
@@ -115,28 +115,28 @@ export const SedPlot: React.FC<SedPlotProps> = ({
   }
 
   return (
-    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-2 select-none">
+    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3 select-none shadow-md">
       {/* Non-overlapping structured header */}
-      <div className="mb-1.5">
+      <div className="mb-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-slate-200">Rest-Frame SED & Filter Bandpasses</span>
-          <span className="text-[10px] text-slate-400 font-mono bg-cosmos-900 px-2 py-0.5 rounded border border-cosmos-800">
+          <span className="text-sm font-bold text-slate-100">Rest-Frame SED & Filter Bandpasses</span>
+          <span className="text-xs text-slate-300 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800">
             λ_rest ∈ [10³ - 5×10⁴ Å]
           </span>
         </div>
 
         {/* Dedicated Diff Badges Bar (strictly on its own line to prevent overlap) */}
         {(isZModified || isDustModified) && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-cosmos-800/60">
+          <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-cosmos-800/60">
             {isZModified && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center space-x-1">
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center space-x-1">
                 <span className="font-bold">Δz = {deltaZ > 0 ? `+${deltaZ.toFixed(2)}` : deltaZ.toFixed(2)}</span>
                 <span className="text-amber-400/80">({originalZ.toFixed(2)} → {redshift.toFixed(2)})</span>
               </span>
             )}
             {isDustModified && (
               <span
-                className={`text-[10px] font-mono px-2 py-0.5 rounded flex items-center space-x-1 ${
+                className={`text-xs font-mono px-2 py-0.5 rounded flex items-center space-x-1 ${
                   deltaAv > 0
                     ? 'bg-rose-950/80 text-rose-300 border border-rose-800/60'
                     : 'bg-cyan-950/80 text-cyan-300 border border-cyan-800/60'
@@ -164,11 +164,12 @@ export const SedPlot: React.FC<SedPlotProps> = ({
             />
             <text
               x={padding.left - 6}
-              y={t.y + 3}
-              fill="#64748b"
-              fontSize="8"
+              y={t.y + 3.5}
+              fill="#94a3b8"
+              fontSize="10"
               textAnchor="end"
               fontFamily="monospace"
+              fontWeight="500"
             >
               {t.label}
             </text>
@@ -188,7 +189,7 @@ export const SedPlot: React.FC<SedPlotProps> = ({
                 stroke="#1e293b"
                 strokeDasharray="2,2"
               />
-              <text x={x} y={svgHeight - 12} fill="#64748b" fontSize="9" textAnchor="middle" fontFamily="monospace">
+              <text x={x} y={svgHeight - 14} fill="#94a3b8" fontSize="10.5" textAnchor="middle" fontFamily="monospace" fontWeight="500">
                 {w < 10000 ? `${w}Å` : `${w / 10000}µm`}
               </text>
             </g>
@@ -314,8 +315,9 @@ export const SedPlot: React.FC<SedPlotProps> = ({
         <text
           x={14}
           y={padding.top + plotHeight / 2}
-          fill="#64748b"
-          fontSize="9"
+          fill="#94a3b8"
+          fontSize="10.5"
+          fontWeight="bold"
           textAnchor="middle"
           transform={`rotate(-90, 14, ${padding.top + plotHeight / 2})`}
         >
@@ -326,8 +328,9 @@ export const SedPlot: React.FC<SedPlotProps> = ({
         <text
           x={padding.left + plotWidth / 2}
           y={svgHeight - 2}
-          fill="#64748b"
-          fontSize="9"
+          fill="#94a3b8"
+          fontSize="10.5"
+          fontWeight="bold"
           textAnchor="middle"
         >
           Rest Wavelength λ_rest (Å)
@@ -335,8 +338,8 @@ export const SedPlot: React.FC<SedPlotProps> = ({
       </svg>
 
       {/* Legend & Hover Status Readout */}
-      <div className="mt-1 flex items-center justify-between text-[11px] text-slate-300 font-mono bg-cosmos-900/90 rounded px-2.5 py-1 border border-cosmos-800">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]">
+      <div className="mt-1 flex items-center justify-between text-xs text-slate-200 font-mono bg-cosmos-900/90 rounded px-3 py-1.5 border border-cosmos-800 shadow-sm">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           {isDustModified && (
             <div className="flex items-center space-x-1 text-slate-400">
               <span className="inline-block w-3 h-0.5 border-t border-dashed border-slate-400" />
@@ -349,9 +352,9 @@ export const SedPlot: React.FC<SedPlotProps> = ({
               <span>Orig z={originalZ.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1.5 font-semibold">
             <span
-              className={`inline-block w-3 h-0.5 ${
+              className={`inline-block w-3 h-1 rounded ${
                 isDustModified ? (deltaAv > 0 ? 'bg-rose-400' : 'bg-sky-400') : 'bg-indigo-400'
               }`}
             />
@@ -362,7 +365,7 @@ export const SedPlot: React.FC<SedPlotProps> = ({
         </div>
 
         {hoverIndex !== null && modifiedSed[hoverIndex] && (
-          <div className="text-[10px] text-amber-300 flex-shrink-0 ml-2">
+          <div className="text-xs font-bold text-amber-300 flex-shrink-0 ml-2">
             λ = {modifiedSed[hoverIndex].wave.toFixed(0)}Å • L_λ = {modifiedSed[hoverIndex].flux.toExponential(2)}
           </div>
         )}

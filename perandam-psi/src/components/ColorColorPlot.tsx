@@ -56,10 +56,10 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
   const minY = Math.min(-3.5, Math.floor(activePos.colorY - 0.5));
   const maxY = Math.max(4.0, Math.ceil(activePos.colorY + 0.5));
 
-  // Dimensions & Scale (Streamlined for zero vertical scroll)
+  // Dimensions & Scale (Comfortable proportions filling available vertical height)
   const svgWidth = 440;
-  const svgHeight = 200;
-  const padding = { top: 18, right: 18, bottom: 35, left: 48 };
+  const svgHeight = 240;
+  const padding = { top: 22, right: 18, bottom: 42, left: 52 };
 
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
@@ -110,18 +110,19 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
   const vecEnd = { x: toScreenX(refVecEnd.colorX), y: toScreenY(refVecEnd.colorY) };
 
   return (
-    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-2 select-none">
-      {/* Title & Methodology Badge */}
-      <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center space-x-2">
-          <span className="text-xs font-semibold text-slate-200">Color-Color Space (JOSS Fig. 3 Track)</span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60">
-            F150W-F444W vs F200W-F277W
+    <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3 select-none shadow-md">
+      {/* Title & Methodology Badge (Structured to prevent any text overlap) */}
+      <div className="mb-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-100">Color-Color Space (JOSS Fig. 3 Track)</span>
+          <span className="text-xs text-amber-400 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800">
+            z = {currentZ.toFixed(2)} • Av = {currentAv.toFixed(2)} mag
           </span>
         </div>
-        <span className="text-[10px] text-amber-400 font-mono">
-          z: {currentZ.toFixed(2)} • Av: {currentAv.toFixed(2)}
-        </span>
+        <div className="text-xs font-mono text-indigo-300 mt-1 flex items-center space-x-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+          <span>F150W − F444W vs F200W − F277W</span>
+        </div>
       </div>
 
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-hidden">
@@ -315,7 +316,7 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
           x={padding.left + plotWidth / 2}
           y={svgHeight - 6}
           fill="#94a3b8"
-          fontSize="10"
+          fontSize="11"
           textAnchor="middle"
           fontWeight="bold"
         >
@@ -323,25 +324,25 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
         </text>
 
         <text
-          x={16}
+          x={14}
           y={padding.top + plotHeight / 2}
           fill="#94a3b8"
-          fontSize="10"
+          fontSize="11"
           textAnchor="middle"
           fontWeight="bold"
-          transform={`rotate(-90, 16, ${padding.top + plotHeight / 2})`}
+          transform={`rotate(-90, 14, ${padding.top + plotHeight / 2})`}
         >
           JWST (F150W - F444W) [AB mag]
         </text>
       </svg>
 
       {/* Real-time Trajectory Status Footer */}
-      <div className="mt-1 flex items-center justify-between text-[11px] text-slate-300 font-mono bg-cosmos-900/90 rounded px-2.5 py-1 border border-cosmos-800">
-        <div className="flex items-center space-x-2 text-[10px]">
-          <span className="w-2 h-2 rounded-full bg-amber-400" />
+      <div className="mt-1 flex items-center justify-between text-xs text-slate-200 font-mono bg-cosmos-900/90 rounded px-3 py-1.5 border border-cosmos-800 shadow-sm">
+        <div className="flex items-center space-x-2 text-xs font-semibold">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
           <span>Active Position: ({activePos.colorX.toFixed(2)}, {activePos.colorY.toFixed(2)})</span>
         </div>
-        <span className="text-[10px] text-indigo-300">
+        <span className="text-xs text-indigo-300">
           Dotted curve = Redshift trajectory z ∈ [0.2, 8.5]
         </span>
       </div>
