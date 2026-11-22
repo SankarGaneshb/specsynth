@@ -24,6 +24,9 @@ export interface Galaxy {
   tau_diffuse: number;
   tau_birth: number;
   sentry_status: 'PRISTINE' | 'ANOMALY';
+  qc_failure_code?: string;
+  qc_failure_title?: string;
+  qc_failure_detail?: string;
   fluxes: Record<string, number>;
   mags: Record<string, number>;
   apparent_mag: number;

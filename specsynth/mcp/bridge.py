@@ -42,29 +42,12 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
 
         mcp = self.server_instance or SpecsynthMCPServer()
 
-        if path in ("/", ""):
-            self._set_cors_headers(200)
-            res = {
-                "service": "Perandam Space Intelligence (PSI) — SpecSynth HTTP Bridge",
-                "mark": "PerandamΨ",
-                "status": "online",
-                "version": "1.0.0",
-                "frontend_url": "http://localhost:5173",
-                "endpoints": {
-                    "health": "/api/health",
-                    "filters": "/api/filters?instrument=jwst_nircam",
-                    "tng_catalog": "/api/tng-catalog?limit=5",
-                    "inspect_galaxy": "/api/inspect?galaxy_idx=0",
-                    "system_hardware": "/api/system",
-                    "sentry_audit": "/api/audit",
-                },
-                "instructions": "Open the PerandamΨ visual frontend at http://localhost:5173 (run 'cd perandam-psi; npm run dev').",
-            }
-            self.wfile.write(json.dumps(res, indent=2).encode("utf-8"))
+        # 1. SPA Static File Serving (perandam-psi/dist)
+        dist_dir = Path(__file__).parents[2] / "perandam-psi" / "dist"
+        index_file = dist_dir / "index.html"
 
-        elif path.startswith("/app"):
-            dist_dir = Path(__file__).parents[2] / "perandam-psi" / "dist"
-            subpath = path[4:].lstrip("/") or "index.html"
+        if not path.startswith("/api"):
+            subpath = path.lstrip("/") or "index.html"
             target_file = dist_dir / subpath
             if target_file.exists() and target_file.is_file():
                 content_type = "text/html"
@@ -76,20 +59,46 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
                     content_type = "application/json"
                 elif subpath.endswith(".svg"):
                     content_type = "image/svg+xml"
+                elif subpath.endswith(".png"):
+                    content_type = "image/png"
+                elif subpath.endswith(".ico"):
+                    content_type = "image/x-icon"
                 self._set_cors_headers(200, content_type=content_type)
                 with open(target_file, "rb") as f:
                     self.wfile.write(f.read())
+                return
+            elif index_file.exists():
+                self._set_cors_headers(200, content_type="text/html")
+                with open(index_file, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+            elif path in ("/", ""):
+                self._set_cors_headers(200)
+                res = {
+                    "service": "Perandam Space Intelligence (PSI) — SpecSynth HTTP Bridge",
+                    "mark": "PerandamΨ",
+                    "status": "online",
+                    "version": "1.0.0",
+                    "frontend_url": "http://localhost:5173",
+                    "endpoints": {
+                        "health": "/api/health",
+                        "filters": "/api/filters?instrument=jwst_nircam",
+                        "tng_catalog": "/api/tng-catalog?limit=5",
+                        "inspect_galaxy": "/api/inspect?galaxy_idx=0",
+                        "system_hardware": "/api/system",
+                        "sentry_audit": "/api/audit",
+                    },
+                    "instructions": "Build frontend with 'cd perandam-psi; npm run build' to serve from port 8000, or run 'npm run dev'.",
+                }
+                self.wfile.write(json.dumps(res, indent=2).encode("utf-8"))
+                return
             else:
-                index_file = dist_dir / "index.html"
-                if index_file.exists():
-                    self._set_cors_headers(200, content_type="text/html")
-                    with open(index_file, "rb") as f:
-                        self.wfile.write(f.read())
-                else:
-                    self._set_cors_headers(404)
-                    self.wfile.write(json.dumps({"error": "App not built. Run 'npm run build' in perandam-psi."}).encode("utf-8"))
+                self._set_cors_headers(404)
+                self.wfile.write(json.dumps({"error": f"Endpoint '{path}' not found"}).encode("utf-8"))
+                return
 
-        elif path == "/api/health":
+        # 2. REST API Endpoints (/api/*)
+        if path == "/api/health":
             self._set_cors_headers(200)
             res = {
                 "status": "ok",

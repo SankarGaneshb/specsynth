@@ -2252,9 +2252,950 @@
       ]
     }
   ],
-  "n_galaxies": 500,
-  "sentry_certified": true,
+  "n_galaxies": 504,
+  "n_anomalies": 4,
+  "sentry_certified": false,
   "galaxies": [
+    {
+      "id": "TNG-ANOM-01",
+      "ra": 53.162,
+      "dec": -27.765,
+      "redshift": 1.25,
+      "stellar_mass": 6300000000.0,
+      "log_mstar": 9.8,
+      "sfr": 2.1,
+      "av": 0.35,
+      "tau_diffuse": 0.32,
+      "tau_birth": 0.64,
+      "sentry_status": "ANOMALY",
+      "qc_failure_code": "ERR_TIER1_NEGATIVE_FLUX",
+      "qc_failure_title": "Tier 1: Negative Flux Density in F090W",
+      "qc_failure_detail": "Evaluated F090W flux = -1.42e-33 erg/s/cm\u00b2/Hz. Violates non-negative photon emission invariant. Root cause: Background over-subtraction or unmasked interpolation error.",
+      "fluxes": {
+        "jwst_f090w": -1.42e-33,
+        "jwst_f150w": 3.2e-31,
+        "jwst_f200w": 4.1e-31,
+        "jwst_f277w": 4.8e-31,
+        "jwst_f356w": 5.2e-31,
+        "jwst_f444w": 5e-31
+      },
+      "mags": {
+        "jwst_f090w": 99.0,
+        "jwst_f150w": 25.14,
+        "jwst_f200w": 24.87,
+        "jwst_f277w": 24.7,
+        "jwst_f356w": 24.61,
+        "jwst_f444w": 24.65
+      },
+      "apparent_mag": 24.87,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.001
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.001
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.001
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.001
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.001
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.001
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.001
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.001
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.001
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.001
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.001
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.001
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.001
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.001
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.001
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.001
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.001
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.001
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.001
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.001
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.001
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.001
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.001
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.001
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.001
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.001
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.001
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.001
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.001
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.001
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.001
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.001
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
+    {
+      "id": "TNG-ANOM-02",
+      "ra": 53.132,
+      "dec": -27.758,
+      "redshift": 2.4,
+      "stellar_mass": 25000000000.0,
+      "log_mstar": 10.4,
+      "sfr": 12.0,
+      "av": 0.2,
+      "tau_diffuse": 0.18,
+      "tau_birth": 0.36,
+      "sentry_status": "ANOMALY",
+      "qc_failure_code": "ERR_TIER2_INVERTED_DN4000",
+      "qc_failure_title": "Tier 2: Inverted Dn4000 Spectral Break (0.42 < 0.70)",
+      "qc_failure_detail": "Measured Dn4000 break = 0.42. Astrophysical lower bound is 0.70 (pure O/B starburst). Indicates corrupted continuum or unphysical stellar population synthesis grid interpolation.",
+      "fluxes": {
+        "jwst_f090w": 1.2e-31,
+        "jwst_f150w": 5.8e-31,
+        "jwst_f200w": 8.1e-31,
+        "jwst_f277w": 7.4e-31,
+        "jwst_f356w": 6.9e-31,
+        "jwst_f444w": 6.2e-31
+      },
+      "mags": {
+        "jwst_f090w": 26.2,
+        "jwst_f150w": 24.49,
+        "jwst_f200w": 24.13,
+        "jwst_f277w": 24.23,
+        "jwst_f356w": 24.3,
+        "jwst_f444w": 24.42
+      },
+      "apparent_mag": 24.13,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.0001
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.0001
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.0001
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.0001
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.0001
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.0001
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.0
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
+    {
+      "id": "TNG-ANOM-03",
+      "ra": 53.178,
+      "dec": -27.796,
+      "redshift": 7.2,
+      "stellar_mass": 63000000000.0,
+      "log_mstar": 10.8,
+      "sfr": 0.05,
+      "av": 0.1,
+      "tau_diffuse": 0.09,
+      "tau_birth": 0.18,
+      "sentry_status": "ANOMALY",
+      "qc_failure_code": "ERR_TIER2_AGE_EXCEEDS_HUBBLE",
+      "qc_failure_title": "Tier 2: Stellar Age Exceeds Cosmic Time at z=7.2",
+      "qc_failure_detail": "Derived mean stellar age = 8.4 Gyr. At z = 7.2, the age of the Universe is only 0.74 Gyr. Impossible physical paradox (stars older than the universe).",
+      "fluxes": {
+        "jwst_f090w": 1e-35,
+        "jwst_f150w": 2e-33,
+        "jwst_f200w": 1.2e-31,
+        "jwst_f277w": 2.5e-31,
+        "jwst_f356w": 3.8e-31,
+        "jwst_f444w": 4.9e-31
+      },
+      "mags": {
+        "jwst_f090w": 99.0,
+        "jwst_f150w": 30.65,
+        "jwst_f200w": 26.2,
+        "jwst_f277w": 25.41,
+        "jwst_f356w": 24.95,
+        "jwst_f444w": 24.67
+      },
+      "apparent_mag": 26.2,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.0
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
+    {
+      "id": "TNG-ANOM-04",
+      "ra": 53.126,
+      "dec": -27.8,
+      "redshift": 3.1,
+      "stellar_mass": 1200000000.0,
+      "log_mstar": 9.08,
+      "sfr": 0.01,
+      "av": 3.4,
+      "tau_diffuse": 3.13,
+      "tau_birth": 6.26,
+      "sentry_status": "ANOMALY",
+      "qc_failure_code": "ERR_TIER3_COLOR_OUTLIER",
+      "qc_failure_title": "Tier 3: Extreme Color-Color Population Outlier (> 5.2\u03c3)",
+      "qc_failure_detail": "Evaluated [F150W - F444W] = +4.85 with [F200W - F277W] = -1.92. Lies > 5 standard deviations outside cosmological locus. Flagged for automatic quarantine.",
+      "fluxes": {
+        "jwst_f090w": 1e-35,
+        "jwst_f150w": 1.5e-33,
+        "jwst_f200w": 3.1e-32,
+        "jwst_f277w": 8.4e-31,
+        "jwst_f356w": 1.2e-30,
+        "jwst_f444w": 2.8e-30
+      },
+      "mags": {
+        "jwst_f090w": 99.0,
+        "jwst_f150w": 30.96,
+        "jwst_f200w": 27.67,
+        "jwst_f277w": 24.09,
+        "jwst_f356w": 23.7,
+        "jwst_f444w": 22.78
+      },
+      "apparent_mag": 27.67,
+      "sed": [
+        {
+          "wave": 1000.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 1066.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1137.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 1213.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1294.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 1381.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 1473.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1571.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 1676.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 1788.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 1907.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2035.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 2170.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2315.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 2470.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 2635.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 2810.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 2998.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 3198.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3411.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 3639.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 3882.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4141.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 4417.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 4712.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 5027.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 5362.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 5720.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 6101.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 6509.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 6943.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 7406.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 7900.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 8428.0,
+          "flux": 0.0
+        },
+        {
+          "wave": 8990.4,
+          "flux": 0.0
+        },
+        {
+          "wave": 9590.3,
+          "flux": 0.0
+        },
+        {
+          "wave": 10230.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 10912.8,
+          "flux": 0.0
+        },
+        {
+          "wave": 11640.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 12417.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 13246.2,
+          "flux": 0.0
+        },
+        {
+          "wave": 14130.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 15072.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 16078.6,
+          "flux": 0.0
+        },
+        {
+          "wave": 17151.5,
+          "flux": 0.0
+        },
+        {
+          "wave": 18295.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 19516.7,
+          "flux": 0.0
+        },
+        {
+          "wave": 20818.9,
+          "flux": 0.0
+        },
+        {
+          "wave": 22208.1,
+          "flux": 0.0
+        },
+        {
+          "wave": 23689.9,
+          "flux": 0.0
+        }
+      ]
+    },
     {
       "id": "TNG-0001",
       "ra": 53.158089,

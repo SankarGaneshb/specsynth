@@ -203,6 +203,33 @@ print("Executing in-flight GEMM filter projection...")
 
       {/* Main Scientific Visualization Panel (Dominant View) */}
       <div className="p-3.5 flex-1 overflow-y-auto space-y-3.5">
+        {/* QC Failure Diagnostic Card */}
+        {galaxy.sentry_status === 'ANOMALY' && (
+          <div className="bg-rose-950/60 border border-rose-800/80 rounded-xl p-3.5 space-y-2 text-xs shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1.5 text-rose-300 font-bold">
+                <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                <span>QC FAILED: Physical Invariant Violation</span>
+              </div>
+              {galaxy.qc_failure_code && (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-900/80 text-rose-200 border border-rose-700/60 font-semibold">
+                  {galaxy.qc_failure_code}
+                </span>
+              )}
+            </div>
+            <div className="text-slate-100 font-semibold text-xs">
+              {galaxy.qc_failure_title}
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed bg-cosmos-950/80 p-2.5 rounded-lg border border-rose-900/40">
+              {galaxy.qc_failure_detail}
+            </p>
+            <div className="text-[10px] text-rose-300 flex items-center space-x-1 pt-0.5">
+              <span className="font-semibold text-rose-400">Action:</span>
+              <span>Quarantine object. Run <code className="bg-cosmos-900 px-1 py-0.5 rounded text-rose-200">specsynth sentry --clean</code> to purge.</span>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'sed' && (
           <SedPlot
             sed={galaxy.sed}

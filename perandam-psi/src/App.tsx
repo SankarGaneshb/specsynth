@@ -74,7 +74,7 @@ export const App: React.FC = () => {
         onResetView={() => setResetTrigger((prev) => prev + 1)}
         onSelectGalaxy={handleSelectById}
         onOpenGuide={() => setIsGuideOpen(true)}
-        galaxiesList={galaxyIds}
+        galaxies={galaxies}
       />
 
       {/* Beginner & Student Guide Modal */}

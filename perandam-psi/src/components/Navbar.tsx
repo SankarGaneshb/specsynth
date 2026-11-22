@@ -7,7 +7,7 @@ import {
   GraduationCap,
   Palette,
 } from 'lucide-react';
-import { SkyColorMode } from '../types/galaxy';
+import { Galaxy, SkyColorMode } from '../types/galaxy';
 
 interface NavbarProps {
   nGalaxies: number;
@@ -18,7 +18,7 @@ interface NavbarProps {
   onResetView: () => void;
   onSelectGalaxy: (id: string) => void;
   onOpenGuide: () => void;
-  galaxiesList: string[];
+  galaxies: Galaxy[];
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,8 +30,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetView,
   onSelectGalaxy,
   onOpenGuide,
-  galaxiesList,
+  galaxies,
 }) => {
+  const anomalies = galaxies.filter((g) => g.sentry_status === 'ANOMALY');
+  const validGalaxies = galaxies.filter((g) => g.sentry_status !== 'ANOMALY');
   return (
     <header className="h-14 bg-cosmos-900/90 backdrop-blur border-b border-cosmos-700/80 px-4 flex items-center justify-between z-30 select-none">
       {/* Brand & Signature Mark */}
@@ -86,11 +88,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             <option value="" disabled className="bg-cosmos-900">
               Jump to Galaxy ({nGalaxies})...
             </option>
-            {galaxiesList.slice(0, 100).map((id) => (
-              <option key={id} value={id} className="bg-cosmos-900 text-slate-200">
-                {id}
-              </option>
-            ))}
+            {anomalies.length > 0 && (
+              <optgroup label={`⚠️ QC Failed Anomalies (${anomalies.length})`}>
+                {anomalies.map((g) => (
+                  <option key={g.id} value={g.id} className="bg-cosmos-900 text-rose-300 font-mono">
+                    ⚠️ {g.id} ({g.qc_failure_code || 'Anomaly'})
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label={`Validated TNG Galaxies (${validGalaxies.length})`}>
+              {validGalaxies.slice(0, 100).map((g) => (
+                <option key={g.id} value={g.id} className="bg-cosmos-900 text-slate-200">
+                  {g.id} (z={g.redshift.toFixed(2)}, logM={g.log_mstar.toFixed(1)})
+                </option>
+              ))}
+            </optgroup>
           </select>
         </div>
 

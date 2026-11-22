@@ -211,9 +211,22 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         ctx.arc(x, y, currentRadius * 0.75, 0, Math.PI * 2);
         ctx.fill();
 
+        // QC Anomaly Warning Ring
+        if (g.sentry_status === 'ANOMALY') {
+          ctx.save();
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 1.8;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.arc(x, y, currentRadius * 3.5 + 4, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
         // Selected Galaxy Reticle
         if (isSelected) {
-          ctx.strokeStyle = '#f59e0b';
+          const reticleColor = g.sentry_status === 'ANOMALY' ? '#f43f5e' : '#f59e0b';
+          ctx.strokeStyle = reticleColor;
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(x, y, currentRadius * 4 + 4, 0, Math.PI * 2);
