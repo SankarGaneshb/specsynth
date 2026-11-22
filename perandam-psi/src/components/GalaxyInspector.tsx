@@ -102,15 +102,21 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
 
   const pythonSnippet = `# Reproduce ${galaxy.id} via SpecSynth & FSPS
 from specsynth.adapters.toy import ToyAdapter
-from specsynth.core import attenuation_curve, synth_block
-from specsynth.cosmology import TNG_COSMOLOGY, project_per_galaxy_photometry_chunk
+from specsynth.core import (
+    attenuation_curve,
+    synth_block,
+)
+from specsynth.cosmology import (
+    TNG_COSMOLOGY,
+    project_per_galaxy_photometry_chunk,
+)
 import numpy as np
 
 # Physical Parameters (Forward Model)
 log_mstar = ${galaxy.log_mstar}
-redshift = ${currentZ.toFixed(2)}
-av = ${currentAv.toFixed(2)}
-sfr = ${galaxy.sfr.toFixed(2)}  # M☉/yr
+redshift  = ${currentZ.toFixed(2)}
+av        = ${currentAv.toFixed(2)}
+sfr       = ${galaxy.sfr.toFixed(2)}  # M☉/yr
 
 print("Executing in-flight GEMM filter projection...")
 `;
@@ -124,115 +130,121 @@ print("Executing in-flight GEMM filter projection...")
   return (
     <aside className="w-full sm:w-[500px] h-[calc(100vh-3.5rem)] bg-cosmos-900/95 border-l border-cosmos-700/80 backdrop-blur-xl flex flex-col z-20 shadow-2xl overflow-hidden transition-all duration-300">
       {/* Top Header: Scientific Metadata & QA Status (Compact single-line) */}
-      <div className="py-2 px-3 border-b border-cosmos-800 flex items-center justify-between bg-cosmos-950/70">
-        <div className="flex items-center space-x-2 min-w-0">
-          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse flex-shrink-0" />
-          <h2 className="text-sm font-bold text-slate-100 font-mono">{galaxy.id}</h2>
+      <div className="py-2.5 px-3.5 border-b border-cosmos-800 flex items-center justify-between bg-cosmos-950/70">
+        <div className="flex items-center space-x-2.5 min-w-0">
+          <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse flex-shrink-0" />
+          <h2 className="text-base font-bold text-slate-100 font-mono tracking-tight">{galaxy.id}</h2>
           {galaxy.discovery_profile ? (
-            <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-950/80 text-purple-300 border border-purple-600/70 shadow-sm">
-              <Sparkles className="w-2.5 h-2.5 text-purple-400 animate-pulse" />
+            <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950/80 text-purple-300 border border-purple-600/70 shadow-sm">
+              <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
               <span>{galaxy.discovery_profile.rarity_sigma.toFixed(1)}σ Outlier</span>
             </span>
           ) : galaxy.sentry_status === 'PRISTINE' ? (
-            <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-700/60">
-              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+            <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-700/60">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
               <span>QC Validated</span>
             </span>
           ) : (
-            <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/80 text-rose-400 border border-rose-700/60">
-              <AlertTriangle className="w-2.5 h-2.5 text-rose-400" />
+            <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-400 border border-rose-700/60">
+              <AlertTriangle className="w-3 h-3 text-rose-400" />
               <span>{galaxy.qc_failure_code || 'QC Anomaly'}</span>
             </span>
           )}
-          <span className="text-[10px] text-slate-400 font-mono truncate hidden sm:inline">
+          <span className="text-[11px] text-slate-400 font-mono truncate hidden sm:inline">
             ({galaxy.ra.toFixed(4)}°, {galaxy.dec.toFixed(4)}°)
           </span>
         </div>
 
         <button
           onClick={onClose}
-          className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-cosmos-800 transition-colors"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-cosmos-800 transition-colors"
           title="Close Scientific Workspace"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Scientific Tab Switcher: Science Plots First! */}
-      <div className="flex border-b border-cosmos-800 bg-cosmos-950/80 px-2.5 pt-1.5 overflow-x-auto scrollbar-none">
+      {/* Scientific Tab Switcher: Perfectly fits on one row with NO horizontal scroll */}
+      <div className="flex border-b border-cosmos-800 bg-cosmos-950/80 px-2 pt-1 items-center justify-between">
         <button
           onClick={() => setActiveTab('sed')}
-          className={`flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+          className={`flex items-center space-x-1 px-2 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === 'sed'
               ? 'border-indigo-400 text-indigo-300'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
+          title="Rest-Frame Spectral Energy Distribution"
         >
-          <Layers className="w-3 h-3" />
-          <span>Rest-Frame SED</span>
+          <Layers className="w-3.5 h-3.5" />
+          <span>SED</span>
         </button>
 
         <button
           onClick={() => setActiveTab('color-color')}
-          className={`flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+          className={`flex items-center space-x-1 px-2 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === 'color-color'
               ? 'border-amber-400 text-amber-300'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
+          title="Color-Color Diagram (JOSS Fig. 3)"
         >
-          <ScatterChart className="w-3 h-3" />
-          <span>Color-Color (Fig. 3)</span>
+          <ScatterChart className="w-3.5 h-3.5" />
+          <span>Color-Color</span>
         </button>
 
         {galaxy.discovery_profile && (
           <button
             onClick={() => setActiveTab('discovery')}
-            className={`flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex items-center space-x-1 px-2 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'discovery'
                 ? 'border-purple-400 text-purple-300'
                 : 'border-transparent text-purple-400/80 hover:text-purple-300'
             }`}
+            title="Astrophysical Hypotheses & Observing Proposal"
           >
-            <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
-            <span>Hypotheses & Proposal</span>
+            <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+            <span>Hypotheses</span>
           </button>
         )}
 
         {galaxy.sentry_status === 'ANOMALY' && (
           <button
             onClick={() => setActiveTab('discovery')}
-            className={`flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex items-center space-x-1 px-2 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'discovery'
                 ? 'border-rose-400 text-rose-300'
                 : 'border-transparent text-rose-400/80 hover:text-rose-300'
             }`}
+            title="Sentry Physical Invariant Violation Diagnosis"
           >
-            <AlertTriangle className="w-3 h-3 text-rose-400" />
-            <span>QC Diagnosis</span>
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+            <span>Diagnosis</span>
           </button>
         )}
 
         <button
           onClick={() => setActiveTab('phot')}
-          className={`flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+          className={`flex items-center space-x-1 px-2 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === 'phot'
               ? 'border-indigo-400 text-indigo-300'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
+          title="Synthetic JWST Photometry"
         >
-          <BarChart2 className="w-3 h-3" />
+          <BarChart2 className="w-3.5 h-3.5" />
           <span>Photometry</span>
         </button>
 
         <button
           onClick={() => setActiveTab('code')}
-          className={`flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+          className={`flex items-center space-x-1 px-2 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === 'code'
-              ? 'border-indigo-400 text-indigo-300'
+              ? 'border-cyan-400 text-cyan-300'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
+          title="Python Reproducibility Script"
         >
-          <Code className="w-3 h-3" />
+          <Code className="w-3.5 h-3.5" />
           <span>Python</span>
         </button>
       </div>
@@ -338,18 +350,18 @@ print("Executing in-flight GEMM filter projection...")
         {activeTab === 'phot' && <PhotometryBar mags={currentMags} />}
 
         {activeTab === 'code' && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium">Deterministic Python In-Flight Forward Model</span>
+              <span className="text-xs font-bold text-slate-300">Deterministic Python In-Flight Forward Model</span>
               <button
                 onClick={handleCopyCode}
-                className="flex items-center space-x-1 text-xs px-2.5 py-1 rounded bg-cosmos-800 hover:bg-cosmos-700 text-slate-200 border border-cosmos-700"
+                className="flex items-center space-x-1.5 text-xs px-2.5 py-1 rounded-lg bg-cosmos-800 hover:bg-cosmos-700 text-slate-200 border border-cosmos-700 transition-colors cursor-pointer"
               >
-                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? 'Copied' : 'Copy'}</span>
               </button>
             </div>
-            <pre className="p-3 bg-cosmos-950 rounded-lg border border-cosmos-800 text-[11px] font-mono text-indigo-200 overflow-x-auto leading-relaxed">
+            <pre className="p-3.5 bg-cosmos-950 rounded-xl border border-cosmos-800 text-xs font-mono text-indigo-200 whitespace-pre-wrap break-words leading-relaxed select-text">
               {pythonSnippet}
             </pre>
           </div>
@@ -365,60 +377,60 @@ print("Executing in-flight GEMM filter projection...")
           </div>
         )}
 
-        {/* Supporting Physical Parameters: Single Compact Row */}
-        <div className="grid grid-cols-4 gap-1.5 text-xs">
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
-            <div className="text-slate-400 text-[9px] uppercase font-semibold">Mass</div>
-            <div className="text-xs font-bold text-indigo-300">
-              10<sup>{galaxy.log_mstar.toFixed(2)}</sup> <span className="text-[9px] font-normal text-slate-400">M☉</span>
+        {/* Supporting Physical Parameters: Single Roomy Row with Increased Legibility */}
+        <div className="grid grid-cols-4 gap-2 text-xs">
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2 shadow-sm">
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Mass</div>
+            <div className="text-sm font-extrabold text-indigo-300 mt-0.5">
+              10<sup>{galaxy.log_mstar.toFixed(2)}</sup> <span className="text-[10px] font-normal text-slate-400">M☉</span>
             </div>
           </div>
 
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
-            <div className="text-slate-400 text-[9px] uppercase font-semibold">Redshift</div>
-            <div className="text-xs font-bold text-amber-300">
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2 shadow-sm">
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Redshift</div>
+            <div className="text-sm font-extrabold text-amber-300 mt-0.5">
               z={currentZ.toFixed(2)}
             </div>
           </div>
 
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
-            <div className="text-slate-400 text-[9px] uppercase font-semibold">SFR</div>
-            <div className="text-xs font-bold text-cyan-300 truncate">
-              {galaxy.sfr.toFixed(1)} <span className="text-[9px] font-normal text-slate-400">M☉/yr</span>
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2 shadow-sm">
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">SFR</div>
+            <div className="text-sm font-extrabold text-cyan-300 mt-0.5 truncate">
+              {galaxy.sfr.toFixed(1)} <span className="text-[10px] font-normal text-slate-400">M☉/yr</span>
             </div>
           </div>
 
-          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-1.5">
-            <div className="text-slate-400 text-[9px] uppercase font-semibold">Dust Av</div>
-            <div className="text-xs font-bold text-rose-300">
-              {currentAv.toFixed(2)} <span className="text-[9px] font-normal text-slate-400">mag</span>
+          <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2 shadow-sm">
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Dust Av</div>
+            <div className="text-sm font-extrabold text-rose-300 mt-0.5">
+              {currentAv.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">mag</span>
             </div>
           </div>
         </div>
 
-        {/* Supporting Interactive Controls Deck: 2-Column Compact Grid */}
-        <div className="p-2.5 bg-cosmos-950/70 border border-cosmos-800 rounded-xl space-y-1.5">
+        {/* Supporting Interactive Controls Deck: 2-Column Compact Grid with Larger Fonts */}
+        <div className="p-3 bg-cosmos-950/70 border border-cosmos-800 rounded-xl space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-300">
+            <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-200">
               <Sliders className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[11px]">Forward-Modeling Parameters</span>
+              <span>Forward-Modeling Parameters</span>
             </div>
             {(isZEdited || isAvEdited) && (
               <button
                 onClick={handleResetSliders}
-                className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                className="text-[11px] text-amber-400 hover:text-amber-300 underline font-medium cursor-pointer"
               >
-                Reset
+                Reset to Origin
               </button>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3.5">
             {/* Redshift Slider */}
             <div>
-              <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-1 font-medium">
                 <span>Redshift (z)</span>
-                <span className="font-mono text-amber-300">z = {currentZ.toFixed(2)}</span>
+                <span className="font-mono font-bold text-amber-300">z = {currentZ.toFixed(2)}</span>
               </div>
               <input
                 type="range"
@@ -427,15 +439,15 @@ print("Executing in-flight GEMM filter projection...")
                 step="0.05"
                 value={currentZ}
                 onChange={(e) => handleSliderChange(parseFloat(e.target.value), null)}
-                className="w-full h-1.5 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                className="w-full h-2 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
               />
             </div>
 
             {/* Dust Av Slider */}
             <div>
-              <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-1 font-medium">
                 <span>Dust (Av)</span>
-                <span className="font-mono text-rose-300">{currentAv.toFixed(2)} mag</span>
+                <span className="font-mono font-bold text-rose-300">{currentAv.toFixed(2)} mag</span>
               </div>
               <input
                 type="range"
@@ -444,7 +456,7 @@ print("Executing in-flight GEMM filter projection...")
                 step="0.05"
                 value={currentAv}
                 onChange={(e) => handleSliderChange(null, parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-rose-400"
+                className="w-full h-2 bg-cosmos-800 rounded-lg appearance-none cursor-pointer accent-rose-400"
               />
             </div>
           </div>
