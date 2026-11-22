@@ -58,66 +58,84 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     [centerRa, centerDec, fieldRadius]
   );
 
-  // Compute color based on scientific mode
-  const getGalaxyColor = useCallback(
-    (g: Galaxy) => {
+  // Helper to ensure valid color byte in [0, 255]
+  const clampByte = (val: number, fallback = 128): number => {
+    if (isNaN(val) || !isFinite(val)) return fallback;
+    return Math.max(0, Math.min(255, Math.round(val)));
+  };
+
+  // Compute color based on scientific mode, returning clean numeric RGB components
+  const getGalaxyRgb = useCallback(
+    (g: Galaxy): { r: number; g: number; b: number } => {
       if (colorMode === 'redshift') {
         // Cosmological Redshift Colormap: z in [0.2, 8.5]
-        const t = Math.max(0, Math.min(1, (g.redshift - 0.2) / 8.0));
+        const zVal = typeof g.redshift === 'number' && !isNaN(g.redshift) ? g.redshift : 1.0;
+        const t = Math.max(0, Math.min(1, (zVal - 0.2) / 8.0));
         if (t < 0.3) {
           const f = t / 0.3;
-          const r = Math.round(56 + f * (52 - 56));
-          const gr = Math.round(189 + f * (211 - 189));
-          const b = Math.round(248 + f * (153 - 248));
-          return `rgb(${r}, ${gr}, ${b})`;
+          return {
+            r: clampByte(56 + f * (52 - 56)),
+            g: clampByte(189 + f * (211 - 189)),
+            b: clampByte(248 + f * (153 - 248)),
+          };
         } else if (t < 0.65) {
           const f = (t - 0.3) / 0.35;
-          const r = Math.round(52 + f * (251 - 52));
-          const gr = Math.round(211 + f * (191 - 211));
-          const b = Math.round(153 + f * (36 - 153));
-          return `rgb(${r}, ${gr}, ${b})`;
+          return {
+            r: clampByte(52 + f * (251 - 52)),
+            g: clampByte(211 + f * (191 - 211)),
+            b: clampByte(153 + f * (36 - 153)),
+          };
         } else {
           const f = (t - 0.65) / 0.35;
-          const r = Math.round(251 + f * (244 - 251));
-          const gr = Math.round(191 + f * (63 - 191));
-          const b = Math.round(36 + f * (94 - 36));
-          return `rgb(${r}, ${gr}, ${b})`;
+          return {
+            r: clampByte(251 + f * (244 - 251)),
+            g: clampByte(191 + f * (63 - 191)),
+            b: clampByte(36 + f * (94 - 36)),
+          };
         }
       } else if (colorMode === 'ssfr') {
         // Specific Star Formation Rate (Bimodality)
-        const logSSFR = Math.log10(Math.max(1e-13, g.sfr / g.stellar_mass));
+        const ssfrVal = (g.sfr && g.stellar_mass && g.stellar_mass > 0) ? (g.sfr / g.stellar_mass) : 1e-12;
+        const logSSFR = Math.log10(Math.max(1e-13, ssfrVal));
         if (logSSFR > -10.0) {
-          return 'rgb(96, 165, 250)'; // Star-forming blue cloud
+          return { r: 96, g: 165, b: 250 }; // Star-forming blue cloud
         } else if (logSSFR > -10.8) {
-          return 'rgb(52, 211, 153)'; // Green Valley
+          return { r: 52, g: 211, b: 153 }; // Green Valley
         } else {
-          return 'rgb(244, 63, 94)'; // Quiescent red sequence
+          return { r: 244, g: 63, b: 94 }; // Quiescent red sequence
         }
       } else if (colorMode === 'mass') {
         // Stellar Mass log M* in [7.5, 11.5]
-        const t = Math.max(0, Math.min(1, (g.log_mstar - 7.5) / 4.0));
-        const r = Math.round(129 + t * (254 - 129));
-        const gr = Math.round(140 + t * (240 - 140));
-        const b = Math.round(248 - t * 110);
-        return `rgb(${r}, ${gr}, ${b})`;
+        const mVal = typeof g.log_mstar === 'number' && !isNaN(g.log_mstar) ? g.log_mstar : 9.5;
+        const t = Math.max(0, Math.min(1, (mVal - 7.5) / 4.0));
+        return {
+          r: clampByte(129 + t * (254 - 129)),
+          g: clampByte(140 + t * (240 - 140)),
+          b: clampByte(248 - t * 110),
+        };
       } else {
         // True Astronomical RGB Composite from NIRCam F444W, F200W, F090W
-        const rFlux = g.fluxes['jwst_f444w'] || 1e-32;
-        const gFlux = g.fluxes['jwst_f200w'] || 1e-32;
-        const bFlux = g.fluxes['jwst_f090w'] || 1e-32;
+        // Guard against negative fluxes (e.g. TNG-ANOM-01) by clamping to 0!
+        const rFlux = Math.max(0, g.fluxes?.['jwst_f444w'] ?? 1e-32);
+        const gFlux = Math.max(0, g.fluxes?.['jwst_f200w'] ?? 1e-32);
+        const bFlux = Math.max(0, g.fluxes?.['jwst_f090w'] ?? 1e-32);
 
         const maxFlux = Math.max(rFlux, gFlux, bFlux);
-        if (maxFlux <= 0) return 'rgba(200, 220, 255, 0.8)';
+        if (maxFlux <= 0) return { r: 200, g: 220, b: 255 };
 
-        const r = Math.min(255, Math.floor(255 * Math.pow(rFlux / maxFlux, 0.4)));
-        const gCol = Math.min(255, Math.floor(255 * Math.pow(gFlux / maxFlux, 0.4)));
-        const b = Math.min(255, Math.floor(255 * Math.pow(bFlux / maxFlux, 0.4)));
+        const rRaw = 255 * Math.pow(rFlux / maxFlux, 0.4);
+        const gRaw = 255 * Math.pow(gFlux / maxFlux, 0.4);
+        const bRaw = 255 * Math.pow(bFlux / maxFlux, 0.4);
 
-        const boost = Math.max(r, gCol, b);
+        const boost = Math.max(rRaw, gRaw, bRaw);
         const minLum = 180;
         const factor = boost > 0 && boost < minLum ? minLum / boost : 1;
 
-        return `rgb(${Math.min(255, Math.floor(r * factor))}, ${Math.min(255, Math.floor(gCol * factor))}, ${Math.min(255, Math.floor(b * factor))})`;
+        return {
+          r: clampByte(rRaw * factor),
+          g: clampByte(gRaw * factor),
+          b: clampByte(bRaw * factor),
+        };
       }
     },
     [colorMode]
@@ -184,26 +202,28 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
       for (const g of galaxies) {
         const { x, y } = projectCoordinates(g.ra, g.dec, width, height, zoom, offset);
 
-        // Viewport culling
-        if (x < -20 || x > width + 20 || y < -20 || y > height + 20) continue;
+        // Sanity & Viewport culling
+        if (isNaN(x) || isNaN(y) || x < -20 || x > width + 20 || y < -20 || y > height + 20) continue;
 
         // Radius based on stellar mass and zoom
         const isSelected = selectedGalaxy?.id === g.id;
         const isHovered = hoveredGalaxy?.id === g.id;
 
-        const baseRadius = Math.max(1.8, Math.min(8.5, (g.log_mstar - 6.5) * 1.6));
-        const currentRadius = baseRadius * Math.pow(zoom, 0.35);
-        const color = getGalaxyColor(g);
+        const mstar = typeof g.log_mstar === 'number' && !isNaN(g.log_mstar) ? g.log_mstar : 9.5;
+        const baseRadius = Math.max(1.8, Math.min(8.5, (mstar - 6.5) * 1.6));
+        const currentRadius = Math.max(1.5, baseRadius * Math.pow(Math.max(0.1, zoom), 0.35));
+        const rgb = getGalaxyRgb(g);
 
         // Glow halo
-        const haloGrad = ctx.createRadialGradient(x, y, 0, x, y, currentRadius * 3.5);
-        haloGrad.addColorStop(0, color.replace('rgb', 'rgba').replace(')', ', 0.9)'));
-        haloGrad.addColorStop(0.4, color.replace('rgb', 'rgba').replace(')', ', 0.35)'));
+        const haloRadius = Math.max(2.0, currentRadius * 3.5);
+        const haloGrad = ctx.createRadialGradient(x, y, 0, x, y, haloRadius);
+        haloGrad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`);
+        haloGrad.addColorStop(0.4, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`);
         haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = haloGrad;
         ctx.beginPath();
-        ctx.arc(x, y, currentRadius * 3.5, 0, Math.PI * 2);
+        ctx.arc(x, y, haloRadius, 0, Math.PI * 2);
         ctx.fill();
 
         // Core dot
@@ -292,7 +312,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     centerDec,
     fieldRadius,
     projectCoordinates,
-    getGalaxyColor,
+    getGalaxyRgb,
     canvasSize,
   ]);
 
