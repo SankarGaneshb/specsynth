@@ -5,11 +5,12 @@ import { GalaxyInspector } from './components/GalaxyInspector';
 import { GuideModal } from './components/GuideModal';
 import { Galaxy, CatalogManifest } from './types/galaxy';
 import rawManifest from './data/tng_jwst_deep_field.json';
-import { Sparkles, Layers } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 const manifest = rawManifest as unknown as CatalogManifest;
 
 export const App: React.FC = () => {
+  const [galaxies, setGalaxies] = useState<Galaxy[]>(manifest.galaxies);
   const [selectedGalaxy, setSelectedGalaxy] = useState<Galaxy | null>(null);
   const [resetTrigger, setResetTrigger] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -47,10 +48,14 @@ export const App: React.FC = () => {
   }, []);
 
   const handleSelectById = (id: string) => {
-    const found = manifest.galaxies.find((g) => g.id === id);
+    const found = galaxies.find((g) => g.id === id);
     if (found) {
       setSelectedGalaxy(found);
     }
+  };
+
+  const handleUpdateGalaxy = (updated: Galaxy) => {
+    setGalaxies((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
   };
 
   const galaxyIds = manifest.galaxies.map((g) => g.id);
@@ -59,7 +64,7 @@ export const App: React.FC = () => {
     <div className="w-screen h-screen flex flex-col bg-cosmos-950 text-slate-100 overflow-hidden font-sans">
       {/* Top Navbar */}
       <Navbar
-        nGalaxies={manifest.n_galaxies}
+        nGalaxies={galaxies.length}
         selectedId={selectedGalaxy?.id || null}
         isConnected={isConnected}
         onResetView={() => setResetTrigger((prev) => prev + 1)}
@@ -76,7 +81,7 @@ export const App: React.FC = () => {
         {/* Interactive Sky Canvas */}
         <div className="flex-1 h-full relative">
           <SkyCanvas
-            galaxies={manifest.galaxies}
+            galaxies={galaxies}
             selectedGalaxy={selectedGalaxy}
             onSelectGalaxy={setSelectedGalaxy}
             centerRa={manifest.field_center.ra}
@@ -92,7 +97,7 @@ export const App: React.FC = () => {
             <span className="text-slate-500">•</span>
             <span className="text-slate-400">RA 53.15°, Dec -27.78°</span>
             <span className="text-slate-500">•</span>
-            <span className="text-amber-400 font-mono">{manifest.n_galaxies} galaxies</span>
+            <span className="text-amber-400 font-mono">{galaxies.length} galaxies</span>
           </div>
         </div>
 
@@ -102,6 +107,7 @@ export const App: React.FC = () => {
             galaxy={selectedGalaxy}
             filters={manifest.filters}
             onClose={() => setSelectedGalaxy(null)}
+            onUpdateGalaxy={handleUpdateGalaxy}
           />
         )}
       </div>
