@@ -11,12 +11,17 @@ export type DiscoveryClass =
 export interface DiscoveryProfile {
   classification: DiscoveryClass;
   class_title: string;
-  rarity_sigma: number; // Statistical distance from cosmological median (e.g. 4.6σ)
-  rarity_percentile: string; // e.g. "Top 0.1% Extreme"
+  rarity_sigma: number; // Mahalanobis distance D_M
+  rarity_chi2?: number; // χ²_6 statistic
+  rarity_p_value?: number; // Analytical survival probability p-value
+  rarity_percentile: string; // e.g. "Top 0.05% Frontier Discovery"
   observed_phenomenon: string; // Quantitative photometric signature
   hypotheses: {
     primary: string; // Leading astrophysical interpretation
     alternative: string; // Competing physical mechanism
+    citations?: string[]; // Academic literature references
+    confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+    required_observations?: string; // Missing observations required to resolve ambiguity
   };
   spectral_excess?: {
     band: string; // e.g. "jwst_f444w"
@@ -24,10 +29,11 @@ export interface DiscoveryProfile {
     mechanism: string; // e.g. "Supermassive black hole accretion torus"
   };
   jwst_followup: {
-    instrument: 'NIRSpec' | 'MIRI' | 'NIRCam Wide-Field Slitless';
-    mode: 'PRISM / CLEAR' | 'G395H / F290LP' | 'F444W Grism';
+    instrument: 'NIRSpec' | 'MIRI' | 'NIRCam Wide-Field Slitless' | 'NIRCam';
+    mode: string;
     exposure_time_s: number;
     science_goal: string;
+    target_acquisition?: string; // e.g. WATA acquisition constraint vs direct imaging
   };
 }
 
@@ -41,6 +47,8 @@ export interface FilterCurveData {
   pivot_wavelength: number;
   wave: number[];
   transmission: number[];
+  sha256?: string;
+  throughput_source?: string;
 }
 
 export interface Galaxy {
@@ -58,10 +66,15 @@ export interface Galaxy {
   qc_failure_code?: string;
   qc_failure_title?: string;
   qc_failure_detail?: string;
-  rarity_score?: number; // Multi-dimensional σ-distance from cosmological median
+  rarity_score?: number; // Mahalanobis distance D_M
+  rarity_chi2?: number;
+  rarity_p_value?: number;
+  rarity_percentile?: string;
   discovery_profile?: DiscoveryProfile;
   fluxes: Record<string, number>;
   mags: Record<string, number>;
+  mag_errs?: Record<string, number>;
+  snr?: Record<string, number>;
   apparent_mag: number;
   sed: SedPoint[];
 }
@@ -69,6 +82,7 @@ export interface Galaxy {
 export interface CatalogManifest {
   title: string;
   description: string;
+  provenance?: string;
   field_center: {
     ra: number;
     dec: number;
@@ -76,6 +90,8 @@ export interface CatalogManifest {
   };
   filters: FilterCurveData[];
   n_galaxies: number;
+  n_discoveries?: number;
+  n_anomalies?: number;
   sentry_certified: boolean;
   galaxies: Galaxy[];
 }

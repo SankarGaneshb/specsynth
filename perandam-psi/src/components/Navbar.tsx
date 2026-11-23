@@ -9,6 +9,7 @@ import {
   Sparkles,
   AlertTriangle,
   ShieldCheck,
+  Layers,
 } from 'lucide-react';
 import { Galaxy, SkyColorMode } from '../types/galaxy';
 
@@ -24,6 +25,8 @@ interface NavbarProps {
   galaxies: Galaxy[];
   discoveryMode: boolean;
   onToggleDiscoveryMode: () => void;
+  datasetId: 'goods_s_mock' | 'tng_100';
+  onSwitchDataset: (id: 'goods_s_mock' | 'tng_100') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -38,6 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   galaxies,
   discoveryMode,
   onToggleDiscoveryMode,
+  datasetId,
+  onSwitchDataset,
 }) => {
   const selectedGalaxy = galaxies.find((g) => g.id === selectedId);
   const discoveries = galaxies.filter((g) => Boolean(g.discovery_profile));
@@ -60,8 +65,27 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Center Controls: Colormap Selector & Galaxy Quick-Jump */}
+      {/* Center Controls: Dataset Switcher, Colormap Selector & Galaxy Quick-Jump */}
       <div className="flex items-center space-x-2.5">
+        {/* Dual Dataset Switcher (Issue #6 Provisioning) */}
+        <div className="flex items-center space-x-1.5 bg-cosmos-950/80 border border-indigo-700/60 rounded-lg px-2.5 py-1 text-xs shadow-sm">
+          <Layers className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="hidden xl:inline text-slate-400 font-medium">Dataset:</span>
+          <select
+            value={datasetId}
+            onChange={(e) => onSwitchDataset(e.target.value as 'goods_s_mock' | 'tng_100')}
+            className="bg-transparent text-indigo-200 focus:outline-none cursor-pointer pr-1 font-medium font-mono"
+            title="Switch between Synthetic GOODS-S Mock and IllustrisTNG-100 Calibration Sample"
+          >
+            <option value="goods_s_mock" className="bg-cosmos-900 text-slate-200 font-sans">
+              GOODS-S Deep Mock (508)
+            </option>
+            <option value="tng_100" className="bg-cosmos-900 text-slate-200 font-sans">
+              TNG-100 Calibration (100)
+            </option>
+          </select>
+        </div>
+
         {/* Scientific Colormap Selector */}
         <div className="flex items-center space-x-1.5 bg-cosmos-950/80 border border-cosmos-700 rounded-lg px-2.5 py-1 text-xs">
           <Palette className="w-3.5 h-3.5 text-indigo-400" />

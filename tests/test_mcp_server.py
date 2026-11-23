@@ -130,6 +130,24 @@ def test_http_bridge_live_endpoints() -> None:
         data2 = json.loads(res2.read().decode("utf-8"))
         assert data2["filter_set"] == "jwst_nircam"
 
+        # Test /api/system
+        conn.request("GET", "/api/system")
+        res3 = conn.getresponse()
+        assert res3.status == 200
+        data3 = json.loads(res3.read().decode("utf-8"))
+        assert "os" in data3 or "cpu_arch" in data3
+
+        # Test POST /api/tools/call
+        post_payload = json.dumps({
+            "name": "sps_list_filters",
+            "arguments": {"instrument": "jwst_nircam"}
+        }).encode("utf-8")
+        conn.request("POST", "/api/tools/call", body=post_payload, headers={"Content-Type": "application/json"})
+        res4 = conn.getresponse()
+        assert res4.status == 200
+        data4 = json.loads(res4.read().decode("utf-8"))
+        assert "result" in data4
+
         conn.close()
     finally:
         httpd.shutdown()

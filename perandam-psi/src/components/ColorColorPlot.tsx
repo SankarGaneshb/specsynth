@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Galaxy } from '../types/galaxy';
+import React, { useMemo } from 'react';
+import { Galaxy, FilterCurveData } from '../types/galaxy';
+import { forwardModelGalaxy } from '../utils/physics';
 
 interface ColorColorPlotProps {
   allGalaxies: Galaxy[];
   selectedGalaxy: Galaxy;
   currentZ: number;
   currentAv: number;
+  filters: FilterCurveData[];
 }
 
 export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
@@ -13,50 +15,54 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
   selectedGalaxy,
   currentZ,
   currentAv,
+  filters,
 }) => {
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; label: string } | null>(null);
+  // Compute active galaxy position using full in-flight forward model
+  const activeModel = useMemo(() => {
+    return forwardModelGalaxy(
+      selectedGalaxy.sed,
+      selectedGalaxy.redshift,
+      currentZ,
+      selectedGalaxy.av,
+      currentAv,
+      filters
+    );
+  }, [selectedGalaxy, currentZ, currentAv, filters]);
 
-  // Define colors: X = (F200W - F277W), Y = (F150W - F444W)
-  const getColors = (g: Galaxy, z: number, av: number) => {
-    // Base fluxes
-    const origF150 = g.fluxes['jwst_f150w'] || 1e-32;
-    const origF200 = g.fluxes['jwst_f200w'] || 1e-32;
-    const origF277 = g.fluxes['jwst_f277w'] || 1e-32;
-    const origF444 = g.fluxes['jwst_f444w'] || 1e-32;
+  const activeColorX = Number(
+    ((activeModel.mags['jwst_f200w'] ?? 26.0) - (activeModel.mags['jwst_f277w'] ?? 26.0)).toFixed(2)
+  );
+  const activeColorY = Number(
+    ((activeModel.mags['jwst_f150w'] ?? 26.0) - (activeModel.mags['jwst_f444w'] ?? 26.0)).toFixed(2)
+  );
 
-    const deltaAv = av - g.av;
+  // Compute Redshift Evolutionary Track across z in [0.2, 8.5] using the forward model
+  const zTrackSteps = [0.2, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 3.8, 4.8, 6.0, 7.2, 8.5];
+  const trackData = useMemo(() => {
+    return zTrackSteps.map((zVal) => {
+      const model = forwardModelGalaxy(
+        selectedGalaxy.sed,
+        selectedGalaxy.redshift,
+        zVal,
+        selectedGalaxy.av,
+        selectedGalaxy.av,
+        filters
+      );
+      const cx = (model.mags['jwst_f200w'] ?? 26.0) - (model.mags['jwst_f277w'] ?? 26.0);
+      const cy = (model.mags['jwst_f150w'] ?? 26.0) - (model.mags['jwst_f444w'] ?? 26.0);
+      return { z: zVal, colorX: Number(cx.toFixed(2)), colorY: Number(cy.toFixed(2)) };
+    });
+  }, [selectedGalaxy, filters]);
 
-    // Attenuation factors for each band at redshift z
-    const tauFactor = (w_piv: number) => {
-      const rest_w = w_piv / (1.0 + z);
-      return Math.exp(-((deltaAv / 1.086) * Math.pow(rest_w / 5500.0, -0.7)));
-    };
+  // Adaptive bounds ensuring active galaxy and full track are enclosed
+  const allX = [activeColorX, ...trackData.map((t) => t.colorX)];
+  const allY = [activeColorY, ...trackData.map((t) => t.colorY)];
+  const minX = Math.min(-1.5, Math.floor(Math.min(...allX) - 0.5));
+  const maxX = Math.max(2.5, Math.ceil(Math.max(...allX) + 0.5));
+  const minY = Math.min(-3.5, Math.floor(Math.min(...allY) - 0.5));
+  const maxY = Math.max(4.0, Math.ceil(Math.max(...allY) + 0.5));
 
-    const f150 = origF150 * tauFactor(15000);
-    const f200 = origF200 * tauFactor(20000);
-    const f277 = origF277 * tauFactor(27700);
-    const f444 = origF444 * tauFactor(44400);
-
-    const m150 = -2.5 * Math.log10(Math.max(1e-35, f150)) - 48.60;
-    const m200 = -2.5 * Math.log10(Math.max(1e-35, f200)) - 48.60;
-    const m277 = -2.5 * Math.log10(Math.max(1e-35, f277)) - 48.60;
-    const m444 = -2.5 * Math.log10(Math.max(1e-35, f444)) - 48.60;
-
-    const colorX = m200 - m277; // F200W - F277W
-    const colorY = m150 - m444; // F150W - F444W
-    return { colorX, colorY };
-  };
-
-  // Dynamic scale calculation based on active galaxy position and astronomical distribution
-  const activePos = getColors(selectedGalaxy, currentZ, currentAv);
-
-  // Compute adaptive bounds to guarantee the active galaxy and track are always inside
-  const minX = Math.min(-1.5, Math.floor(activePos.colorX - 0.5));
-  const maxX = Math.max(2.5, Math.ceil(activePos.colorX + 0.5));
-  const minY = Math.min(-3.5, Math.floor(activePos.colorY - 0.5));
-  const maxY = Math.max(4.0, Math.ceil(activePos.colorY + 0.5));
-
-  // Dimensions & Scale (Comfortable proportions filling available vertical height)
+  // Dimensions
   const svgWidth = 440;
   const svgHeight = 240;
   const padding = { top: 22, right: 18, bottom: 42, left: 52 };
@@ -64,16 +70,13 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
 
-  const toScreenX = (val: number) =>
-    padding.left + ((val - minX) / (maxX - minX)) * plotWidth;
+  const toScreenX = (val: number) => padding.left + ((val - minX) / (maxX - minX)) * plotWidth;
+  const toScreenY = (val: number) => padding.top + plotHeight - ((val - minY) / (maxY - minY)) * plotHeight;
 
-  const toScreenY = (val: number) =>
-    padding.top + plotHeight - ((val - minY) / (maxY - minY)) * plotHeight;
+  const activeScreenX = toScreenX(activeColorX);
+  const activeScreenY = toScreenY(activeColorY);
 
-  const activeScreenX = toScreenX(activePos.colorX);
-  const activeScreenY = toScreenY(activePos.colorY);
-
-  // Generate nice round tick intervals
+  // Axis ticks
   const xTicks: number[] = [];
   const xStep = maxX - minX > 5 ? 1.0 : 0.5;
   for (let v = Math.ceil(minX / xStep) * xStep; v <= maxX; v += xStep) {
@@ -86,35 +89,30 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
     yTicks.push(Math.round(v * 10) / 10);
   }
 
-  // Compute Redshift Evolutionary Track (z from 0.2 to 8.5)
-  const zSamples = [0.2, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 3.5, 4.2, 5.0, 6.0, 7.0, 8.2];
-  const trackPoints = zSamples.map((z) => {
-    const pt = getColors(selectedGalaxy, z, selectedGalaxy.av);
-    return {
-      z,
-      x: toScreenX(pt.colorX),
-      y: toScreenY(pt.colorY),
-      colorX: pt.colorX,
-      colorY: pt.colorY,
-    };
-  });
-
-  const trackPathD = trackPoints.reduce((acc, pt, idx) => {
-    return idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`;
+  // Track path
+  const trackPathD = trackData.reduce((acc, pt, idx) => {
+    const sx = toScreenX(pt.colorX);
+    const sy = toScreenY(pt.colorY);
+    return idx === 0 ? `M ${sx} ${sy}` : `${acc} L ${sx} ${sy}`;
   }, '');
 
   // Dust Reddening Vector (Av = +1.0 mag arrow starting from reference point)
-  const refVecPt = { colorX: minX + 0.3 * (maxX - minX), colorY: minY + 0.6 * (maxY - minY) };
+  const refVecPt = { colorX: minX + 0.25 * (maxX - minX), colorY: minY + 0.65 * (maxY - minY) };
   const refVecEnd = { colorX: refVecPt.colorX + 0.35, colorY: refVecPt.colorY + 0.85 };
   const vecStart = { x: toScreenX(refVecPt.colorX), y: toScreenY(refVecPt.colorY) };
   const vecEnd = { x: toScreenX(refVecEnd.colorX), y: toScreenY(refVecEnd.colorY) };
 
   return (
     <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3 select-none shadow-md">
-      {/* Title & Methodology Badge (Structured to prevent any text overlap) */}
+      {/* Title & Methodology Badge */}
       <div className="mb-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-100">Color-Color Space (JOSS Fig. 3 Track)</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-bold text-slate-100">Color-Color Space (JOSS Fig. 3 Track)</span>
+            <span className="text-xs text-indigo-300 font-mono bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/60">
+              Forward Modeled
+            </span>
+          </div>
           <span className="text-xs text-amber-400 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800">
             z = {currentZ.toFixed(2)} • Av = {currentAv.toFixed(2)} mag
           </span>
@@ -128,12 +126,7 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-hidden">
         <defs>
           <clipPath id="color-plot-clip">
-            <rect
-              x={padding.left}
-              y={padding.top}
-              width={plotWidth}
-              height={plotHeight}
-            />
+            <rect x={padding.left} y={padding.top} width={plotWidth} height={plotHeight} />
           </clipPath>
         </defs>
 
@@ -197,11 +190,15 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
 
         {/* Data Group clipped to chart boundaries */}
         <g clipPath="url(#color-plot-clip)">
-          {/* Population Scatter (Background IllustrisTNG Sample) */}
+          {/* Background population scatter points */}
           {allGalaxies.map((g) => {
-            const pt = getColors(g, g.redshift, g.av);
-            const px = toScreenX(pt.colorX);
-            const py = toScreenY(pt.colorY);
+            const m150 = g.mags['jwst_f150w'] ?? 26.0;
+            const m200 = g.mags['jwst_f200w'] ?? 26.0;
+            const m277 = g.mags['jwst_f277w'] ?? 26.0;
+            const m444 = g.mags['jwst_f444w'] ?? 26.0;
+            const px = toScreenX(m200 - m277);
+            const py = toScreenY(m150 - m444);
+
             if (px < padding.left || px > padding.left + plotWidth || py < padding.top || py > padding.top + plotHeight) {
               return null;
             }
@@ -233,31 +230,38 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
             strokeDasharray="3,2"
           />
 
-          {/* Track Milestone Redshift Waypoint Dots */}
-          {trackPoints.map((pt, idx) => {
-            const isInside = pt.x >= padding.left && pt.x <= padding.left + plotWidth && pt.y >= padding.top && pt.y <= padding.top + plotHeight;
+          {/* Track Milestone Waypoints (Distinct diamond styling to prevent collision) */}
+          {trackData.map((pt, idx) => {
+            const sx = toScreenX(pt.colorX);
+            const sy = toScreenY(pt.colorY);
+            const isInside = sx >= padding.left && sx <= padding.left + plotWidth && sy >= padding.top && sy <= padding.top + plotHeight;
             if (!isInside) return null;
-            const isMilestone = [0.5, 2.0, 5.0, 8.0].some((target) => Math.abs(pt.z - target) < 0.25);
+
+            const isMilestone = [0.5, 2.0, 5.0, 8.0].some((target) => Math.abs(pt.z - target) < 0.35);
+
+            // Distance to active beacon to prevent visual label collision
+            const distToActive = Math.hypot(sx - activeScreenX, sy - activeScreenY);
+            const shouldShowLabel = isMilestone && distToActive > 24;
+
             return (
-              <g key={`wp-${idx}`}>
-                <circle
-                  cx={pt.x}
-                  cy={pt.y}
-                  r={2.2}
+              <g key={`track-wp-${idx}`}>
+                {/* Diamond waypoint marker */}
+                <polygon
+                  points={`${sx},${sy - 3} ${sx + 3},${sy} ${sx},${sy + 3} ${sx - 3},${sy}`}
                   fill="#c7d2fe"
                   stroke="#4338ca"
                   strokeWidth={1}
                 />
-                {isMilestone && (
+                {shouldShowLabel && (
                   <text
-                    x={pt.x + 4}
-                    y={pt.y - 3}
-                    fill="#a5b4fc"
-                    fontSize="7.5"
+                    x={sx + 5}
+                    y={sy - 4}
+                    fill="#94a3b8"
+                    fontSize="7"
                     fontFamily="monospace"
                     fontWeight="bold"
                   >
-                    z={pt.z.toFixed(1)}
+                    Track: z={pt.z.toFixed(1)}
                   </text>
                 )}
               </g>
@@ -290,25 +294,63 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
             </text>
           </g>
 
-          {/* Active Galaxy Highlight Marker */}
-          <circle
-            cx={activeScreenX}
-            cy={activeScreenY}
-            r={7}
-            fill="#f59e0b"
-            fillOpacity={0.3}
-            stroke="#f59e0b"
-            strokeWidth={2}
-            className="animate-ping"
-          />
-          <circle
-            cx={activeScreenX}
-            cy={activeScreenY}
-            r={5}
-            fill="#fbbf24"
-            stroke="#ffffff"
-            strokeWidth={1.8}
-          />
+          {/* Active Target Galaxy Beacon (Unambiguous Target Reticle + Beacon) */}
+          <g>
+            {/* Outer pulsating reticle */}
+            <circle
+              cx={activeScreenX}
+              cy={activeScreenY}
+              r={9}
+              fill="none"
+              stroke="#f59e0b"
+              strokeWidth={1.5}
+              strokeDasharray="2,2"
+              className="animate-spin"
+            />
+            {/* Pulsing glow */}
+            <circle
+              cx={activeScreenX}
+              cy={activeScreenY}
+              r={7}
+              fill="#f59e0b"
+              fillOpacity={0.3}
+              stroke="#f59e0b"
+              strokeWidth={2}
+            />
+            {/* Solid core dot */}
+            <circle
+              cx={activeScreenX}
+              cy={activeScreenY}
+              r={4}
+              fill="#fbbf24"
+              stroke="#ffffff"
+              strokeWidth={1.5}
+            />
+            {/* Explicit Active Target Callout Tag */}
+            <g transform={`translate(${activeScreenX + 8}, ${activeScreenY - 8})`}>
+              <rect
+                x={0}
+                y={-10}
+                width={86}
+                height={14}
+                rx={3}
+                fill="#1e1b4b"
+                stroke="#fbbf24"
+                strokeWidth={0.8}
+                fillOpacity={0.9}
+              />
+              <text
+                x={4}
+                y={0}
+                fill="#fef08a"
+                fontSize="7.5"
+                fontFamily="monospace"
+                fontWeight="bold"
+              >
+                Target: z={currentZ.toFixed(2)}
+              </text>
+            </g>
+          </g>
         </g>
 
         {/* Axis Labels */}
@@ -340,7 +382,7 @@ export const ColorColorPlot: React.FC<ColorColorPlotProps> = ({
       <div className="mt-1 flex items-center justify-between text-xs text-slate-200 font-mono bg-cosmos-900/90 rounded px-3 py-1.5 border border-cosmos-800 shadow-sm">
         <div className="flex items-center space-x-2 text-xs font-semibold">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-          <span>Active Position: ({activePos.colorX.toFixed(2)}, {activePos.colorY.toFixed(2)})</span>
+          <span>Active Position: ({activeColorX.toFixed(2)}, {activeColorY.toFixed(2)})</span>
         </div>
         <span className="text-xs text-indigo-300">
           Dotted curve = Redshift trajectory z ∈ [0.2, 8.5]

@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SedPoint, FilterCurveData } from '../types/galaxy';
+import {
+  forwardModelGalaxy,
+  luminosityDistanceCm,
+  madauIgmTransmission,
+  charlotFallAttenuation,
+} from '../utils/physics';
 
 interface SedPlotProps {
   sed: SedPoint[];
@@ -10,6 +16,8 @@ interface SedPlotProps {
   originalAv: number;
 }
 
+export type SedViewMode = 'rest' | 'observed';
+
 export const SedPlot: React.FC<SedPlotProps> = ({
   sed,
   filters,
@@ -18,6 +26,8 @@ export const SedPlot: React.FC<SedPlotProps> = ({
   dustAv,
   originalAv,
 }) => {
+  const [viewMode, setViewMode] = useState<SedViewMode>('rest');
+  const [showBreakMarkers, setShowBreakMarkers] = useState<boolean>(true);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   if (!sed || sed.length === 0) {
@@ -28,43 +38,49 @@ export const SedPlot: React.FC<SedPlotProps> = ({
     );
   }
 
-  // Calculate wavelength range from original data
-  const minWave = Math.min(...sed.map((p) => p.wave));
-  const maxWave = Math.max(...sed.map((p) => p.wave));
-
   // Parameter modification diffs
   const deltaAv = dustAv - originalAv;
   const isDustModified = Math.abs(deltaAv) > 0.01;
-
   const deltaZ = redshift - originalZ;
   const isZModified = Math.abs(deltaZ) > 0.01;
 
-  // Compute attenuation relative to the galaxy's intrinsic dust
-  // Charlot & Fall (2000): delta_tau = (dustAv - originalAv) / 1.086 * (wave / 5500)^(-0.7)
-  const modifiedSed = sed.map((p) => {
-    const wave = p.wave;
-    const deltaTau = (deltaAv / 1.086) * Math.pow(wave / 5500.0, -0.7);
-    const atten = Math.exp(-deltaTau);
-    return { wave, flux: Math.max(1e-12, p.flux * atten) };
-  });
+  // Compute forward-modeled active and baseline spectra using physical engine
+  const activeModel = useMemo(() => {
+    return forwardModelGalaxy(sed, originalZ, redshift, originalAv, dustAv, filters);
+  }, [sed, originalZ, redshift, originalAv, dustAv, filters]);
 
-  // Fixed Y-axis anchored to baseline unattenuated SED
-  const origFluxes = sed.map((p) => p.flux).filter((f) => f > 0);
-  const baselineMaxFlux = Math.max(...origFluxes, 1.0);
-  const logMaxFlux = Math.log10(baselineMaxFlux * 1.5);
-  const logMinFlux = logMaxFlux - 4.5;
+  const baselineModel = useMemo(() => {
+    return forwardModelGalaxy(sed, originalZ, originalZ, originalAv, originalAv, filters);
+  }, [sed, originalZ, originalAv, filters]);
 
-  // SVG dimensions (Comfortable proportions filling available vertical height)
+  // Active curves depending on viewMode
+  const activeCurve = viewMode === 'rest' ? activeModel.sedRestModified : activeModel.sedObs;
+  const baselineCurve = viewMode === 'rest' ? sed : baselineModel.sedObs;
+
+  // Wavelength ranges
+  const minWave = Math.min(...activeCurve.map((p) => p.wave));
+  const maxWave = Math.max(...activeCurve.map((p) => p.wave));
+
+  // Adaptive Y-axis bounds based on actual continuum range (covering ~2.5 decades)
+  const positiveFluxes = activeCurve.map((p) => p.flux).filter((f) => f > 0 && isFinite(f));
+  const maxFlux = Math.max(...positiveFluxes, 1e-35);
+  // Continuum 90th percentile to anchor the top of the axis
+  const sortedFluxes = [...positiveFluxes].sort((a, b) => a - b);
+  const p95Flux = sortedFluxes[Math.floor(sortedFluxes.length * 0.95)] || maxFlux;
+  const logMaxFlux = Math.log10(p95Flux * 2.0);
+  const logMinFlux = logMaxFlux - 2.8; // 2.8 decades window provides ideal visibility of breaks
+
+  // SVG dimensions
   const svgWidth = 440;
   const svgHeight = 240;
-  const padding = { top: 24, right: 18, bottom: 38, left: 54 };
+  const padding = { top: 26, right: 18, bottom: 40, left: 60 };
 
   const plotWidth = svgWidth - padding.left - padding.right;
   const plotHeight = svgHeight - padding.top - padding.bottom;
 
   // Logarithmic coordinate mapping
-  const logMinWave = Math.log10(minWave);
-  const logMaxWave = Math.log10(maxWave);
+  const logMinWave = Math.log10(Math.max(10, minWave));
+  const logMaxWave = Math.log10(Math.max(100, maxWave));
 
   const getX = (w: number) => {
     const logW = Math.log10(Math.max(w, minWave));
@@ -72,30 +88,23 @@ export const SedPlot: React.FC<SedPlotProps> = ({
   };
 
   const getY = (f: number) => {
-    const logF = Math.log10(Math.max(f, 10 ** logMinFlux));
+    const logF = Math.log10(Math.max(f, 10 ** (logMinFlux - 2)));
     const clampedLogF = Math.max(logMinFlux, Math.min(logMaxFlux, logF));
     return padding.top + plotHeight - ((clampedLogF - logMinFlux) / (logMaxFlux - logMinFlux)) * plotHeight;
   };
 
-  // Path for original baseline SED (dashed reference)
-  const origPathD = sed.reduce((acc, p, idx) => {
+  // Paths
+  const activePathD = activeCurve.reduce((acc, p, idx) => {
     const x = getX(p.wave);
     const y = getY(p.flux);
     return idx === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`;
   }, '');
 
-  // Path for active attenuated SED curve
-  const pathD = modifiedSed.reduce((acc, p, idx) => {
+  const baselinePathD = baselineCurve.reduce((acc, p, idx) => {
     const x = getX(p.wave);
     const y = getY(p.flux);
     return idx === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`;
   }, '');
-
-  // UV drop calculation
-  const uvSampleIdx = Math.floor(sed.length * 0.1);
-  const origUv = sed[uvSampleIdx]?.flux || 1;
-  const modUv = modifiedSed[uvSampleIdx]?.flux || 1;
-  const uvDropPct = Math.round((1 - modUv / origUv) * 100);
 
   // Filter band colors
   const filterColors: Record<string, string> = {
@@ -107,25 +116,101 @@ export const SedPlot: React.FC<SedPlotProps> = ({
     jwst_f444w: '#e879f9',
   };
 
-  // Y-axis tick values
+  // Y-axis tick values (3-4 nice decades)
   const yTicks = [];
   const topExp = Math.floor(logMaxFlux);
-  for (let exp = topExp; exp >= topExp - 4; exp--) {
-    yTicks.push({ val: 10 ** exp, label: `10^${exp}`, y: getY(10 ** exp) });
+  for (let exp = topExp; exp >= topExp - 3; exp--) {
+    yTicks.push({
+      val: 10 ** exp,
+      label: `10^${exp}`,
+      y: getY(10 ** exp),
+    });
   }
+
+  // Astrophysical Spectral Break Markers
+  // (Lyman limit 912 Å, Ly-alpha 1216 Å, Balmer 3646 Å, Dn4000 4000 Å, H-alpha 6563 Å)
+  const restBreaks = [
+    { name: 'Ly-limit', wave: 911.75, color: '#ec4899', desc: 'Lyman Limit (912 Å)' },
+    { name: 'Lyα', wave: 1215.67, color: '#f43f5e', desc: 'Lyman-alpha (1216 Å)' },
+    { name: 'Balmer', wave: 3646.0, color: '#06b6d4', desc: 'Balmer Break (3646 Å)' },
+    { name: 'Dn4000', wave: 4000.0, color: '#10b981', desc: 'Dn4000 Break (4000 Å)' },
+    { name: 'Hα', wave: 6562.8, color: '#eab308', desc: 'H-alpha (6563 Å)' },
+  ];
+
+  const zFactor = viewMode === 'observed' ? 1.0 + redshift : 1.0;
+  const activeBreaks = restBreaks
+    .map((b) => ({
+      ...b,
+      evalWave: b.wave * zFactor,
+    }))
+    .filter((b) => b.evalWave >= minWave && b.evalWave <= maxWave);
+
+  // Wavelength ticks
+  const waveTicks = viewMode === 'rest'
+    ? [1000, 2000, 4000, 10000, 25000, 60000]
+    : [3000, 7000, 15000, 30000, 60000, 150000];
 
   return (
     <div className="relative w-full bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3 select-none shadow-md">
-      {/* Non-overlapping structured header */}
-      <div className="mb-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-sm font-bold text-slate-100">Rest-Frame SED & Filter Bandpasses</span>
-          <span className="text-xs text-slate-300 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800">
-            λ_rest ∈ [10³ - 5×10⁴ Å]
-          </span>
+      {/* Header with Title and 1-Click Frame & Unit Toggle */}
+      <div className="mb-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-bold text-slate-100">
+              {viewMode === 'rest' ? 'Rest-Frame Luminosity SED' : 'Observed-Frame Flux Density'}
+            </span>
+            <span className="text-xs text-indigo-300 font-mono bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/60">
+              FSPS MIST
+            </span>
+          </div>
+
+          {/* Unit / Frame Switcher Toggle */}
+          <div className="flex items-center space-x-1.5 bg-cosmos-900 p-0.5 rounded-lg border border-cosmos-700/80">
+            <button
+              onClick={() => setViewMode('rest')}
+              className={`px-2 py-0.5 text-xs font-mono font-bold rounded transition-all ${
+                viewMode === 'rest'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Rest (L_λ)
+            </button>
+            <button
+              onClick={() => setViewMode('observed')}
+              className={`px-2 py-0.5 text-xs font-mono font-bold rounded transition-all ${
+                viewMode === 'observed'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Obs (F_λ)
+            </button>
+          </div>
         </div>
 
-        {/* Dedicated Diff Badges Bar (strictly on its own line to prevent overlap) */}
+        {/* Subheader Badges & Break Toggle */}
+        <div className="flex flex-wrap items-center justify-between mt-1 text-xs text-slate-400">
+          <div className="flex items-center space-x-2">
+            <span className="font-mono text-slate-300">
+              {viewMode === 'rest'
+                ? 'Units: L_λ [L☉ / Å] at source'
+                : 'Units: F_λ [erg s⁻¹ cm⁻² Å⁻¹] at Earth (D_L + IGM)'}
+            </span>
+          </div>
+
+          <label className="flex items-center space-x-1.5 cursor-pointer text-xs hover:text-slate-200">
+            <input
+              type="checkbox"
+              checked={showBreakMarkers}
+              onChange={(e) => setShowBreakMarkers(e.target.checked)}
+              className="rounded bg-cosmos-900 border-cosmos-700 text-indigo-500 focus:ring-0 w-3 h-3 cursor-pointer"
+            />
+            <span className="font-mono">Break Markers</span>
+          </label>
+        </div>
+
+        {/* Dedicated Diff Badges Bar */}
         {(isZModified || isDustModified) && (
           <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-cosmos-800/60">
             {isZModified && (
@@ -142,8 +227,8 @@ export const SedPlot: React.FC<SedPlotProps> = ({
                     : 'bg-cyan-950/80 text-cyan-300 border border-cyan-800/60'
                 }`}
               >
-                <span className="font-bold">ΔAv = {deltaAv > 0 ? `+${deltaAv.toFixed(2)}` : deltaAv.toFixed(2)}</span>
-                <span>({deltaAv > 0 ? `-${uvDropPct}% UV` : `+${Math.abs(uvDropPct)}% UV`})</span>
+                <span className="font-bold">ΔAv = {deltaAv > 0 ? `+${deltaAv.toFixed(2)}` : deltaAv.toFixed(2)} mag</span>
+                <span>(Charlot & Fall)</span>
               </span>
             )}
           </div>
@@ -166,7 +251,7 @@ export const SedPlot: React.FC<SedPlotProps> = ({
               x={padding.left - 6}
               y={t.y + 3.5}
               fill="#94a3b8"
-              fontSize="10"
+              fontSize="9.5"
               textAnchor="end"
               fontFamily="monospace"
               fontWeight="500"
@@ -177,7 +262,8 @@ export const SedPlot: React.FC<SedPlotProps> = ({
         ))}
 
         {/* X-axis Grid lines */}
-        {[1500, 4000, 10000, 25000].map((w) => {
+        {waveTicks.map((w) => {
+          if (w < minWave || w > maxWave) return null;
           const x = getX(w);
           return (
             <g key={w}>
@@ -189,47 +275,67 @@ export const SedPlot: React.FC<SedPlotProps> = ({
                 stroke="#1e293b"
                 strokeDasharray="2,2"
               />
-              <text x={x} y={svgHeight - 14} fill="#94a3b8" fontSize="10.5" textAnchor="middle" fontFamily="monospace" fontWeight="500">
-                {w < 10000 ? `${w}Å` : `${w / 10000}µm`}
+              <text
+                x={x}
+                y={svgHeight - 16}
+                fill="#94a3b8"
+                fontSize="9.5"
+                textAnchor="middle"
+                fontFamily="monospace"
+                fontWeight="500"
+              >
+                {w < 10000 ? `${w}Å` : `${(w / 10000).toFixed(1)}µm`}
               </text>
             </g>
           );
         })}
 
-        {/* Ghost lines for original filter positions if z was modified */}
-        {isZModified &&
-          filters.map((flt) => {
-            const origRestCenter = flt.pivot_wavelength / (1.0 + originalZ);
-            if (origRestCenter < minWave || origRestCenter > maxWave) return null;
-            const origX = getX(origRestCenter);
+        {/* Astrophysical Spectral Break Markers */}
+        {showBreakMarkers &&
+          activeBreaks.map((b) => {
+            const bx = getX(b.evalWave);
             return (
-              <line
-                key={`orig-${flt.name}`}
-                x1={origX}
-                y1={padding.top}
-                x2={origX}
-                y2={padding.top + plotHeight}
-                stroke="#64748b"
-                strokeWidth={1}
-                strokeOpacity={0.25}
-                strokeDasharray="2,2"
-              />
+              <g key={`break-${b.name}`}>
+                <line
+                  x1={bx}
+                  y1={padding.top}
+                  x2={bx}
+                  y2={padding.top + plotHeight}
+                  stroke={b.color}
+                  strokeWidth={1}
+                  strokeOpacity={0.7}
+                  strokeDasharray="2,3"
+                />
+                <text
+                  x={bx}
+                  y={padding.top - 5}
+                  fill={b.color}
+                  fontSize="7.5"
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  {b.name}
+                </text>
+              </g>
             );
           })}
 
-        {/* Active Filter Bandpass Overlays: λ_obs / (1 + z) */}
+        {/* Filter Bandpass Overlays */}
         {filters.map((flt) => {
-          const restCenter = flt.pivot_wavelength / (1.0 + redshift);
-          if (restCenter < minWave || restCenter > maxWave) return null;
+          const evalWave = viewMode === 'rest'
+            ? flt.pivot_wavelength / (1.0 + redshift)
+            : flt.pivot_wavelength;
 
+          if (evalWave < minWave || evalWave > maxWave) return null;
           const fColor = filterColors[flt.name] || '#6366f1';
-          const restX = getX(restCenter);
+          const restX = getX(evalWave);
 
           return (
             <g key={flt.name}>
               <line
                 x1={restX}
-                y1={padding.top}
+                y1={padding.top + 10}
                 x2={restX}
                 y2={padding.top + plotHeight}
                 stroke={fColor}
@@ -239,9 +345,10 @@ export const SedPlot: React.FC<SedPlotProps> = ({
               />
               <text
                 x={restX}
-                y={padding.top - 6}
+                y={padding.top + 7}
                 fill={fColor}
-                fontSize="8"
+                fontSize="7.5"
+                fontFamily="monospace"
                 textAnchor="middle"
                 fontWeight="bold"
               >
@@ -251,12 +358,12 @@ export const SedPlot: React.FC<SedPlotProps> = ({
           );
         })}
 
-        {/* Original Baseline Curve (if dust was modified, show as gray dashed reference) */}
-        {isDustModified && (
+        {/* Baseline Reference Curve (when dust or z modified) */}
+        {(isDustModified || isZModified) && (
           <path
-            d={origPathD}
+            d={baselinePathD}
             fill="none"
-            stroke="#94a3b8"
+            stroke="#64748b"
             strokeWidth={1.5}
             strokeDasharray="3,3"
             strokeOpacity={0.6}
@@ -264,20 +371,20 @@ export const SedPlot: React.FC<SedPlotProps> = ({
         )}
 
         {/* Glowing Active SED Curve */}
-        <path d={pathD} fill="none" stroke="#6366f1" strokeWidth={3} strokeOpacity={0.25} />
+        <path d={activePathD} fill="none" stroke="#6366f1" strokeWidth={3} strokeOpacity={0.25} />
         <path
-          d={pathD}
+          d={activePathD}
           fill="none"
           stroke={isDustModified ? (deltaAv > 0 ? '#fb7185' : '#38bdf8') : '#818cf8'}
           strokeWidth={2}
         />
 
         {/* Hover Crosshair Dot */}
-        {hoverIndex !== null && modifiedSed[hoverIndex] && (
+        {hoverIndex !== null && activeCurve[hoverIndex] && (
           <g>
             <circle
-              cx={getX(modifiedSed[hoverIndex].wave)}
-              cy={getY(modifiedSed[hoverIndex].flux)}
+              cx={getX(activeCurve[hoverIndex].wave)}
+              cy={getY(activeCurve[hoverIndex].flux)}
               r={4}
               fill="#f59e0b"
               stroke="#ffffff"
@@ -298,7 +405,7 @@ export const SedPlot: React.FC<SedPlotProps> = ({
             const relX = ((e.clientX - rect.left) / rect.width) * plotWidth + padding.left;
             let closest = 0;
             let minDist = Infinity;
-            modifiedSed.forEach((p, idx) => {
+            activeCurve.forEach((p, idx) => {
               const dist = Math.abs(getX(p.wave) - relX);
               if (dist < minDist) {
                 minDist = dist;
@@ -316,12 +423,12 @@ export const SedPlot: React.FC<SedPlotProps> = ({
           x={14}
           y={padding.top + plotHeight / 2}
           fill="#94a3b8"
-          fontSize="10.5"
+          fontSize="10"
           fontWeight="bold"
           textAnchor="middle"
           transform={`rotate(-90, 14, ${padding.top + plotHeight / 2})`}
         >
-          L_λ (L☉/Å)
+          {viewMode === 'rest' ? 'L_λ (L☉ / Å)' : 'F_λ (erg s⁻¹ cm⁻² Å⁻¹)'}
         </text>
 
         {/* X-axis label */}
@@ -329,27 +436,21 @@ export const SedPlot: React.FC<SedPlotProps> = ({
           x={padding.left + plotWidth / 2}
           y={svgHeight - 2}
           fill="#94a3b8"
-          fontSize="10.5"
+          fontSize="10"
           fontWeight="bold"
           textAnchor="middle"
         >
-          Rest Wavelength λ_rest (Å)
+          {viewMode === 'rest' ? 'Rest Wavelength λ_rest (Å)' : 'Observed Wavelength λ_obs (Å)'}
         </text>
       </svg>
 
       {/* Legend & Hover Status Readout */}
       <div className="mt-1 flex items-center justify-between text-xs text-slate-200 font-mono bg-cosmos-900/90 rounded px-3 py-1.5 border border-cosmos-800 shadow-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          {isDustModified && (
+          {(isDustModified || isZModified) && (
             <div className="flex items-center space-x-1 text-slate-400">
               <span className="inline-block w-3 h-0.5 border-t border-dashed border-slate-400" />
-              <span>Orig Av={originalAv.toFixed(2)}</span>
-            </div>
-          )}
-          {isZModified && (
-            <div className="flex items-center space-x-1 text-slate-400">
-              <span className="inline-block w-3 h-0.5 border-t border-dotted border-slate-400" />
-              <span>Orig z={originalZ.toFixed(2)}</span>
+              <span>Baseline (z={originalZ.toFixed(2)}, Av={originalAv.toFixed(2)})</span>
             </div>
           )}
           <div className="flex items-center space-x-1.5 font-semibold">
@@ -359,14 +460,16 @@ export const SedPlot: React.FC<SedPlotProps> = ({
               }`}
             />
             <span className={isDustModified ? (deltaAv > 0 ? 'text-rose-300' : 'text-sky-300') : 'text-indigo-300'}>
-              Active (z={redshift.toFixed(2)}, Av={dustAv.toFixed(2)})
+              Active Model (z={redshift.toFixed(2)}, Av={dustAv.toFixed(2)})
             </span>
           </div>
         </div>
 
-        {hoverIndex !== null && modifiedSed[hoverIndex] && (
+        {hoverIndex !== null && activeCurve[hoverIndex] && (
           <div className="text-xs font-bold text-amber-300 flex-shrink-0 ml-2">
-            λ = {modifiedSed[hoverIndex].wave.toFixed(0)}Å • L_λ = {modifiedSed[hoverIndex].flux.toExponential(2)}
+            λ = {activeCurve[hoverIndex].wave.toFixed(0)}Å •{' '}
+            {viewMode === 'rest' ? 'L_λ = ' : 'F_λ = '}
+            {activeCurve[hoverIndex].flux.toExponential(2)}
           </div>
         )}
       </div>

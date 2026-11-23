@@ -4,12 +4,20 @@ import { SkyCanvas } from './components/SkyCanvas';
 import { GalaxyInspector } from './components/GalaxyInspector';
 import { GuideModal } from './components/GuideModal';
 import { Galaxy, CatalogManifest, SkyColorMode } from './types/galaxy';
-import rawManifest from './data/tng_jwst_deep_field.json';
-import { Sparkles } from 'lucide-react';
+import rawGoodsSManifest from './data/tng_goods_s_mock_508.json';
+import rawTng100Manifest from './data/tng_100_calibration.json';
+import { Sparkles, Layers } from 'lucide-react';
 
-const manifest = rawManifest as unknown as CatalogManifest;
+export type DatasetId = 'goods_s_mock' | 'tng_100';
+
+const DATASETS: Record<DatasetId, CatalogManifest> = {
+  goods_s_mock: rawGoodsSManifest as unknown as CatalogManifest,
+  tng_100: rawTng100Manifest as unknown as CatalogManifest,
+};
 
 export const App: React.FC = () => {
+  const [datasetId, setDatasetId] = useState<DatasetId>('goods_s_mock');
+  const manifest = DATASETS[datasetId];
   const [galaxies, setGalaxies] = useState<Galaxy[]>(manifest.galaxies);
   const [selectedGalaxy, setSelectedGalaxy] = useState<Galaxy | null>(null);
   const [resetTrigger, setResetTrigger] = useState<number>(0);
@@ -17,6 +25,14 @@ export const App: React.FC = () => {
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [colorMode, setColorMode] = useState<SkyColorMode>('rgb');
   const [discoveryMode, setDiscoveryMode] = useState<boolean>(false);
+
+  // Switch active dataset
+  const handleSwitchDataset = (newId: DatasetId) => {
+    setDatasetId(newId);
+    setGalaxies(DATASETS[newId].galaxies);
+    setSelectedGalaxy(null);
+    setResetTrigger((prev) => prev + 1);
+  };
 
   // Check connection to local SpecSynth HTTP bridge (localhost:8000)
   useEffect(() => {
@@ -61,8 +77,6 @@ export const App: React.FC = () => {
     setSelectedGalaxy(updated);
   };
 
-  const galaxyIds = manifest.galaxies.map((g) => g.id);
-
   return (
     <div className="w-screen h-screen flex flex-col bg-cosmos-950 text-slate-100 overflow-hidden font-sans">
       {/* Top Navbar */}
@@ -78,6 +92,8 @@ export const App: React.FC = () => {
         galaxies={galaxies}
         discoveryMode={discoveryMode}
         onToggleDiscoveryMode={() => setDiscoveryMode((prev) => !prev)}
+        datasetId={datasetId}
+        onSwitchDataset={handleSwitchDataset}
       />
 
       {/* Beginner & Student Guide Modal */}
@@ -100,13 +116,17 @@ export const App: React.FC = () => {
           />
 
           {/* Floating Field Summary Badge (Bottom Left) */}
-          <div className="absolute bottom-4 left-4 z-10 flex items-center space-x-2 bg-cosmos-900/90 border border-cosmos-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs shadow-lg pointer-events-none">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-slate-300 font-medium">GOODS-S Deep Field</span>
+          <div className="absolute bottom-4 left-4 z-10 flex items-center space-x-2 bg-cosmos-900/90 border border-cosmos-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs shadow-lg pointer-events-none font-mono">
+            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-slate-300 font-semibold font-sans">
+              {datasetId === 'goods_s_mock' ? 'GOODS-S Deep Mock' : 'TNG-100 Calibration'}
+            </span>
             <span className="text-slate-500">•</span>
-            <span className="text-slate-400">RA 53.15°, Dec -27.78°</span>
+            <span className="text-slate-400">
+              RA {manifest.field_center.ra.toFixed(2)}°, Dec {manifest.field_center.dec.toFixed(2)}°
+            </span>
             <span className="text-slate-500">•</span>
-            <span className="text-amber-400 font-mono">{galaxies.length} galaxies</span>
+            <span className="text-amber-400 font-bold">{galaxies.length} galaxies</span>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ Serves REST endpoints on localhost:8000 for the PerandamΨ Web UI.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import json
 import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -106,6 +107,7 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
                 return
 
         # 2. REST API Endpoints (/api/*)
+        now = datetime.now().strftime("%H:%M:%S")
         if path == "/api/health":
             self._set_cors_headers(200)
             res = {
@@ -114,20 +116,24 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
                 "brand": "Perandam Space Intelligence (PSI)",
                 "mark": "PerandamΨ",
                 "version": "1.0.0",
+                "timestamp": now,
             }
             self.wfile.write(json.dumps(res).encode("utf-8"))
+            print(f"[{now}] [Engine Heartbeat] GET /api/health -> 200 OK (PerandamΨ connected)")
 
         elif path == "/api/filters":
             inst = query.get("instrument", [None])[0]
             data = mcp._tool_list_filters({"instrument": inst})
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Filters API] GET /api/filters?instrument={inst or 'all'} -> 200 OK")
 
         elif path == "/api/tng-catalog":
             limit = int(query.get("limit", [100])[0])
             data = mcp._tool_load_tng_demo({"limit": limit})
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Catalog API] GET /api/tng-catalog (limit={limit}) -> 200 OK")
 
         elif path == "/api/inspect":
             idx = int(query.get("galaxy_idx", [0])[0])
@@ -135,25 +141,30 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             data = mcp._tool_inspect_galaxy({"base": base, "galaxy_idx": idx})
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Inspect API] GET /api/inspect (galaxy_idx={idx}, base={base}) -> 200 OK")
 
         elif path == "/api/system":
             data = mcp._tool_get_system_info({})
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [System API] GET /api/system -> 200 OK (Hardware reported)")
 
         elif path == "/api/audit":
             base = query.get("base", ["./run"])[0]
             data = mcp._tool_run_sentry_audit({"base": base, "sample_size": 5000})
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Sentry Audit API] GET /api/audit (base={base}) -> 200 OK")
 
         else:
             self._set_cors_headers(404)
             self.wfile.write(json.dumps({"error": f"Endpoint '{path}' not found"}).encode("utf-8"))
+            print(f"[{now}] [404 Not Found] GET {path}")
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
+        now = datetime.now().strftime("%H:%M:%S")
 
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length)
@@ -164,6 +175,7 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             except Exception:
                 self._set_cors_headers(400)
                 self.wfile.write(json.dumps({"error": "Malformed JSON body"}).encode("utf-8"))
+                print(f"[{now}] [400 Bad Request] POST {path} (Malformed JSON)")
                 return
 
         mcp = self.server_instance or SpecsynthMCPServer()
@@ -179,21 +191,38 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             })
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(resp).encode("utf-8"))
+            print(f"[{now}] [MCP Tool Dispatch] POST /api/tools/call -> tool: '{tool_name}' -> 200 OK")
 
         else:
             self._set_cors_headers(404)
             self.wfile.write(json.dumps({"error": f"POST endpoint '{path}' not found"}).encode("utf-8"))
+            print(f"[{now}] [404 Not Found] POST {path}")
 
     def log_message(self, format: str, *args: Any) -> None:
-        """Suppress default HTTP request spam in terminal logs."""
-        pass
+        """Stream HTTP access logs to console."""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        msg = format % args
+        # Only log non-empty message strings
+        if msg.strip():
+            print(f"[{timestamp}] [HTTP Log] {self.command} {self.path} -> {msg}")
 
 
 def run_bridge_server(host: str = "127.0.0.1", port: int = 8000) -> None:
     server_address = (host, port)
     BridgeHTTPHandler.server_instance = SpecsynthMCPServer()
     httpd = HTTPServer(server_address, BridgeHTTPHandler)
-    print(f"PerandamΨ HTTP Bridge active on http://{host}:{port}")
+    banner = f"""
+================================================================================
+  PerandamΨ (PSI) — SpecSynth Scientific Engine & HTTP Bridge v1.0.0
+================================================================================
+  * Local Engine URL   : http://{host}:{port}
+  * Web Explorer UI    : http://localhost:5173 (Dev) or http://{host}:{port} (Prod)
+  * Active Endpoints   : /api/health, /api/filters, /api/system, /api/inspect, /api/audit
+  * MCP Tool Endpoint  : POST /api/tools/call
+  * Status             : Online & streaming live logs below
+================================================================================
+"""
+    print(banner.strip())
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

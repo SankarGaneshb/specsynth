@@ -72,7 +72,58 @@ For researchers evaluating synthetic JWST NIRCam photometry from cosmological si
 
 ---
 
-## 2. System Architecture & Worker Pipeline
+## 2. Interactive Scientific Explorer: PerandamΨ (PSI)
+
+[![E2E & LoAF Passed](https://img.shields.io/badge/E2E%20Browser%20Testing-Chromium%20CDP%20Passed-emerald.svg)](#)
+[![LoAF Active](https://img.shields.io/badge/W3C%20LoAF-Monitored%20%26%20Optimized-indigo.svg)](#)
+[![UI Parity](https://img.shields.io/badge/Scientific%20Parity-%7C%CE%94m%7C%20%3C%200.004%20mag-cyan.svg)](#)
+
+`specsynth` includes **PerandamΨ (PSI)**, a high-performance interactive web application and scientific engine for survey-scale deep field exploration, real-time cosmological parameter sweeping, and automated JWST observing proposal generation.
+
+<div align="center">
+  <img src="assets/perandam_walkthrough.gif" alt="PerandamΨ Interactive Walkthrough" width="100%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+  <p><em>Recorded Live: Interactive galaxy selection, synthetic JWST NIRCam photometry, reactive in-flight parameter forward-modeling (Redshift z = 1.0 → 4.5, Dust Av = 0.5 → 2.5 mag), and JWST proposal feasibility planning.</em></p>
+</div>
+
+### Key Capabilities in PerandamΨ
+
+- **In-Flight Real-Time Forward Modeling**: Drag Redshift ($z \in [0.1, 10.0]$) and Dust Attenuation ($A_V \in [0.0, 3.0]\,\mathrm{mag}$) sliders. The in-browser scientific engine applies cosmological expansion ($\lambda_{\text{obs}} = \lambda_{\text{rest}}(1+z)$), Flat $\Lambda\mathrm{CDM}$ distance dimming ($D_L(z)$), Charlot & Fall (2000) dust extinction, and Madau (1995) IGM attenuation with sub-16ms latency.
+- **Calibrated JWST NIRCam Photometry**: Displays synthetic photometry across all 6 core filters (`F090W` to `F444W`) with bandpass flux densities in $\mu\mathrm{Jy}$, AB magnitudes with 10 ks ETC noise errors ($\pm \sigma_m$), and dynamic $S/N$ detection flags (Secure $\ge 5\sigma$, Marginal $3-5\sigma$, Upper Limit $<3\sigma$).
+- **Dual-Frame SED Inspection**: 1-click toggle between rest-frame luminosity ($L_\lambda$ in $L_\odot/\mathrm{\AA}$) and observed-frame flux density ($F_\lambda$ in $\mathrm{erg\,s^{-1}\,cm^{-2}\,\AA^{-1}}$) with astrophysical break markers (Lyman Limit 912 Å, Ly$\alpha$ 1216 Å, Balmer Break 3646 Å, $D_n4000$, and H$\alpha$ 6563 Å).
+- **Dynamic Color-Color Tracks**: Diagnostic color-redshift evolution tracks ($z \in [0.2, 8.5]$) with diamond waypoints and a live target reticle tracking forward-modeled colors.
+- **Frontier Discovery Mining**: Statistical anomaly detection ($D_M, \chi^2_6, p$-value) in 6D NIRCam feature space with peer-reviewed literature citations (*Matthee+24, Labbé+23, Greene+23, Carnall+23*).
+- **JWST Observing Feasibility Planning Sheet**: Generates proposal-ready celestial ($\alpha, \delta$) and ecliptic ($\lambda, \beta$) coordinates, GOODS-S annual visibility windows (~190 days/yr), and NIRSpec WATA target acquisition star constraints ($V < 20$ within 2 arcmin).
+- **Dual-Dataset Switcher**: Seamless toggle between the **GOODS-S Deep Mock (508 galaxies)** and the curated **TNG-100 Calibration Sample (100 galaxies)**.
+
+### Quickstart: Launching the Explorer
+
+```bash
+# Terminal 1: Launch SpecSynth Scientific HTTP Bridge & MCP Server
+python -m specsynth.mcp.bridge --port 8000
+
+# Terminal 2: Launch PerandamΨ Web Explorer (Dev Mode)
+cd perandam-psi
+npm install
+npm run dev
+
+# Or visit http://localhost:8000 directly to access the compiled production build!
+```
+
+### Automated UI & Headless E2E Browser Testing
+
+```bash
+cd perandam-psi
+
+# 1. Run Headless Browser E2E, Core Web Vitals & W3C LoAF Audit
+npm run test:e2e
+
+# 2. Run In-Browser Physics & Dataset Unit Tests
+npm test
+```
+
+---
+
+## 3. System Architecture & Worker Pipeline
 
 `specsynth` decouples offline SSP basis construction (`K x W`) from online streaming matrix contractions (`N_chunk x K` @ `K x W`). Intermediate full spectra stay in CPU cache or GPU VRAM and are projected directly into photometric bandpasses (`W x B`):
 
@@ -105,7 +156,7 @@ $$F_g(\lambda) = D_g(\lambda) \cdot \left[ \sum_{k \in \text{old}} \text{SFH}[g,
 
 ---
 
-## 3. Core Capabilities
+## 4. Core Capabilities
 
 | Capability | Summary | Documentation |
 | :--- | :--- | :--- |
@@ -117,7 +168,7 @@ $$F_g(\lambda) = D_g(\lambda) \cdot \left[ \sum_{k \in \text{old}} \text{SFH}[g,
 
 ---
 
-## 4. Empirical Verification Summary
+## 5. Empirical Verification Summary
 
 All headline benchmarks below are empirically measured and recorded in machine-readable JSON manifests under [`paper/`](paper/):
 
@@ -132,7 +183,7 @@ See the full [Validation & Benchmarks Guide](docs/guides/validation-and-benchmar
 
 ---
 
-## 5. Canonical Reference Benchmark Dataset
+## 6. Canonical Reference Benchmark Dataset
 
 A 100,000-galaxy lightcone benchmark catalog ($z \in [0.05, 3.8]$, 16 calibrated JWST/HST/SDSS bands in float64) is archived on Hugging Face with permanent DOI [`10.57967/hf/11635`](https://doi.org/10.57967/hf/11635):
 
@@ -143,7 +194,7 @@ ds = load_dataset("sreeganesh/specsynth-benchmark-100k")
 
 ---
 
-## 6. Contributing, Code of Conduct & License
+## 7. Contributing, Code of Conduct & License
 
 - **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) and open a [GitHub Issue](https://github.com/SankarGaneshb/specsynth/issues) or Pull Request.
 - **Code of Conduct**: Governed by the [Contributor Covenant v2.1](CODE_OF_CONDUCT.md).

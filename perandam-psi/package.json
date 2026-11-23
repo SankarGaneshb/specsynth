@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test:e2e": "node test/e2e_loaf.mjs",
     "bridge": "..\\.venv\\Scripts\\python.exe -m specsynth.mcp.bridge --port 8000"
   },
   "dependencies": {
