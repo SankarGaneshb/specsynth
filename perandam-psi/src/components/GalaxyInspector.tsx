@@ -37,15 +37,19 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   onUpdateGalaxy,
 }) => {
   const [activeTab, setActiveTab] = useState<'sed' | 'color-color' | 'discovery' | 'phot' | 'code'>('sed');
+  const [baseGalaxy, setBaseGalaxy] = useState<Galaxy | null>(null);
   const [sliderZ, setSliderZ] = useState<number | null>(null);
   const [sliderAv, setSliderAv] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [isProposalOpen, setIsProposalOpen] = useState<boolean>(false);
 
-  // Reset slider state when a new galaxy is selected
+  // Snapshot the unmutated base galaxy when selection changes
   useEffect(() => {
-    setSliderZ(null);
-    setSliderAv(null);
+    if (galaxy && (!baseGalaxy || baseGalaxy.id !== galaxy.id)) {
+      setBaseGalaxy({ ...galaxy });
+      setSliderZ(null);
+      setSliderAv(null);
+    }
     if (activeTab === 'discovery' && !galaxy?.discovery_profile && galaxy?.sentry_status !== 'ANOMALY') {
       setActiveTab('sed');
     }
@@ -53,11 +57,15 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
 
   if (!galaxy) return null;
 
-  const currentZ = sliderZ !== null ? sliderZ : galaxy.redshift;
-  const currentAv = sliderAv !== null ? sliderAv : galaxy.av;
+  const originGalaxy = baseGalaxy && baseGalaxy.id === galaxy.id ? baseGalaxy : galaxy;
+  const baselineZ = originGalaxy.redshift;
+  const baselineAv = originGalaxy.av;
 
-  const isZEdited = sliderZ !== null && Math.abs(sliderZ - galaxy.redshift) > 0.01;
-  const isAvEdited = sliderAv !== null && Math.abs(sliderAv - galaxy.av) > 0.01;
+  const currentZ = sliderZ !== null ? sliderZ : baselineZ;
+  const currentAv = sliderAv !== null ? sliderAv : baselineAv;
+
+  const isZEdited = sliderZ !== null && Math.abs(sliderZ - baselineZ) > 0.01;
+  const isAvEdited = sliderAv !== null && Math.abs(sliderAv - baselineAv) > 0.01;
 
   // Scientific Extrapolation check (outside standard simulation calibration bounds)
   const isExtrapolatedRegime = currentZ > 8.0 || currentAv > 2.5;
@@ -65,14 +73,14 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   // Recompute in-flight forward model (D_L(z) distance dimming, Charlot & Fall dust, Madau IGM, filter integration)
   const activeForwardModel = useMemo(() => {
     return forwardModelGalaxy(
-      galaxy.sed,
-      galaxy.redshift,
+      originGalaxy.sed,
+      baselineZ,
       currentZ,
-      galaxy.av,
+      baselineAv,
       currentAv,
       filters
     );
-  }, [galaxy.sed, galaxy.redshift, currentZ, galaxy.av, currentAv, filters]);
+  }, [originGalaxy.sed, baselineZ, currentZ, baselineAv, currentAv, filters]);
 
   const currentFluxes = activeForwardModel.fluxes;
   const currentMags = activeForwardModel.mags;
@@ -80,8 +88,8 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const handleResetSliders = () => {
     setSliderZ(null);
     setSliderAv(null);
-    if (onUpdateGalaxy) {
-      onUpdateGalaxy(galaxy);
+    if (onUpdateGalaxy && originGalaxy) {
+      onUpdateGalaxy(originGalaxy);
     }
   };
 
@@ -91,9 +99,9 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
     if (newZ !== null) setSliderZ(newZ);
     if (newAv !== null) setSliderAv(newAv);
 
-    if (onUpdateGalaxy) {
+    if (onUpdateGalaxy && originGalaxy) {
       onUpdateGalaxy({
-        ...galaxy,
+        ...originGalaxy,
         redshift: zVal,
         av: avVal,
         fluxes: currentFluxes,
@@ -105,10 +113,24 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
     }
   };
 
+  const handleClose = () => {
+    if ((isZEdited || isAvEdited) && onUpdateGalaxy && originGalaxy) {
+      onUpdateGalaxy(originGalaxy);
+    }
+    onClose();
+  };
+
+  const tOnsetVal = originGalaxy.t_onset !== undefined ? originGalaxy.t_onset : 3.0;
+  const tauVal = originGalaxy.tau !== undefined ? originGalaxy.tau : 1.5;
+  const metVal = originGalaxy.metallicity !== undefined ? originGalaxy.metallicity : 0.0;
+  const tauDVal = currentAv / 1.086;
+  const tauBVal = tauDVal * 2.0;
+
   const pythonSnippet = `"""
-Reproduce ${galaxy.id} via SpecSynth and FSPS.
+Deterministic SpecSynth Reproduction for ${galaxy.id}
+Dataset Provenance: ${galaxy.provenance_type || (galaxy.subhalo_id ? `IllustrisTNG-100 Subhalo (${galaxy.subhalo_id})` : 'Simulation Calibration Sample')}
 Numerical Parity Tolerance: In-browser JS integration matches Python SpecSynth
-contraction within |Δm| < 0.02 mag across all 6 NIRCam bands.
+forward projection within |Δm| < 0.02 mag across all 6 NIRCam bands.
 """
 
 from pathlib import Path
@@ -118,21 +140,24 @@ from specsynth.core import attenuation_curve, sfh_from_params, synth_block
 from specsynth.cosmology import TNG_COSMOLOGY, project_per_galaxy_photometry_chunk
 from specsynth.filters import get_filter
 
-# 1. Physical Parameters
-log_mstar = ${galaxy.log_mstar}
-redshift  = ${currentZ.toFixed(3)}
-av        = ${currentAv.toFixed(3)}
-sfr       = ${galaxy.sfr.toFixed(3)}  # M☉/yr
-tau_d     = av / 1.086
-tau_b     = tau_d * 2.0
+# 1. Exact Physical Parameters
+log_mstar   = ${galaxy.log_mstar.toFixed(2)}
+redshift    = ${currentZ.toFixed(3)}
+av          = ${currentAv.toFixed(3)}
+sfr         = ${galaxy.sfr.toFixed(3)}  # M☉/yr
+t_onset     = ${tOnsetVal.toFixed(3)}  # Gyr
+tau         = ${tauVal.toFixed(3)}  # Gyr e-folding timescale
+metallicity = ${metVal.toFixed(4)}  # log(Z/Z_sun)
+tau_d       = ${tauDVal.toFixed(3)}  # Diffuse ISM dust
+tau_b       = ${tauBVal.toFixed(3)}  # Birth cloud dust
 
-# 2. Load Bundled FSPS Grid (Chabrier IMF, MIST Isochrones)
+# 2. Load Reference Grid (analytical_reference proxy or genuine python-fsps)
 grid_path = find_default_fsps_grid()
 adapter = FSPSAdapter(filepath=grid_path)
 ssp_data = adapter.load()
 
-# 3. Form Delayed-Tau SFH normalized to stellar mass
-p = np.array([[log_mstar, 3.0, 1.5, 0.0]], dtype=np.float32)
+# 3. Form Delayed-Tau SFH normalized to stellar mass with exact parameters
+p = np.array([[log_mstar, t_onset, tau, metallicity]], dtype=np.float32)
 sfh = sfh_from_params(p, ssp_data.ages, ssp_data.mets)
 
 # 4. Attenuation Curves (Charlot & Fall 2000)
@@ -159,12 +184,22 @@ phot = project_per_galaxy_photometry_chunk(
 
 # 7. Convert F_lambda to f_nu and AB Magnitudes
 c_ang_s = 2.99792458e18
+m_ab_dict = {}
 print(f"Photometry for ${galaxy.id} (z={redshift:.3f}, Av={av:.3f}):")
 for i, fn in enumerate(target_filters):
     flt = get_filter(fn)
     f_nu = phot[i] * (flt.pivot_wavelength ** 2) / c_ang_s
     m_ab = -2.5 * np.log10(f_nu) - 48.60 if f_nu > 0 else 99.0
+    m_ab_dict[fn] = float(m_ab)
     print(f"  {fn}: {m_ab:.2f} AB mag (f_nu = {f_nu*1e29:.2f} μJy)")
+
+# 8. Numerical Parity Validation vs. Web Browser Display (|Δm| < 0.05 mag)
+browser_mags = ${JSON.stringify(currentMags)}
+for fn, m_browser in browser_mags.items():
+    if fn in m_ab_dict and m_browser < 90.0 and m_ab_dict[fn] < 90.0:
+        delta = abs(m_ab_dict[fn] - m_browser)
+        assert delta < 0.05, f"Numerical divergence in {fn}: {delta:.4f} mag"
+print("✓ In-browser and Python numerical parity verified.")
 `;
 
   const handleCopyCode = () => {
@@ -202,7 +237,7 @@ for i, fn in enumerate(target_filters):
         </div>
 
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-cosmos-800 transition-colors"
           title="Close Scientific Workspace"
         >

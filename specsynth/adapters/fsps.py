@@ -88,12 +88,28 @@ class FSPSAdapter(BaseAdapter):
         # File mode
         if self.filepath:
             ages, wave, fluxes = parse_fsps_spec_file(self.filepath)
+            is_analytical = False
+            try:
+                with open(self.filepath, "r", encoding="utf-8") as f:
+                    head = f.read(1024).lower()
+                    if "analytical_reference" in head or "is_genuine_fsps: false" in head:
+                        is_analytical = True
+            except Exception:
+                pass
+            model_name = "analytical_reference" if is_analytical else "FSPS"
+            meta = {
+                "model": model_name,
+                "is_genuine_fsps": not is_analytical,
+                "file": str(self.filepath),
+            }
+            if is_analytical:
+                meta["note"] = "SpecSynth analytical reference grid (continuum & break proxy; python-fsps not used)"
             return SSPData.from_3d_grid(
                 ages=ages,
                 mets=np.array([self.metallicity]),
                 wave=wave,
                 grid_3d=fluxes[:, None, :],
-                metadata={"model": "FSPS", "file": str(self.filepath)},
+                metadata=meta,
             )
 
         # Dynamic python-fsps mode
@@ -104,16 +120,27 @@ class FSPSAdapter(BaseAdapter):
                 default_file = find_default_fsps_grid()
                 if default_file:
                     ages, wave, fluxes = parse_fsps_spec_file(default_file)
+                    is_analytical = False
+                    try:
+                        with open(default_file, "r", encoding="utf-8") as f:
+                            head = f.read(1024).lower()
+                            if "analytical_reference" in head or "is_genuine_fsps: false" in head:
+                                is_analytical = True
+                    except Exception:
+                        pass
+                    model_name = "analytical_reference" if is_analytical else "FSPS"
+                    meta = {
+                        "model": model_name,
+                        "is_genuine_fsps": not is_analytical,
+                        "file": str(default_file),
+                        "note": "Bundled reference grid (analytical proxy; python-fsps not installed)" if is_analytical else "Bundled reference grid",
+                    }
                     return SSPData.from_3d_grid(
                         ages=ages,
                         mets=np.array([self.metallicity]),
                         wave=wave,
                         grid_3d=fluxes[:, None, :],
-                        metadata={
-                            "model": "FSPS",
-                            "file": str(default_file),
-                            "note": "Bundled reference grid (python-fsps not installed)",
-                        },
+                        metadata=meta,
                     )
             raise ImportError(
                 "python-fsps is required to run the dynamic FSPS adapter. Install it with: "

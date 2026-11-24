@@ -40,11 +40,11 @@ export const DiscoveryHypothesisCard: React.FC<DiscoveryHypothesisCardProps> = (
       </div>
 
       {/* Multidimensional Statistical Grounding Banner (Issue #6 Adjustment 4) */}
-      <div className="bg-cosmos-950/90 rounded-lg p-2.5 border border-purple-900/60 space-y-1 font-mono text-[11px]">
+      <div className="bg-cosmos-950/90 rounded-lg p-2.5 border border-purple-900/60 space-y-1 font-mono text-[11px]" title="Descriptive Mahalanobis distance relative to 6D sample covariance matrix; measures photometric outlier distance, not a calibrated discovery probability.">
         <div className="flex items-center justify-between text-purple-300">
           <div className="flex items-center space-x-1">
             <Activity className="w-3 h-3 text-purple-400" />
-            <span className="font-bold">Mahalanobis Rarity: D_M = {profile.rarity_sigma.toFixed(2)}</span>
+            <span className="font-bold">Descriptive Outlier Distance: D_M = {profile.rarity_sigma.toFixed(2)}</span>
           </div>
           <span className="text-amber-300 font-semibold">{profile.rarity_percentile}</span>
         </div>

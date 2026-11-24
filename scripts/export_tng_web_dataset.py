@@ -260,7 +260,8 @@ def export_all() -> None:
     dec_center = -27.78
     np.random.seed(100)
     for i in range(n_base):
-        gal_id = f"TNG-{i+1:04d}"
+        subhalo_id = str(pydict["galaxy_id"][i])
+        gal_id = subhalo_id
         log_m = float(pydict["log_mstar"][i])
         mstar = 10.0 ** log_m
         z = float(pydict["redshift"][i])
@@ -268,6 +269,9 @@ def export_all() -> None:
         av = float(pydict["av"][i])
         td = float(pydict["tau_diffuse"][i])
         tb = float(pydict["tau_birth"][i])
+        t_onset = float(pydict["t_onset"][i])
+        tau = float(pydict["tau"][i])
+        metallicity = float(pydict["metallicity"][i])
 
         r = 0.05 * math.sqrt(np.random.uniform(0, 1))
         theta = np.random.uniform(0, 2 * math.pi)
@@ -285,6 +289,7 @@ def export_all() -> None:
         tng100_galaxies.append(
             {
                 "id": gal_id,
+                "subhalo_id": subhalo_id,
                 "ra": round(ra, 6),
                 "dec": round(dec, 6),
                 "redshift": round(z, 3),
@@ -294,6 +299,9 @@ def export_all() -> None:
                 "av": round(av, 3),
                 "tau_diffuse": round(td, 3),
                 "tau_birth": round(tb, 3),
+                "t_onset": round(t_onset, 3),
+                "tau": round(tau, 3),
+                "metallicity": round(metallicity, 4),
                 "sentry_status": "PRISTINE",
                 "fluxes": fluxes,
                 "mags": mags,
@@ -308,7 +316,7 @@ def export_all() -> None:
 
     # Attach profile for natural simulation extremes in TNG-100
     for g in tng100_galaxies:
-        if g["id"] == "TNG-0031":
+        if g["id"] in ("tng100_subhalo_005478", "TNG-0031"):
             chi2_v = g["rarity_chi2"]
             p_v = g["rarity_p_value"]
             g["discovery_profile"] = {
@@ -334,7 +342,7 @@ def export_all() -> None:
                     "target_acquisition": "NIRSpec WATA required: Verify bright reference star (V < 20 mag) within 2 arcmin.",
                 },
             }
-        elif g["id"] == "TNG-0088":
+        elif g["id"] in ("tng100_subhalo_008423", "TNG-0088"):
             chi2_v = g["rarity_chi2"]
             p_v = g["rarity_p_value"]
             g["discovery_profile"] = {
@@ -360,7 +368,7 @@ def export_all() -> None:
                     "target_acquisition": "NIRSpec WATA required: Verify bright reference star (V < 20 mag) within 2 arcmin.",
                 },
             }
-        elif g["id"] == "TNG-0062":
+        elif g["id"] in ("tng100_subhalo_005626", "TNG-0062"):
             chi2_v = g["rarity_chi2"]
             p_v = g["rarity_p_value"]
             g["discovery_profile"] = {
@@ -481,6 +489,9 @@ def export_all() -> None:
                 "av": round(av, 3),
                 "tau_diffuse": round(td, 3),
                 "tau_birth": round(tb, 3),
+                "t_onset": round(float(p_mock[i, 1]), 3),
+                "tau": round(float(p_mock[i, 2]), 3),
+                "metallicity": round(float(p_mock[i, 3]), 4),
                 "sentry_status": "PRISTINE",
                 "fluxes": fluxes,
                 "mags": mags,
@@ -508,6 +519,8 @@ def export_all() -> None:
 
     disc_01 = {
         "id": "TNG-DISC-01",
+        "is_synthetic_scenario": True,
+        "provenance_type": "Illustrative synthetic exploration scenario (Not an observed astronomical source)",
         "ra": round(ra_center + 0.019, 6),
         "dec": round(dec_center - 0.021, 6),
         "redshift": z_d1,
@@ -517,6 +530,9 @@ def export_all() -> None:
         "av": 0.25,
         "tau_diffuse": 0.23,
         "tau_birth": 0.46,
+        "t_onset": 1.0,
+        "tau": 2.0,
+        "metallicity": 0.0142,
         "sentry_status": "PRISTINE",
         "rarity_score": 5.10,
         "rarity_chi2": 26.01,
@@ -597,6 +613,8 @@ def export_all() -> None:
 
     disc_02 = {
         "id": "TNG-DISC-02",
+        "is_synthetic_scenario": True,
+        "provenance_type": "Illustrative synthetic exploration scenario (Not an observed astronomical source)",
         "ra": round(ra_center - 0.021, 6),
         "dec": round(dec_center + 0.018, 6),
         "redshift": z_d2,
@@ -606,6 +624,9 @@ def export_all() -> None:
         "av": 0.15,
         "tau_diffuse": 0.14,
         "tau_birth": 0.28,
+        "t_onset": 1.0,
+        "tau": 2.0,
+        "metallicity": 0.0142,
         "sentry_status": "PRISTINE",
         "rarity_score": 4.80,
         "rarity_chi2": 23.04,
@@ -688,6 +709,8 @@ def export_all() -> None:
 
     disc_03 = {
         "id": "TNG-DISC-03",
+        "is_synthetic_scenario": True,
+        "provenance_type": "Illustrative synthetic exploration scenario (Not an observed astronomical source)",
         "ra": round(ra_center + 0.026, 6),
         "dec": round(dec_center + 0.024, 6),
         "redshift": z_d3,
@@ -697,6 +720,9 @@ def export_all() -> None:
         "av": 0.30,
         "tau_diffuse": 0.28,
         "tau_birth": 0.55,
+        "t_onset": 1.0,
+        "tau": 2.0,
+        "metallicity": 0.0142,
         "sentry_status": "PRISTINE",
         "rarity_score": 4.90,
         "rarity_chi2": 24.01,
@@ -774,6 +800,8 @@ def export_all() -> None:
 
     disc_04 = {
         "id": "TNG-DISC-04",
+        "is_synthetic_scenario": True,
+        "provenance_type": "Illustrative synthetic exploration scenario (Not an observed astronomical source)",
         "ra": round(ra_center - 0.028, 6),
         "dec": round(dec_center - 0.025, 6),
         "redshift": z_d4,
@@ -783,6 +811,9 @@ def export_all() -> None:
         "av": 3.60,
         "tau_diffuse": 3.31,
         "tau_birth": 6.62,
+        "t_onset": 1.0,
+        "tau": 2.0,
+        "metallicity": 0.0142,
         "sentry_status": "PRISTINE",
         "rarity_score": 5.05,
         "rarity_chi2": 25.50,
@@ -853,6 +884,8 @@ def export_all() -> None:
     anomalies = [
         {
             "id": "TNG-ANOM-01",
+            "is_synthetic_scenario": True,
+            "provenance_type": "Synthetic Sentry QC validation injection",
             "ra": round(ra_center + 0.012, 6),
             "dec": round(dec_center + 0.015, 6),
             "redshift": 1.25,
@@ -862,6 +895,9 @@ def export_all() -> None:
             "av": 0.35,
             "tau_diffuse": 0.32,
             "tau_birth": 0.64,
+            "t_onset": 1.0,
+            "tau": 2.0,
+            "metallicity": 0.0142,
             "sentry_status": "ANOMALY",
             "qc_failure_code": "ERR_TIER1_NEGATIVE_FLUX",
             "qc_failure_title": "Tier 1: Negative Flux Density in F090W",
@@ -903,6 +939,8 @@ def export_all() -> None:
         },
         {
             "id": "TNG-ANOM-02",
+            "is_synthetic_scenario": True,
+            "provenance_type": "Synthetic Sentry QC validation injection",
             "ra": round(ra_center - 0.018, 6),
             "dec": round(dec_center + 0.022, 6),
             "redshift": 2.40,
@@ -912,6 +950,9 @@ def export_all() -> None:
             "av": 0.20,
             "tau_diffuse": 0.18,
             "tau_birth": 0.36,
+            "t_onset": 1.0,
+            "tau": 2.0,
+            "metallicity": 0.0142,
             "sentry_status": "ANOMALY",
             "qc_failure_code": "ERR_TIER2_INVERTED_DN4000",
             "qc_failure_title": "Tier 2: Inverted Dn4000 Spectral Break (0.42 < 0.70)",
@@ -953,6 +994,8 @@ def export_all() -> None:
         },
         {
             "id": "TNG-ANOM-03",
+            "is_synthetic_scenario": True,
+            "provenance_type": "Synthetic Sentry QC validation injection",
             "ra": round(ra_center + 0.028, 6),
             "dec": round(dec_center - 0.016, 6),
             "redshift": 7.20,
@@ -962,6 +1005,9 @@ def export_all() -> None:
             "av": 0.10,
             "tau_diffuse": 0.09,
             "tau_birth": 0.18,
+            "t_onset": 1.0,
+            "tau": 2.0,
+            "metallicity": 0.0142,
             "sentry_status": "ANOMALY",
             "qc_failure_code": "ERR_TIER2_AGE_EXCEEDS_HUBBLE",
             "qc_failure_title": "Tier 2: Stellar Age Exceeds Cosmic Time at z=7.2",
@@ -1003,6 +1049,8 @@ def export_all() -> None:
         },
         {
             "id": "TNG-ANOM-04",
+            "is_synthetic_scenario": True,
+            "provenance_type": "Synthetic Sentry QC validation injection",
             "ra": round(ra_center - 0.024, 6),
             "dec": round(dec_center - 0.020, 6),
             "redshift": 3.10,
@@ -1012,6 +1060,9 @@ def export_all() -> None:
             "av": 3.40,
             "tau_diffuse": 3.13,
             "tau_birth": 6.26,
+            "t_onset": 1.0,
+            "tau": 2.0,
+            "metallicity": 0.0142,
             "sentry_status": "ANOMALY",
             "qc_failure_code": "ERR_TIER3_COLOR_OUTLIER",
             "qc_failure_title": "Tier 3: Extreme Color-Color Population Outlier (> 5.2σ)",
@@ -1061,8 +1112,12 @@ def export_all() -> None:
     # -------------------------------------------------------------
     manifest_tng100 = {
         "title": "PerandamΨ — IllustrisTNG 100-Galaxy Calibration Sample",
-        "description": "Exact 1-to-1 conversion of the 100 IllustrisTNG reference galaxies synthesized with SpecSynth & FSPS",
-        "provenance": "IllustrisTNG Cosmological Simulation (TNG-100-1) + FSPS v3.2 (Chabrier IMF, MIST Isochrones)",
+        "description": "Exact 1-to-1 conversion of 100 IllustrisTNG-100 subhalos synthesized with SpecSynth",
+        "dataset_type": "simulation_calibration",
+        "ssp_model": "analytical_reference",
+        "is_genuine_fsps": False,
+        "provenance": "IllustrisTNG Cosmological Simulation (TNG-100-1 subhalos) + analytical_reference proxy grid",
+        "coordinates_note": "Mock GOODS-S projection: Projected sky coordinates (RA, Dec) are assigned for spatial visualization in GOODS-S footprint",
         "field_center": {"ra": ra_center, "dec": dec_center, "radius_deg": 0.05},
         "filters": filter_meta,
         "n_galaxies": len(tng100_galaxies),
@@ -1074,8 +1129,12 @@ def export_all() -> None:
 
     manifest_goods_s = {
         "title": "PerandamΨ — Synthetic GOODS-S Deep Field Mock (508 Galaxies)",
-        "description": "508-galaxy synthetic deep field mock with authentic JWST discovery specimens and Sentry QC anomalies",
-        "provenance": "Synthetic GOODS-S Deep Field Mock (SpecSynth + FSPS v3.2)",
+        "description": "508-galaxy synthetic deep field mock with illustrative JWST discovery specimens and Sentry QC anomalies",
+        "dataset_type": "synthetic_mock",
+        "ssp_model": "analytical_reference",
+        "is_genuine_fsps": False,
+        "provenance": "Synthetic GOODS-S Deep Field Mock (SpecSynth + analytical_reference proxy grid)",
+        "coordinates_note": "Mock GOODS-S projection: Projected sky coordinates (RA, Dec) are assigned for spatial visualization in GOODS-S footprint",
         "field_center": {"ra": ra_center, "dec": dec_center, "radius_deg": field_radius},
         "filters": filter_meta,
         "n_galaxies": len(combined_goods_s),

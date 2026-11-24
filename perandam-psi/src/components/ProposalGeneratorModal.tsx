@@ -57,10 +57,13 @@ export const ProposalGeneratorModal: React.FC<ProposalGeneratorModalProps> = ({
     ? 'MIRI Target Acquisition: Autonomous peakup or direct target acquisition star required for low-resolution prism spectroscopy.'
     : 'NIRCam Direct Imaging: Point-and-shoot Module A/B imaging; no dedicated target acquisition star required.';
 
-  const planningSheet = `=== JWST OBSERVING FEASIBILITY & PLANNING SPECIFICATION ===
+  const planningSheet = `=== JWST OBSERVING FEASIBILITY & HEURISTIC PLANNING SPECIFICATION ===
+DISCLAIMER: Heuristic planning guideline based on simplified point-source exposure limits.
+Not an approved Astronomer's Proposal Tool (APT) file. Verify all observations in STScI Pandeia ETC.
+
 Target Name:           ${galaxy.id}
 Classification:        ${profile.class_title}
-Statistical Grounding: Mahalanobis Distance D_M = ${profile.rarity_sigma.toFixed(2)} (χ²_6 = ${(profile.rarity_sigma**2).toFixed(1)}, ${profile.rarity_percentile})
+Statistical Grounding: Descriptive Mahalanobis Distance D_M = ${profile.rarity_sigma.toFixed(2)} (χ²_6 = ${(profile.rarity_sigma**2).toFixed(1)}, ${profile.rarity_percentile})
 
 [CELESTIAL & ECLIPTIC COORDINATES]
 Equatorial (J2000):    RA = ${raString} (${galaxy.ra.toFixed(6)}°), Dec = ${decString} (${galaxy.dec.toFixed(6)}°)
@@ -82,6 +85,10 @@ Candidate Int. B:      ${profile.hypotheses.alternative}
 Required Observation:  ${profile.hypotheses.required_observations || 'High-resolution rest-frame optical spectroscopy.'}
 `;
 
+  const tOnset = galaxy.t_onset !== undefined ? galaxy.t_onset : 3.0;
+  const tau = galaxy.tau !== undefined ? galaxy.tau : 1.5;
+  const met = galaxy.metallicity !== undefined ? galaxy.metallicity : 0.0;
+
   const pythonScript = `"""
 SpecSynth & FSPS Verification Script for ${galaxy.id}
 Target: ${profile.class_title} (D_M = ${profile.rarity_sigma.toFixed(2)})
@@ -94,13 +101,14 @@ from specsynth.cosmology import TNG_COSMOLOGY, project_per_galaxy_photometry_chu
 from specsynth.filters import get_filter
 import numpy as np
 
-# Physical coordinates
+# Physical coordinates & parameters
 ra, dec, z = ${galaxy.ra.toFixed(6)}, ${galaxy.dec.toFixed(6)}, ${galaxy.redshift.toFixed(3)}
 log_mstar, av = ${galaxy.log_mstar.toFixed(2)}, ${galaxy.av.toFixed(3)}
+t_onset, tau, met = ${tOnset.toFixed(3)}, ${tau.toFixed(3)}, ${met.toFixed(4)}
 
 # Execute forward model
 ssp = FSPSAdapter(filepath=find_default_fsps_grid()).load()
-sfh = sfh_from_params(np.array([[log_mstar, 3.0, 1.5, 0.0]], dtype=np.float32), ssp.ages, ssp.mets)
+sfh = sfh_from_params(np.array([[log_mstar, t_onset, tau, met]], dtype=np.float32), ssp.ages, ssp.mets)
 kd = attenuation_curve(ssp.wave, -0.7).astype(np.float32)
 kb = attenuation_curve(ssp.wave, -1.3).astype(np.float32)
 ny = int((ssp.ages < 1e7).sum()) * len(ssp.mets)

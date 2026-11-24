@@ -198,7 +198,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Engine Connectivity Indicator */}
         <div
-          title={isConnected ? 'Connected to local SpecSynth engine (:8000)' : 'Running in Standalone Mock mode'}
+          title={isConnected ? 'Connected to local SpecSynth HTTP Bridge (:8000)' : 'Running in Standalone In-Browser Mode'}
           className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full border ${
             isConnected
               ? 'bg-indigo-950/60 border-indigo-500/60 text-indigo-300'
@@ -206,7 +206,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           }`}
         >
           <Cpu className={`w-3.5 h-3.5 ${isConnected ? 'text-indigo-400 animate-pulse' : 'text-slate-500'}`} />
-          <span>{isConnected ? 'Engine: SpecSynth' : 'Standalone Mock'}</span>
+          <span>{isConnected ? 'Local Bridge Available' : 'Standalone Mode'}</span>
         </div>
       </div>
     </header>

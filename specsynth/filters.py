@@ -25,6 +25,7 @@ class FilterCurve:
     wave: np.ndarray
     transmission: np.ndarray
     is_calibrated: bool = False
+    sha256: str = ""
 
     def __post_init__(self):
         self.wave = np.asarray(self.wave, dtype=np.float64)
@@ -111,7 +112,7 @@ class FilterCurve:
         else:
             is_cal = bool(is_calibrated)
 
-        return cls(name=filter_name, wave=data[:, 0], transmission=data[:, 1], is_calibrated=is_cal)
+        return cls(name=filter_name, wave=data[:, 0], transmission=data[:, 1], is_calibrated=is_cal, sha256=file_sha if is_cal else "")
 
 
 DATA_FILTERS_DIR = Path(__file__).parent / "data" / "filters"
@@ -429,7 +430,10 @@ def get_filter(name: str) -> FilterCurve:
     # 2. Bundled calibrated instrument profile (e.g. jwst_f200w.csv)
     bundled_file = DATA_FILTERS_DIR / f"{name_clean}.csv"
     if bundled_file.is_file():
-        return FilterCurve.from_file(bundled_file, name=name_clean)
+        curve = FilterCurve.from_file(bundled_file, name=name_clean)
+        if not curve.sha256 and name_clean in FILTER_REGISTRY:
+            curve.sha256 = FILTER_REGISTRY[name_clean].get("sha256", "")
+        return curve
 
     # 3. Standard built-in analytical profile fallback
     if name_clean in STANDARD_FILTER_SPECS:

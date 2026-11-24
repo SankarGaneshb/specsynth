@@ -6,9 +6,12 @@
  *  2. Charlot & Fall (2000) dust attenuation curve.
  *  3. Madau (1995) Intergalactic Medium (IGM) line blanketing and Lyman continuum absorption.
  *  4. In-flight numerical bandpass integration for JWST NIRCam filters.
- *  5. JWST Exposure Time Calculator (ETC) point-source noise model (10 ks medium-deep limits).
+ *  5. 10 ks reference-depth point-source noise approximation (STScI NIRCam medium-deep limits).
  *  6. Exact analytical chi^2 survival probability for 6 degrees of freedom.
  *  7. Complete in-browser galaxy forward-modeling engine.
+ * 
+ * NOTE: For formal observation proposals and JWST APT submissions, exposure times and SNR
+ * must be verified using the official STScI Pandeia Exposure Time Calculator (ETC).
  */
 
 import type { SedPoint, FilterCurveData } from '../types/galaxy';
@@ -224,7 +227,9 @@ export function integrateBandpass(
 }
 
 /**
- * Photometric uncertainty and S/N based on 10 ks NIRCam medium-deep exposure limits.
+ * Photometric uncertainty and S/N based on 10 ks NIRCam reference point-source exposure limits.
+ * Reference noise approximation assumes low background and r=0.08" aperture (STScI NIRCam 10 ks reference depths).
+ * For APT proposals, consult the official STScI Pandeia ETC.
  */
 export function getPhotometricUncertainty(
   fNuCgs: number,

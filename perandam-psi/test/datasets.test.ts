@@ -21,7 +21,11 @@ test('Datasets: TNG-100 Calibration Manifest', () => {
   assert.ok(data.filters.length >= 6, 'Must contain at least 6 core NIRCam filters');
 
   for (const g of data.galaxies) {
-    assert.ok(g.id.startsWith('TNG-'), `Invalid galaxy ID: ${g.id}`);
+    assert.ok(g.id.startsWith('tng100_subhalo_') || g.id.startsWith('TNG-'), `Invalid galaxy ID: ${g.id}`);
+    assert.ok(g.subhalo_id !== undefined, 'Must preserve subhalo_id');
+    assert.ok(g.t_onset !== undefined, 'Must preserve t_onset');
+    assert.ok(g.tau !== undefined, 'Must preserve tau');
+    assert.ok(g.metallicity !== undefined, 'Must preserve metallicity');
     assert.ok(g.redshift > 0 && g.redshift < 15, `Invalid redshift: ${g.redshift}`);
     assert.ok(g.log_mstar >= 6 && g.log_mstar <= 13, `Invalid stellar mass: ${g.log_mstar}`);
     assert.ok(g.sed.length >= 400, `SED resolution too low: ${g.sed.length}`);

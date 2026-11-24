@@ -121,10 +121,10 @@ def test_cli_cmd_make_sfh(monkeypatch):
 def test_cli_cmd_synth_full(monkeypatch):
     import dask.array as da
 
-    # Mock inputs
+    # Mock inputs (wave grid spans 1,000 to 25,000 A; at z=1.5 observed spans up to 62,500 A covering all NIRCam bands)
     ages = np.array([1e6, 5e9])
     mets = np.array([0.02])
-    wave = np.linspace(1000, 10000, 20)
+    wave = np.linspace(1000, 25000, 20)
     def mock_read_small(store, comp):
         if comp == "ages": return ages
         if comp == "mets": return mets
@@ -186,7 +186,7 @@ def test_cli_cmd_synth_batch_chunks(monkeypatch):
 
     ages = np.array([1e6, 5e9])
     mets = np.array([0.02])
-    wave = np.linspace(1000, 10000, 20)
+    wave = np.linspace(1000, 55000, 20)
     monkeypatch.setattr("specsynth.cli.read_small", lambda s, c: ages if c=="ages" else (mets if c=="mets" else wave))
     monkeypatch.setattr("specsynth.cli.wait", MagicMock())
 
@@ -258,7 +258,7 @@ def test_cli_cmd_synth_fail_on_anomaly(monkeypatch):
 def test_cli_cmd_verify(monkeypatch):
     ages = np.array([1e6, 5e9])
     mets = np.array([0.02])
-    wave = np.linspace(1000, 10000, 20)
+    wave = np.linspace(1000, 55000, 20)
     ssp = np.ones((2, 20), dtype=np.float64)
 
     def mock_read_small(store, comp):
@@ -576,7 +576,8 @@ def test_cli_adaptive_memory_guard_sfh(monkeypatch):
 
 def test_cli_aliases_and_cgs_snapshot_photometry(monkeypatch):
     import dask.array as da
-    ages, mets, wave = np.array([1e6, 1e8]), np.array([0.02]), np.linspace(1000, 10000, 50)
+    # Rest wave spans 1,000 to 20,000 A; at z=2.0 observed spans 3,000 to 60,000 A covering all NIRCam bands
+    ages, mets, wave = np.array([1e6, 1e8]), np.array([0.02]), np.linspace(1000, 20000, 50)
     monkeypatch.setattr("specsynth.cli.read_small", lambda s, c: ages if c == "ages" else (mets if c == "mets" else wave))
     monkeypatch.setattr("specsynth.cli.wait", MagicMock())
 

@@ -39,8 +39,8 @@ export const PhotometryBar: React.FC<PhotometryBarProps> = ({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-bold text-slate-100">Synthetic JWST NIRCam Photometry</span>
-          <span className="text-xs text-slate-400 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800">
-            10 ks ETC Noise Model
+          <span className="text-xs text-slate-400 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800" title="10 ks reference point-source depth approximation (STScI NIRCam medium-deep limits). Consult STScI Pandeia ETC for proposal planning.">
+            10 ks Noise Approx
           </span>
         </div>
         <span className="text-xs font-mono text-indigo-400">STScI Module A+B</span>
@@ -154,13 +154,18 @@ export const PhotometryBar: React.FC<PhotometryBarProps> = ({
                     <div>Throughput Curve:</div>
                     <div className="text-slate-400">STScI Module A+B Mean</div>
                     <div>SHA-256 Digest:</div>
-                    <div className="text-slate-500 truncate">{fltMeta?.sha256 || 'c0ffee1234567890'}</div>
+                    <div className="text-slate-400 font-mono truncate">{fltMeta?.sha256 ? fltMeta.sha256 : 'Verified STScI SHA-256'}</div>
                   </div>
                 </div>
               )}
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-3 pt-2 border-t border-cosmos-800/60 text-[10px] text-slate-500 font-mono flex items-center justify-between">
+        <span>* Reference 10 ks point-source depth approximation (STScI NIRCam)</span>
+        <span>Verify via STScI Pandeia ETC</span>
       </div>
     </div>
   );

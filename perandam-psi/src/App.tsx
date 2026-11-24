@@ -18,7 +18,7 @@ const DATASETS: Record<DatasetId, CatalogManifest> = {
 export const App: React.FC = () => {
   const [datasetId, setDatasetId] = useState<DatasetId>('goods_s_mock');
   const manifest = DATASETS[datasetId];
-  const [galaxies, setGalaxies] = useState<Galaxy[]>(manifest.galaxies);
+  const [galaxies, setGalaxies] = useState<Galaxy[]>(() => manifest.galaxies.map((g) => ({ ...g })));
   const [selectedGalaxy, setSelectedGalaxy] = useState<Galaxy | null>(null);
   const [resetTrigger, setResetTrigger] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -29,7 +29,7 @@ export const App: React.FC = () => {
   // Switch active dataset
   const handleSwitchDataset = (newId: DatasetId) => {
     setDatasetId(newId);
-    setGalaxies(DATASETS[newId].galaxies);
+    setGalaxies(DATASETS[newId].galaxies.map((g) => ({ ...g })));
     setSelectedGalaxy(null);
     setResetTrigger((prev) => prev + 1);
   };

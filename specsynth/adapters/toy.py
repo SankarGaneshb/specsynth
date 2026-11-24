@@ -18,7 +18,13 @@ def planck(wave_A: np.ndarray, T: float) -> np.ndarray:
     return 1.0 / (lam**5 * np.expm1(x))
 
 
-def build_toy_ssp(n_age: int, n_met: int, n_wave: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def build_toy_ssp(
+    n_age: int,
+    n_met: int,
+    n_wave: int,
+    wave_min: float = 1000.0,
+    wave_max: float = 55000.0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Physically-flavoured *toy* SSPs: blackbody whose temperature falls with age,
     luminosity per unit mass ~ age^-0.8, a 4000 A break that strengthens with
@@ -27,7 +33,7 @@ def build_toy_ssp(n_age: int, n_met: int, n_wave: int) -> tuple[np.ndarray, np.n
     """
     ages = np.logspace(6.0, np.log10(1.3e10), n_age)  # yr
     mets = np.logspace(-4, np.log10(0.03), n_met)  # Z (absolute)
-    wave = np.logspace(np.log10(1000.0), np.log10(25000.0), n_wave)  # Angstrom
+    wave = np.logspace(np.log10(wave_min), np.log10(wave_max), n_wave)  # Angstrom
     ssp = np.empty((n_age * n_met, n_wave), dtype=np.float32)
     for i, t in enumerate(ages):
         for j, z in enumerate(mets):
@@ -44,13 +50,24 @@ def build_toy_ssp(n_age: int, n_met: int, n_wave: int) -> tuple[np.ndarray, np.n
 class ToyAdapter(BaseAdapter):
     """Adapter for generating synthetic analytical reference SSP grids."""
 
-    def __init__(self, n_age: int = 60, n_met: int = 6, n_wave: int = 4000):
+    def __init__(
+        self,
+        n_age: int = 60,
+        n_met: int = 6,
+        n_wave: int = 4000,
+        wave_min: float = 1000.0,
+        wave_max: float = 55000.0,
+    ):
         self.n_age = n_age
         self.n_met = n_met
         self.n_wave = n_wave
+        self.wave_min = wave_min
+        self.wave_max = wave_max
 
     def load(self) -> SSPData:
-        ages, mets, wave, ssp = build_toy_ssp(self.n_age, self.n_met, self.n_wave)
+        ages, mets, wave, ssp = build_toy_ssp(
+            self.n_age, self.n_met, self.n_wave, self.wave_min, self.wave_max
+        )
         return SSPData(
             ages=ages,
             mets=mets,

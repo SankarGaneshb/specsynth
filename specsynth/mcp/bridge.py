@@ -27,7 +27,12 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
 
     def _set_cors_headers(self, status_code: int = 200, content_type: str = "application/json") -> None:
         self.send_response(status_code)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin", "") if hasattr(self, "headers") and self.headers else ""
+        allowed_prefixes = ("http://localhost", "http://127.0.0.1", "http://[::1]")
+        if any(origin.startswith(p) for p in allowed_prefixes):
+            self.send_header("Access-Control-Allow-Origin", origin)
+        else:
+            self.send_header("Access-Control-Allow-Origin", "http://localhost:5173")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("Content-Type", content_type)
@@ -49,7 +54,18 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
 
         if not path.startswith("/api"):
             subpath = path.lstrip("/") or "index.html"
-            target_file = dist_dir / subpath
+            dist_resolved = dist_dir.resolve()
+            try:
+                target_file = (dist_dir / subpath).resolve()
+                if dist_resolved not in target_file.parents and target_file != dist_resolved:
+                    self._set_cors_headers(403, content_type="text/plain")
+                    self.wfile.write(b"403 Forbidden: Directory traversal blocked")
+                    return
+            except Exception:
+                self._set_cors_headers(403, content_type="text/plain")
+                self.wfile.write(b"403 Forbidden: Invalid file path")
+                return
+
             if target_file.exists() and target_file.is_file():
                 content_type = "text/html"
                 if subpath.endswith(".js"):

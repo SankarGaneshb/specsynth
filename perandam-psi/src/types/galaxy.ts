@@ -53,6 +53,7 @@ export interface FilterCurveData {
 
 export interface Galaxy {
   id: string;
+  subhalo_id?: string;
   ra: number;
   dec: number;
   redshift: number;
@@ -62,6 +63,11 @@ export interface Galaxy {
   av: number;
   tau_diffuse: number;
   tau_birth: number;
+  t_onset?: number;
+  tau?: number;
+  metallicity?: number;
+  is_synthetic_scenario?: boolean;
+  provenance_type?: string;
   sentry_status: 'PRISTINE' | 'ANOMALY';
   qc_failure_code?: string;
   qc_failure_title?: string;
@@ -82,6 +88,10 @@ export interface Galaxy {
 export interface CatalogManifest {
   title: string;
   description: string;
+  dataset_type?: string;
+  ssp_model?: string;
+  is_genuine_fsps?: boolean;
+  coordinates_note?: string;
   provenance?: string;
   field_center: {
     ra: number;
