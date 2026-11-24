@@ -28,11 +28,16 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
     def _set_cors_headers(self, status_code: int = 200, content_type: str = "application/json") -> None:
         self.send_response(status_code)
         origin = self.headers.get("Origin", "") if hasattr(self, "headers") and self.headers else ""
-        allowed_prefixes = ("http://localhost", "http://127.0.0.1", "http://[::1]")
-        if any(origin.startswith(p) for p in allowed_prefixes):
-            self.send_header("Access-Control-Allow-Origin", origin)
-        else:
-            self.send_header("Access-Control-Allow-Origin", "http://localhost:5173")
+        allowed_origin = "http://localhost:5173"
+        if origin:
+            try:
+                parsed_origin = urlparse(origin)
+                # Check exact hostname to prevent subdomain bypasses like http://localhost.attacker.com
+                if parsed_origin.scheme in ("http", "https") and parsed_origin.hostname in ("localhost", "127.0.0.1", "::1", "[::1]"):
+                    allowed_origin = origin
+            except Exception:
+                pass
+        self.send_header("Access-Control-Allow-Origin", allowed_origin)
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("Content-Type", content_type)
@@ -172,6 +177,17 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(data).encode("utf-8"))
             print(f"[{now}] [Sentry Audit API] GET /api/audit (base={base}) -> 200 OK")
 
+        elif path in ("/api/tools", "/api/tools/list"):
+            resp = mcp.handle_request({
+                "jsonrpc": "2.0",
+                "id": "http-bridge-get",
+                "method": "tools/list",
+                "params": {},
+            })
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+            print(f"[{now}] [MCP Tools List] GET {path} -> 200 OK")
+
         else:
             self._set_cors_headers(404)
             self.wfile.write(json.dumps({"error": f"Endpoint '{path}' not found"}).encode("utf-8"))
@@ -196,18 +212,25 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
 
         mcp = self.server_instance or SpecsynthMCPServer()
 
-        if path == "/api/tools/call":
-            tool_name = data.get("name")
-            tool_args = data.get("arguments", {})
-            resp = mcp.handle_request({
-                "jsonrpc": "2.0",
-                "id": "http-bridge",
-                "method": "tools/call",
-                "params": {"name": tool_name, "arguments": tool_args},
-            })
+        if path in ("/api/tools/call", "/api/tools"):
+            if "method" in data:
+                # Direct JSON-RPC dispatch (initialize, tools/list, tools/call)
+                resp = mcp.handle_request(data)
+                method_name = data.get("method")
+            else:
+                # Legacy REST format: { "name": ..., "arguments": ... }
+                tool_name = data.get("name")
+                tool_args = data.get("arguments", {})
+                resp = mcp.handle_request({
+                    "jsonrpc": "2.0",
+                    "id": "http-bridge",
+                    "method": "tools/call",
+                    "params": {"name": tool_name, "arguments": tool_args},
+                })
+                method_name = f"tools/call ({tool_name})"
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(resp).encode("utf-8"))
-            print(f"[{now}] [MCP Tool Dispatch] POST /api/tools/call -> tool: '{tool_name}' -> 200 OK")
+            print(f"[{now}] [MCP Tool Dispatch] POST {path} -> {method_name} -> 200 OK")
 
         else:
             self._set_cors_headers(404)

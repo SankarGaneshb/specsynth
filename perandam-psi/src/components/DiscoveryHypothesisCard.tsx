@@ -39,6 +39,15 @@ export const DiscoveryHypothesisCard: React.FC<DiscoveryHypothesisCardProps> = (
         </button>
       </div>
 
+      {/* Illustrative Synthetic Exploration Banner */}
+      <div className="bg-amber-950/40 border border-amber-600/50 rounded-lg px-2.5 py-1 text-[10.5px] text-amber-300 font-medium flex items-center justify-between">
+        <span className="flex items-center space-x-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          <span>Illustrative Synthetic Exploration Scenario</span>
+        </span>
+        <span className="text-[10px] text-amber-400/80 font-mono">Not an observed astronomical source</span>
+      </div>
+
       {/* Multidimensional Statistical Grounding Banner (Issue #6 Adjustment 4) */}
       <div className="bg-cosmos-950/90 rounded-lg p-2.5 border border-purple-900/60 space-y-1 font-mono text-[11px]" title="Descriptive Mahalanobis distance relative to 6D sample covariance matrix; measures photometric outlier distance, not a calibrated discovery probability.">
         <div className="flex items-center justify-between text-purple-300">

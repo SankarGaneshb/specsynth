@@ -215,6 +215,14 @@ print("✓ In-browser and Python numerical parity verified.")
         <div className="flex items-center space-x-2.5 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse flex-shrink-0" />
           <h2 className="text-base font-bold text-slate-100 font-mono tracking-tight">{galaxy.id}</h2>
+          {galaxy.is_synthetic_scenario && (
+            <span
+              className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-600/70 shadow-sm"
+              title="Illustrative synthetic exploration scenario (Not an observed astronomical source)"
+            >
+              <span>Synthetic Scenario</span>
+            </span>
+          )}
           {galaxy.discovery_profile ? (
             <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950/80 text-purple-300 border border-purple-600/70 shadow-sm">
               <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />

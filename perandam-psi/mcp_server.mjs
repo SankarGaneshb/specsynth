@@ -38,8 +38,8 @@ function loadManifests() {
   }
 }
 
-// FlatLambdaCDM distance calculations
-function calculateCosmology(z, H0 = 70.0, Om0 = 0.3) {
+// FlatLambdaCDM distance calculations (Default: Planck 2015 H0=67.74, Om0=0.3089)
+function calculateCosmology(z, H0 = 67.74, Om0 = 0.3089) {
   const c = 299792.458; // km/s
   const Ol0 = 1.0 - Om0;
   
@@ -62,6 +62,7 @@ function calculateCosmology(z, H0 = 70.0, Om0 = 0.3) {
     redshift: z,
     H0,
     Om0,
+    calculation_method: 'Numerical Integration (Gauss-Legendre / Trapezoidal)',
     comoving_distance_mpc: Number(D_C.toFixed(2)),
     luminosity_distance_mpc: Number(D_L.toFixed(2)),
     angular_diameter_distance_mpc: Number(D_A.toFixed(2)),
@@ -144,6 +145,32 @@ export const PSI_MCP_TOOLS = {
 
       if (!galaxy) return { error: 'Galaxy not found' };
 
+      const NIRCAM_PIVOTS = {
+        jwst_f090w: 9020.0,
+        jwst_f150w: 15010.0,
+        jwst_f200w: 19890.0,
+        jwst_f277w: 27620.0,
+        jwst_f356w: 35680.0,
+        jwst_f444w: 44040.0,
+      };
+      const C_ANG_S = 2.99792458e18;
+      const fluxes_uJy = {};
+      const fluxes_cgs = galaxy.fluxes || {};
+      for (const [band, f_lam] of Object.entries(fluxes_cgs)) {
+        const pivot = NIRCAM_PIVOTS[band] || 20000.0;
+        let uJy = 0;
+        const mag = galaxy.mags ? galaxy.mags[band] : undefined;
+        if (typeof mag === 'number' && mag > 0 && mag < 90.0) {
+          // Exact AB magnitude to microJanskys: f_nu [uJy] = 3.631e9 * 10^(-m / 2.5)
+          uJy = Number((3.631e9 * Math.pow(10, -mag / 2.5)).toFixed(4));
+        } else {
+          // Direct F_lambda to f_nu conversion: f_nu = f_lam * lambda_pivot^2 / c [erg/s/cm2/Hz]
+          const f_nu = (Number(f_lam) * (pivot ** 2)) / C_ANG_S;
+          uJy = Number((f_nu * 1e29).toFixed(4));
+        }
+        fluxes_uJy[band] = uJy;
+      }
+
       return {
         id: galaxy.id,
         redshift: galaxy.redshift,
@@ -155,7 +182,8 @@ export const PSI_MCP_TOOLS = {
         sentry_status: galaxy.sentry_status,
         apparent_mag: galaxy.apparent_mag,
         mags: galaxy.mags,
-        fluxes_uJy: galaxy.fluxes,
+        fluxes_cgs: fluxes_cgs,
+        fluxes_uJy: fluxes_uJy,
         has_discovery_profile: Boolean(galaxy.discovery_profile),
         sed_points_count: galaxy.sed ? galaxy.sed.length : 0,
       };
@@ -169,8 +197,8 @@ export const PSI_MCP_TOOLS = {
       type: 'object',
       properties: {
         redshift: { type: 'number', description: 'Cosmological redshift z (e.g. 2.5)' },
-        h0: { type: 'number', default: 70.0, description: 'Hubble parameter in km/s/Mpc' },
-        omega_m: { type: 'number', default: 0.3, description: 'Matter density parameter' },
+        h0: { type: 'number', default: 67.74, description: 'Hubble parameter in km/s/Mpc (Planck 2015/2018)' },
+        omega_m: { type: 'number', default: 0.3089, description: 'Matter density parameter (Planck 2015/2018)' },
       },
       required: ['redshift'],
     },
@@ -185,8 +213,8 @@ export const PSI_MCP_TOOLS = {
       if (isNaN(z) || z <= 0) {
         return { error: 'Redshift z must be a positive number' };
       }
-      const H0 = args?.h0 ? Number(args.h0) : 70.0;
-      const Om0 = args?.omega_m ? Number(args.omega_m) : 0.3;
+      const H0 = args?.h0 ? Number(args.h0) : 67.74;
+      const Om0 = args?.omega_m ? Number(args.omega_m) : 0.3089;
       return calculateCosmology(z, H0, Om0);
     },
   },
@@ -248,6 +276,11 @@ export const PSI_MCP_TOOLS = {
     handler: async (args) => {
       const host = args?.host || 'http://127.0.0.1:8000';
       try {
+        const parsed = new URL(host);
+        const allowedHosts = ['localhost', '127.0.0.1', '::1', '[::1]'];
+        if (!allowedHosts.includes(parsed.hostname)) {
+          return { error: `Restricted host '${parsed.hostname}'. Bridge status check is restricted to local loopback addresses.` };
+        }
         const res = await fetch(`${host}/api/health`);
         if (res.ok) {
           const body = await res.json();

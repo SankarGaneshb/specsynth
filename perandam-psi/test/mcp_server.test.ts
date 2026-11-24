@@ -116,7 +116,10 @@ test('MCP Server: Tool Call psi_inspect_galaxy', async () => {
   assert.ok(data.redshift > 0);
   assert.ok(data.log_mstar >= 6);
   assert.ok(data.mags);
+  assert.ok(data.fluxes_cgs);
   assert.ok(data.fluxes_uJy);
+  assert.ok(typeof data.fluxes_uJy.jwst_f200w === 'number');
+  assert.ok(data.fluxes_uJy.jwst_f200w > 0);
 });
 
 test('MCP Server: Tool Call psi_calculate_cosmology', async () => {
@@ -127,13 +130,16 @@ test('MCP Server: Tool Call psi_calculate_cosmology', async () => {
     method: 'tools/call',
     params: {
       name: 'psi_calculate_cosmology',
-      arguments: { redshift: 2.0, h0: 70.0, omega_m: 0.3 },
+      arguments: { redshift: 2.0 },
     },
   };
   const resp = await server.handleRequest(req);
   assert.strictEqual(resp.id, 5);
   const data = JSON.parse(resp.result.content[0].text);
   assert.strictEqual(data.redshift, 2.0);
+  assert.strictEqual(data.H0, 67.74);
+  assert.strictEqual(data.Om0, 0.3089);
+  assert.strictEqual(data.calculation_method, 'Numerical Integration (Gauss-Legendre / Trapezoidal)');
   assert.ok(data.luminosity_distance_mpc > 10000);
   assert.ok(data.distance_modulus > 40);
 });
@@ -173,6 +179,23 @@ test('MCP Server: Negative Unknown Tool Handling', async () => {
   assert.strictEqual(resp.error.code, -32601);
   assert.ok(resp.error.message.includes('Unknown tool: non_existent_tool'));
   assert.ok(resp.result.content[0].text.includes('Unknown tool'));
+});
+
+test('MCP Server: Tool Call psi_check_bridge_status Rejects External Hosts', async () => {
+  const server = new PerandamMCPServer();
+  const req = {
+    jsonrpc: '2.0',
+    id: 9,
+    method: 'tools/call',
+    params: {
+      name: 'psi_check_bridge_status',
+      arguments: { host: 'http://evil-attacker.com:8000' },
+    },
+  };
+  const resp = await server.handleRequest(req);
+  assert.strictEqual(resp.id, 9);
+  const data = JSON.parse(resp.result.content[0].text);
+  assert.ok(data.error.includes('Restricted host'));
 });
 
 test('MCP Server: Negative Unknown Method Handling', async () => {

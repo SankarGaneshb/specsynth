@@ -25,32 +25,46 @@ def generate_genuine_fsps_grid(output_path: str | Path, z_list: list[float] | No
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    # Initialize FSPS: zcontinuous=1 allows continuous metallicity interpolation
     sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, sfh=0, imf_type=1)
+
+    # Verify MIST isochrones and Chabrier IMF
+    isochrone_lib = getattr(sp, "libraries", ["mist"])[0] if hasattr(sp, "libraries") else "mist"
+    if "mist" not in str(isochrone_lib).lower():
+        print(f"Warning: Isochrone library is '{isochrone_lib}' (expected MIST)")
+
     ages = np.logspace(6.0, np.log10(1.35e10), 30)
     metallicities = z_list or [0.0002, 0.002, 0.008, 0.02, 0.03]
-
     wave = sp.wavelengths
-    # Build 2D/3D table
+
+    # Build genuine multi-metallicity spectra: shape (N_met * N_age, N_wave)
+    all_spectra = []
+    for z in metallicities:
+        # Solar metallicity Z_sun = 0.019 (MIST standard)
+        sp.params["logzsol"] = np.log10(z / 0.019)
+        for a in ages:
+            _, flux = sp.get_spectrum(tage=a / 1e9, peraa=True)
+            all_spectra.append(flux)
+
+    all_spectra_arr = np.asarray(all_spectra, dtype=np.float64)
+
     lines = [
         f"# FSPS v3.2 Genuine Reference Grid (MIST isochrones, Chabrier IMF)",
         f"# Model: FSPS",
         f"# is_genuine_fsps: True",
+        f"# isochrone_library: {isochrone_lib}",
+        f"# imf_type: chabrier (1)",
         f"# N_WAVE={len(wave)}, N_AGE={len(ages)}, N_MET={len(metallicities)}",
-        f"# Ages (yr): " + ", ".join(f"{a:.2e}" for a in ages),
-        f"# Metallicities: " + ", ".join(f"{z:.4f}" for z in metallicities),
+        f"# Ages (yr): " + ", ".join(f"{a:.4e}" for a in ages),
+        f"# Metallicities: " + ", ".join(f"{z:.6f}" for z in metallicities),
         f"# Units: L_sun / A per formed M_sun",
     ]
-    # For compatibility with standard 2D spec format: wave, then fluxes for each age (at solar metallicity or first met)
-    sp.params["zmet"] = 4  # solar
-    fluxes_solar = np.empty((len(ages), len(wave)), dtype=np.float64)
-    for i, a in enumerate(ages):
-        _, flux = sp.get_spectrum(tage=a / 1e9, peraa=True)
-        fluxes_solar[i] = flux
 
-    table_data = np.column_stack([wave, fluxes_solar.T])
+    # Column 0 = wavelength, Columns 1..N = spectra for all (met, age) combinations
+    table_data = np.column_stack([wave, all_spectra_arr.T])
     header = "\n".join(lines)
     np.savetxt(out, table_data, fmt="%.8e", header=header)
-    print(f"Successfully generated genuine FSPS grid: {out} ({len(wave)} wave x {len(ages)} ages)")
+    print(f"Successfully generated genuine multi-metallicity FSPS grid: {out} ({len(wave)} wave x {len(ages)} ages x {len(metallicities)} mets)")
 
 
 def generate_analytical_reference_grid(output_path: str | Path) -> None:

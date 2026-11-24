@@ -8,26 +8,64 @@ import numpy as np
 from specsynth.adapters.base import BaseAdapter, SSPData
 
 
-def parse_fsps_spec_file(filepath: str | Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def parse_fsps_spec_file(
+    filepath: str | Path,
+    return_mets: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray] | tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Parse a standard Fortran FSPS ASCII spectrum output file (e.g. spstot_*.spec).
-    Format:
-      Line 1: # N_WAVE, N_AGE
-      Line 2..N_WAVE: wavelengths
-      Followed by blocks of (log_age, spectra)
+    Parse a standard Fortran or SpecSynth FSPS ASCII spectrum output file.
+    Extracts explicit age and metallicity metadata from file headers if present.
     """
     filepath = Path(filepath)
-    with open(filepath, "r") as f:
-        lines = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+    parsed_ages = None
+    parsed_mets = None
+
+    try:
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                if not line.startswith("#"):
+                    break
+                line_str = line.lstrip("#").strip()
+                line_lower = line_str.lower()
+                if (
+                    line_lower.startswith("ages (yr):")
+                    or line_lower.startswith("ages_yr:")
+                    or line_lower.startswith("ages:")
+                ):
+                    parts = line_str.split(":", 1)[1].replace(",", " ").split()
+                    try:
+                        parsed_ages = np.array([float(x) for x in parts], dtype=np.float64)
+                    except Exception:
+                        pass
+                elif line_lower.startswith("metallicities:") or line_lower.startswith("mets:"):
+                    parts = line_str.split(":", 1)[1].replace(",", " ").split()
+                    try:
+                        parsed_mets = np.array([float(x) for x in parts], dtype=np.float64)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
 
     # If whitespace-separated grid
     data = np.loadtxt(filepath, comments="#")
     if data.ndim == 2:
-        # Standard table: col 0 = wave, cols 1..N = flux per age
+        # Standard table: col 0 = wave, cols 1..N = flux per age/met
         wave = data[:, 0].astype(np.float64)
         fluxes = data[:, 1:].T.astype(np.float32)
-        n_age = fluxes.shape[0]
-        ages = np.logspace(6.0, np.log10(1.35e10), n_age)
+        n_cols = fluxes.shape[0]
+
+        if parsed_ages is not None and len(parsed_ages) > 0:
+            ages = parsed_ages
+        else:
+            ages = np.logspace(6.0, np.log10(1.35e10), n_cols)
+
+        if parsed_mets is not None and len(parsed_mets) > 0:
+            mets = parsed_mets
+        else:
+            mets = np.array([0.019], dtype=np.float64)
+
+        if return_mets:
+            return ages, wave, fluxes, mets
         return ages, wave, fluxes
     else:
         raise ValueError(f"Unable to automatically parse FSPS table format in {filepath}")
@@ -87,7 +125,7 @@ class FSPSAdapter(BaseAdapter):
     def load(self) -> SSPData:
         # File mode
         if self.filepath:
-            ages, wave, fluxes = parse_fsps_spec_file(self.filepath)
+            ages, wave, fluxes, mets = parse_fsps_spec_file(self.filepath, return_mets=True)
             is_analytical = False
             try:
                 with open(self.filepath, "r", encoding="utf-8") as f:
@@ -104,11 +142,22 @@ class FSPSAdapter(BaseAdapter):
             }
             if is_analytical:
                 meta["note"] = "SpecSynth analytical reference grid (continuum & break proxy; python-fsps not used)"
+
+            n_age = len(ages)
+            n_met = len(mets)
+            if fluxes.shape[0] == n_age * n_met and n_met > 1:
+                # Multi-metallicity grid: reshape to (N_age, N_met, N_wave)
+                grid_3d = fluxes.reshape(n_met, n_age, len(wave)).transpose(1, 0, 2)
+            else:
+                grid_3d = fluxes[:, None, :]
+                if n_met == 1 and self.metallicity:
+                    mets = np.array([self.metallicity])
+
             return SSPData.from_3d_grid(
                 ages=ages,
-                mets=np.array([self.metallicity]),
+                mets=mets,
                 wave=wave,
-                grid_3d=fluxes[:, None, :],
+                grid_3d=grid_3d,
                 metadata=meta,
             )
 
@@ -119,7 +168,7 @@ class FSPSAdapter(BaseAdapter):
             if self.fallback_to_bundled:
                 default_file = find_default_fsps_grid()
                 if default_file:
-                    ages, wave, fluxes = parse_fsps_spec_file(default_file)
+                    ages, wave, fluxes, mets = parse_fsps_spec_file(default_file, return_mets=True)
                     is_analytical = False
                     try:
                         with open(default_file, "r", encoding="utf-8") as f:
@@ -137,7 +186,7 @@ class FSPSAdapter(BaseAdapter):
                     }
                     return SSPData.from_3d_grid(
                         ages=ages,
-                        mets=np.array([self.metallicity]),
+                        mets=mets,
                         wave=wave,
                         grid_3d=fluxes[:, None, :],
                         metadata=meta,
