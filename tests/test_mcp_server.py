@@ -1,9 +1,11 @@
 """
 Unit and integration tests for specsynth.mcp: Model Context Protocol Server and HTTP Bridge.
+Covers stdio JSON-RPC 2.0 handshake, tool enumeration, M8ven safety annotations, and tool calls.
 """
 
 from __future__ import annotations
 
+import io
 import json
 import threading
 import time
@@ -13,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from specsynth.mcp.bridge import BridgeHTTPHandler
-from specsynth.mcp.server import SpecsynthMCPServer
+from specsynth.mcp.server import SpecsynthMCPServer, _run_fallback_jsonrpc
 
 
 def test_mcp_server_initialize() -> None:
@@ -47,7 +49,83 @@ def test_mcp_server_tools_list() -> None:
     assert "sps_list_filters" in tool_names
     assert "sps_inspect_galaxy" in tool_names
     assert "sps_run_sentry_audit" in tool_names
+    assert "sps_remediate_catalog" in tool_names
     assert "sps_load_tng_demo" in tool_names
+    assert "sps_get_system_info" in tool_names
+
+    for tool in tools:
+        assert "annotations" in tool
+        ann = tool["annotations"]
+        for flag in ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"):
+            assert flag in ann
+            assert isinstance(ann[flag], bool)
+
+
+def test_mcp_fallback_jsonrpc_list_and_call() -> None:
+    """
+    Stdio JSON-RPC 2.0 handshake, tool enumeration, annotation structure, and tool invocation.
+    Simulates IDE agent interactions (Cursor, Antigravity, Claude Desktop) through stdio streams.
+    """
+    reqs = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "sps_list_filters", "arguments": {"instrument": "jwst_nircam"}},
+        },
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {"name": "sps_get_system_info", "arguments": {}},
+        },
+    ]
+
+    input_text = "\n".join(json.dumps(r) for r in reqs) + "\n"
+    stdin_stream = io.StringIO(input_text)
+    stdout_stream = io.StringIO()
+
+    _run_fallback_jsonrpc(stdin=stdin_stream, stdout=stdout_stream)
+
+    lines = [ln.strip() for ln in stdout_stream.getvalue().splitlines() if ln.strip()]
+    # Handshake + tools/list + 2 calls = 4 responses (notification has no response)
+    assert len(lines) == 4
+
+    responses = [json.loads(line) for line in lines]
+
+    # 1. Initialize response
+    r1 = responses[0]
+    assert r1["id"] == 1
+    assert r1["result"]["serverInfo"]["name"] == "specsynth-mcp"
+
+    # 2. Tools list response
+    r2 = responses[1]
+    assert r2["id"] == 2
+    tools = r2["result"]["tools"]
+    assert len(tools) >= 6
+    for t in tools:
+        ann = t["annotations"]
+        assert isinstance(ann["readOnlyHint"], bool)
+        assert isinstance(ann["destructiveHint"], bool)
+        assert isinstance(ann["idempotentHint"], bool)
+        assert isinstance(ann["openWorldHint"], bool)
+
+    # 3. Tool call sps_list_filters
+    r3 = responses[2]
+    assert r3["id"] == 3
+    assert r3["result"]["content"][0]["type"] == "text"
+    filters_data = json.loads(r3["result"]["content"][0]["text"])
+    assert filters_data["filter_set"] == "jwst_nircam"
+
+    # 4. Tool call sps_get_system_info
+    r4 = responses[3]
+    assert r4["id"] == 4
+    assert r4["result"]["content"][0]["type"] == "text"
+    sys_data = json.loads(r4["result"]["content"][0]["text"])
+    assert "cpu_logical_cores" in sys_data or "os" in sys_data or "python_version" in sys_data
 
 
 def test_mcp_server_tool_call_list_filters() -> None:
@@ -99,6 +177,7 @@ def test_mcp_server_unknown_tool() -> None:
     resp = server.handle_request(req)
     assert "error" in resp
     assert resp["error"]["code"] == -32601
+    assert "Unknown tool" in resp["error"]["message"]
 
 
 def test_http_bridge_live_endpoints() -> None:

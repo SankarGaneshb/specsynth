@@ -1,6 +1,10 @@
 """
 Standard JSON-RPC 2.0 Model Context Protocol (MCP) Server for SpecSynth.
 Enables AI agents (Claude, Cursor, Antigravity) to query and drive SPS simulations.
+
+Dual-mode architecture:
+- High-level FastMCP server with M8ven Trust Index safety annotations when `mcp` is installed.
+- Zero-dependency stdio JSON-RPC 2.0 fallback server (_run_fallback_jsonrpc).
 """
 
 from __future__ import annotations
@@ -9,7 +13,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, TextIO
 
 from specsynth.filters import FILTER_SETS, STANDARD_FILTER_SPECS, get_filter
 from specsynth.tools import (
@@ -21,6 +25,47 @@ from specsynth.tools import (
 )
 
 logger = logging.getLogger("specsynth.mcp")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Standard M8ven Safety Risk Annotations
+MCP_TOOL_ANNOTATIONS: Dict[str, Dict[str, bool]] = {
+    "sps_list_filters": {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+    "sps_inspect_galaxy": {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+    "sps_run_sentry_audit": {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+    "sps_remediate_catalog": {
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False,
+        "openWorldHint": False,
+    },
+    "sps_load_tng_demo": {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+    "sps_get_system_info": {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+}
 
 
 class SpecsynthMCPServer:
@@ -48,6 +93,7 @@ class SpecsynthMCPServer:
                         }
                     },
                 },
+                "annotations": MCP_TOOL_ANNOTATIONS["sps_list_filters"],
                 "handler": self._tool_list_filters,
             },
             "sps_inspect_galaxy": {
@@ -61,6 +107,7 @@ class SpecsynthMCPServer:
                     },
                     "required": ["galaxy_idx"],
                 },
+                "annotations": MCP_TOOL_ANNOTATIONS["sps_inspect_galaxy"],
                 "handler": self._tool_inspect_galaxy,
             },
             "sps_run_sentry_audit": {
@@ -73,6 +120,7 @@ class SpecsynthMCPServer:
                         "sample_size": {"type": "integer", "description": "Number of galaxies to audit (default: 10,000)", "default": 10000},
                     },
                 },
+                "annotations": MCP_TOOL_ANNOTATIONS["sps_run_sentry_audit"],
                 "handler": self._tool_run_sentry_audit,
             },
             "sps_remediate_catalog": {
@@ -85,6 +133,7 @@ class SpecsynthMCPServer:
                         "output_csv": {"type": "string", "description": "Output path for the clean catalog CSV", "default": "clean_catalog.csv"},
                     },
                 },
+                "annotations": MCP_TOOL_ANNOTATIONS["sps_remediate_catalog"],
                 "handler": self._tool_remediate_catalog,
             },
             "sps_load_tng_demo": {
@@ -96,12 +145,14 @@ class SpecsynthMCPServer:
                         "limit": {"type": "integer", "description": "Maximum sample galaxies to return (default: 5)", "default": 5},
                     },
                 },
+                "annotations": MCP_TOOL_ANNOTATIONS["sps_load_tng_demo"],
                 "handler": self._tool_load_tng_demo,
             },
             "sps_get_system_info": {
                 "name": "sps_get_system_info",
                 "description": "Get current host hardware info, CPU threads, RAM, and GPU/BLAS capabilities.",
                 "inputSchema": {"type": "object", "properties": {}},
+                "annotations": MCP_TOOL_ANNOTATIONS["sps_get_system_info"],
                 "handler": self._tool_get_system_info,
             },
         }
@@ -140,17 +191,17 @@ class SpecsynthMCPServer:
         return {"available_filter_sets": out}
 
     def _tool_inspect_galaxy(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        base = args.get("base", "./run")
+        base = args.get("base") or str(REPO_ROOT / "run")
         idx = int(args.get("galaxy_idx", 0))
         return tool_inspect_galaxy(base=base, galaxy_idx=idx)
 
     def _tool_run_sentry_audit(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        base = args.get("base", "./run")
+        base = args.get("base") or str(REPO_ROOT / "run")
         size = int(args.get("sample_size", 10000))
         return tool_run_sentry_audit(base=base, sample_size=size)
 
     def _tool_remediate_catalog(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        base = args.get("base", "./run")
+        base = args.get("base") or str(REPO_ROOT / "run")
         out_csv = args.get("output_csv", "clean_catalog.csv")
         return tool_clean_catalog(base=base, output_path=out_csv)
 
@@ -158,7 +209,9 @@ class SpecsynthMCPServer:
         return tool_get_system_info()
 
     def _tool_load_tng_demo(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        tng_path = Path("data/examples/tng_sample/sample_catalog.parquet")
+        tng_path = REPO_ROOT / "data" / "examples" / "tng_sample" / "sample_catalog.parquet"
+        if not tng_path.exists():
+            tng_path = Path("data/examples/tng_sample/sample_catalog.parquet")
         if not tng_path.exists():
             return {"error": f"TNG sample catalog not found at {tng_path}"}
         
@@ -175,7 +228,9 @@ class SpecsynthMCPServer:
                 row = {c: pydict[c][i] for c in cols if not isinstance(pydict[c][i], (list, tuple)) or len(pydict[c][i]) < 10}
                 sample_data.append(row)
 
-            manifest_path = Path("paper/benchmark_manifest_tng_jwst.json")
+            manifest_path = REPO_ROOT / "paper" / "benchmark_manifest_tng_jwst.json"
+            if not manifest_path.exists():
+                manifest_path = Path("paper/benchmark_manifest_tng_jwst.json")
             validation_status = "VERIFIED_FSPS_NIRCAM" if manifest_path.exists() else "AVAILABLE"
 
             return {
@@ -214,6 +269,7 @@ class SpecsynthMCPServer:
                     "name": t["name"],
                     "description": t["description"],
                     "inputSchema": t["inputSchema"],
+                    "annotations": t.get("annotations", {}),
                 }
                 for t in self.tools.values()
             ]
@@ -226,7 +282,11 @@ class SpecsynthMCPServer:
                 return {
                     "jsonrpc": "2.0",
                     "id": msg_id,
-                    "error": {"code": -32601, "message": f"Tool '{name}' not found"},
+                    "error": {"code": -32601, "message": f"Unknown tool: {name}"},
+                    "result": {
+                        "content": [{"type": "text", "text": f"Unknown tool: {name}"}],
+                        "isError": True,
+                    },
                 }
 
             try:
@@ -243,6 +303,10 @@ class SpecsynthMCPServer:
                     "jsonrpc": "2.0",
                     "id": msg_id,
                     "error": {"code": -32000, "message": str(exc)},
+                    "result": {
+                        "content": [{"type": "text", "text": f"Error executing tool {name}: {str(exc)}"}],
+                        "isError": True,
+                    },
                 }
 
         else:
@@ -252,9 +316,12 @@ class SpecsynthMCPServer:
                 "error": {"code": -32601, "message": f"Method '{method}' not found"},
             }
 
-    def run_stdio(self) -> None:
+    def run_stdio(self, stdin: Optional[TextIO] = None, stdout: Optional[TextIO] = None) -> None:
         """Run the MCP server listening on stdin, responding to stdout."""
-        for line in sys.stdin:
+        in_stream = stdin if stdin is not None else sys.stdin
+        out_stream = stdout if stdout is not None else sys.stdout
+
+        for line in in_stream:
             line = line.strip()
             if not line:
                 continue
@@ -262,21 +329,81 @@ class SpecsynthMCPServer:
                 req = json.loads(line)
                 resp = self.handle_request(req)
                 if resp:
-                    sys.stdout.write(json.dumps(resp) + "\n")
-                    sys.stdout.flush()
+                    out_stream.write(json.dumps(resp) + "\n")
+                    out_stream.flush()
             except json.JSONDecodeError:
                 err_resp = {
                     "jsonrpc": "2.0",
                     "id": None,
                     "error": {"code": -32700, "message": "Parse error"},
                 }
-                sys.stdout.write(json.dumps(err_resp) + "\n")
-                sys.stdout.flush()
+                out_stream.write(json.dumps(err_resp) + "\n")
+                out_stream.flush()
+
+
+def _run_fallback_jsonrpc(stdin: Optional[TextIO] = None, stdout: Optional[TextIO] = None) -> None:
+    """Lightweight zero-dependency JSON-RPC stdio fallback loop."""
+    server = SpecsynthMCPServer()
+    server.run_stdio(stdin=stdin, stdout=stdout)
+
+
+def create_fastmcp_server():
+    """Create and configure a FastMCP server instance with M8ven safety annotations."""
+    from mcp.server.fastmcp import FastMCP
+    from mcp.types import ToolAnnotations
+
+    mcp = FastMCP("specsynth-mcp")
+    server = SpecsynthMCPServer()
+
+    for name, tool_info in server.tools.items():
+        ann = tool_info.get("annotations", {})
+        annotations = ToolAnnotations(
+            readOnlyHint=ann.get("readOnlyHint", True),
+            destructiveHint=ann.get("destructiveHint", False),
+            idempotentHint=ann.get("idempotentHint", True),
+            openWorldHint=ann.get("openWorldHint", False),
+        )
+
+        handler = tool_info["handler"]
+
+        def _make_tool_fn(h=handler):
+            def tool_fn(**kwargs):
+                res = h(kwargs)
+                return json.dumps(res, indent=2, default=str)
+            return tool_fn
+
+        fn = _make_tool_fn()
+        fn.__name__ = name
+        fn.__doc__ = tool_info["description"]
+        mcp.tool(name=name, description=tool_info["description"], annotations=annotations)(fn)
+
+    return mcp
+
+
+def run_mcp_server(mode: str = "auto", stdin: Optional[TextIO] = None, stdout: Optional[TextIO] = None) -> None:
+    """
+    Launch SpecSynth MCP Server in FastMCP or zero-dependency fallback mode.
+    
+    Modes:
+      - 'auto': Attempts FastMCP; falls back to _run_fallback_jsonrpc() if mcp is unavailable.
+      - 'fastmcp': Requires FastMCP library.
+      - 'fallback': Direct zero-dependency stdio JSON-RPC.
+    """
+    if mode in ("auto", "fastmcp"):
+        try:
+            mcp = create_fastmcp_server()
+            mcp.run()
+            return
+        except (ImportError, Exception) as exc:
+            if mode == "fastmcp":
+                raise
+            logger.debug("FastMCP unavailable (%s), running zero-dependency fallback", exc)
+
+    _run_fallback_jsonrpc(stdin=stdin, stdout=stdout)
 
 
 def main() -> None:
-    server = SpecsynthMCPServer()
-    server.run_stdio()
+    run_mcp_server(mode="auto")
 
 
 if __name__ == "__main__":

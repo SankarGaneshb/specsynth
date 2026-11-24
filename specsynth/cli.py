@@ -958,6 +958,12 @@ def cmd_sentry_agent(a, client: Client | None = None):
         sys.exit(0)
 
 
+def cmd_mcp(a, client: Client | None = None):
+    from specsynth.mcp.server import run_mcp_server
+    mode = getattr(a, "mode", "auto")
+    run_mcp_server(mode=mode)
+
+
 # --------------------------------------------------------------------------
 # CLI Parser
 # --------------------------------------------------------------------------
@@ -1109,6 +1115,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--max-anomaly-rate", type=float, default=0.001, help="Max acceptable anomaly rate before CRITICAL_REJECTED (default: 0.001)")
     s.set_defaults(fn=cmd_sentry_agent)
 
+    # mcp
+    s = sub.add_parser("mcp", help="Launch Model Context Protocol (MCP) JSON-RPC 2.0 stdio server for AI agents")
+    s.add_argument(
+        "--mode",
+        choices=["auto", "fastmcp", "fallback"],
+        default="auto",
+        help="MCP server implementation mode: 'auto' (FastMCP if installed, fallback otherwise), 'fastmcp', or 'fallback'",
+    )
+    s.set_defaults(fn=cmd_mcp)
+
     # synth and verify
     for name, fn in (("synth", cmd_synth), ("verify", cmd_verify)):
         s = sub.add_parser(name)
@@ -1173,8 +1189,8 @@ def main():
     ap = build_parser()
     a = ap.parse_args()
 
-    # For benchmark, sentry, clean-catalog, and sentry-agent commands, run directly on host without spawning distributed cluster
-    if a.cmd in ("benchmark", "sentry", "clean-catalog", "sentry-agent"):
+    # For benchmark, sentry, clean-catalog, sentry-agent, and mcp commands, run directly on host without spawning distributed cluster
+    if a.cmd in ("benchmark", "sentry", "clean-catalog", "sentry-agent", "mcp"):
         a.fn(a, None)
         return
 
