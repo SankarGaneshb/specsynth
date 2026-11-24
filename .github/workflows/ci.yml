@@ -41,3 +41,29 @@ jobs:
       with:
         files: ./coverage.xml
         fail_ci_if_error: false
+
+  frontend:
+    name: Frontend Test & Build (PerandamΨ)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: 'npm'
+        cache-dependency-path: perandam-psi/package-lock.json
+
+    - name: Install frontend dependencies
+      working-directory: perandam-psi
+      run: npm ci
+
+    - name: Run frontend unit tests
+      working-directory: perandam-psi
+      run: npm test
+
+    - name: Build frontend application
+      working-directory: perandam-psi
+      run: npm run build
