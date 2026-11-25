@@ -345,10 +345,6 @@ export class PerandamMCPServer {
           jsonrpc: '2.0',
           id: msgId,
           error: { code: -32601, message: `Unknown tool: ${name}` },
-          result: {
-            content: [{ type: 'text', text: `Unknown tool: ${name}` }],
-            isError: true,
-          },
         };
       }
 
@@ -366,10 +362,6 @@ export class PerandamMCPServer {
           jsonrpc: '2.0',
           id: msgId,
           error: { code: -32000, message: err.message },
-          result: {
-            content: [{ type: 'text', text: `Tool error: ${err.message}` }],
-            isError: true,
-          },
         };
       }
     }

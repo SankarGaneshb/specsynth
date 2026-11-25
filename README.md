@@ -68,7 +68,7 @@ For researchers evaluating synthetic JWST NIRCam photometry from cosmological si
   ```bash
   python scripts/validate_tng_jwst.py
   ```
-  *Executes all 6 validation stages, validating STScI NIRCam filter checksums, in-flight GEMM synthesis ($1{,}510\,\mathrm{gal/s}$), C09 scientific catalog export, and double-precision stability ($\max \delta F/F = 4.77 \times 10^{-8}$).*
+  *Executes all 6 validation stages, validating STScI NIRCam filter checksums, in-flight GEMM synthesis ($1{,}510.5\,\mathrm{gal/s}$ matrix contraction, $896.6\,\mathrm{gal/s}$ full pipeline), C09 scientific catalog export, and double-precision stability ($\max \delta F/F = 4.77 \times 10^{-8}$).*
 
 ---
 
@@ -173,13 +173,13 @@ $$F_g(\lambda) = D_g(\lambda) \cdot \left[ \sum_{k \in \text{old}} \text{SFH}[g,
 All headline benchmarks below are empirically measured and recorded in machine-readable JSON manifests under [`paper/`](paper/):
 
 - **Numerical Accuracy**: Max relative spectral error `9.87e-7` (RMSE `2.24e-11`) against an independent `float64` reference (`paper/benchmark_manifest.json`).
-- **TNG → JWST NIRCam Scientific Validation**: Max relative error `4.77e-8` (RMSE `5.59e-23`), $0.000\,\mathrm{mag}$ AB zero-point deviation, and $1{,}510.5\,\mathrm{gal/s}$ CPU throughput over the curated 100-galaxy TNG-100 sample (`paper/benchmark_manifest_tng_jwst.json`).
+- **TNG → JWST NIRCam Scientific Validation**: Max relative error `4.77e-8` (RMSE `5.59e-23`), $0.000\,\mathrm{mag}$ AB zero-point deviation, and throughput of $1{,}510.5\,\mathrm{gal/s}$ for in-memory GEMM contraction ($896.6\,\mathrm{gal/s}$ full end-to-end pipeline on multi-core CPU; $446.2\,\mathrm{gal/s}$ single-core laptop) over the curated 100-galaxy TNG-100 sample (`paper/benchmark_manifest_tng_jwst.json`).
 - **Single-Node CPU vs. GPU**: `57,978 gal/s` on a 12-core workstation CPU (`scipy-openblas`). On an NVIDIA Tesla T4 GPU via CuPy, `specsynth` sustains `258,812 gal/s` end-to-end throughput (**4.51x speedup** relative to the paired cloud VM CPU baseline at `57,344 gal/s`, including host-device transfers; `paper/benchmark_manifest_gpu_t4.json`).
 - **Memory Boundedness**: Single-process sequential chunk RSS stays flat at `261.5–261.8 MB` (< 0.2% variance) while streaming 100,000 to 1,000,000 galaxies in 20,000-galaxy chunks.
 - **Multi-Node Kubernetes**: `53,814 gal/s` on a 3-node OCI OKE cluster backed by in-cluster shared NFS (100,000 galaxies in `1.86 s`, max rel. error `8.16e-7`, `paper/benchmark_manifest_oci_oke_3node.json`).
 - **Projected Cluster Scaling**: Analytical scaling models estimate throughput of $> 1.5 \times 10^6\,\mathrm{gal/s}$ across 32 distributed workers ($10^8$ galaxies in $\sim 1.1\,\mathrm{min}$, $\approx \$0.01$ spot compute; clearly distinguished from empirical measurements).
 
-See the full [Validation & Benchmarks Guide](docs/guides/validation-and-benchmarks.md) for reproduction commands and detailed tables.
+See the full [Validation & Benchmarks Guide](docs/guides/validation-and-benchmarks.md) for reproduction commands and detailed tables, and the [Capability Maturity Matrix](docs/architecture/perandam_space_intelligence.md#4-capability-maturity-matrix) for an audit mapping every architectural claim to its verified codebase implementation and automated tests.
 
 ---
 

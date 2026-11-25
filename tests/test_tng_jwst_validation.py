@@ -255,3 +255,15 @@ def test_d08_repeatability_and_determinism():
     run2 = synth_block(sfh, td, tb, ssp, kd, kb, n_young_k=3, use_gpu=False)
 
     assert np.array_equal(run1, run2), "Synthesis must be bitwise deterministic"
+
+
+def test_filter_metadata_sha256_authenticity():
+    """Verify calibrated filters have authentic SHA-256 and no synthetic 'c0ffee...' fallbacks."""
+    for fname in NIRCAM_SIX_FILTERS:
+        flt = get_filter(fname)
+        assert hasattr(flt, "sha256")
+        assert flt.sha256 != "c0ffee1234567890abcdef1234567890c0ffee1234567890abcdef1234567890"
+        if flt.is_calibrated:
+            assert len(flt.sha256) == 64
+            assert all(c in "0123456789abcdef" for c in flt.sha256.lower())
+

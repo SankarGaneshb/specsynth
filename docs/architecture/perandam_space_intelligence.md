@@ -118,3 +118,32 @@ flowchart LR
 1. **Offline Mode (Zero-Install)**: `perandam-psi` packages curated JSON/binary datasets (starting with the validated TNG → JWST NIRCam sample) directly inside the web client.
 2. **Live Engine Mode**: When `python -m specsynth.mcp.bridge --port 8000` is active, the web client seamlessly unlocks live on-the-fly synthesis, custom Zarr imports, and real-time Sentry audits.
 3. **Agent Mode**: AI coding agents connect directly to `specsynth.mcp.server` via stdio, orchestrating simulations via conversational queries.
+
+---
+
+## 4. Capability Maturity Matrix
+
+Every architectural claim and functional module across the SpecSynth and PerandamΨ platform is mapped below to its empirical maturity status, code implementation, and automated test suite:
+
+- **`Validated`**: Fully implemented, verified against analytical or external empirical standards, and strictly gated by automated CI regression tests.
+- **`Implemented`**: Fully operational with unit test coverage and production implementation.
+- **`Prototype`**: Functional proof-of-concept with demonstration dataset support.
+- **`Planned`**: Formally specified roadmap feature slated for future milestone releases.
+
+| Capability / Module | Maturity Status | Operational Scope | Code Location | Verification Suite / Manifests |
+| :--- | :---: | :--- | :--- | :--- |
+| **In-Flight GEMM Matrix Contraction** | `Validated` | Direct contraction of delayed-$\tau$ SFH and SSP into broadband photometry in-flight ($1{,}510.5\,\mathrm{gal/s}$ GEMM, $896.6\,\mathrm{gal/s}$ full pipeline). | `specsynth/core.py` | `tests/test_core.py`, `paper/benchmark_manifest_tng_jwst.json` |
+| **Cosmological Redshift & FLRW Distance** | `Validated` | Flat $\Lambda\text{CDM}$ (Planck 2015) distance dimming $D_L(z)$ and $(1+z)^{-1}$ flux scaling without division singularities. | `specsynth/cosmology.py` | `tests/test_cosmology.py`, `tests/test_tng_jwst_validation.py` |
+| **Cryptographic Filter Verification** | `Validated` | SHA-256 integrity digests for bundled STScI calibrated transmission curves (JWST, HST, SDSS). | `specsynth/filters.py` | `tests/test_filters.py`, `tests/test_tng_jwst_validation.py` |
+| **Charlot & Fall Dust & Madau IGM** | `Validated` | Two-component dust attenuation with physical energy conservation and resonant Ly$\alpha$ / photoelectric Lyman forest absorption. | `specsynth/core.py`, `specsynth/igm.py` | `tests/test_igm.py`, `tests/test_tng_jwst_validation.py` |
+| **Scientific Sentry QA Diagnostics** | `Validated` | 4-tier physics and numerical validation engine (finite fluxes, $D_n4000 \ge 0.7$, population color dispersion, quarantine). | `specsynth/sentry.py` | `tests/test_sentry.py` |
+| **MCP Server & Strict JSON-RPC 2.0** | `Validated` | Model Context Protocol server exposing SPS tools with mutually exclusive `result` XOR `error` schemas and M8ven trust annotations. | `specsynth/mcp/server.py`, `perandam-psi/mcp_server.mjs` | `tests/test_mcp_server.py`, `tests/test_mcp_server_extended.py`, `perandam-psi/test/mcp_server.test.ts` |
+| **Local Secure HTTP Bridge** | `Validated` | Zero-dependency HTTP bridge serving web SPA and REST endpoints with opt-in `--allow-remote` and Bearer token auth. | `specsynth/mcp/bridge.py` | `tests/test_bridge_security.py` |
+| **PSI Space 2D SkyCanvas** | `Implemented` | Fluid 60fps pan/zoom sky view with adaptive celestial grids, dynamic range compression, and true-color filter composition. | `perandam-psi/src/components/SkyCanvas.tsx` | `perandam-psi/test/e2e_loaf.mjs` |
+| **Interactive SED & Slider Forward-Modeling** | `Validated` | Real-time browser-side parameter synthesis ($z, A_V, M_*$) matching Python SpecSynth within $\|\Delta m\| < 0.005\,\mathrm{mag}$. | `perandam-psi/src/components/GalaxyInspector.tsx` | `perandam-psi/test/physics.test.ts`, `verify_tng_galaxy.py` |
+| **E2E & W3C LoAF Performance Monitoring** | `Validated` | Headless Chrome CDP suite monitoring Core Web Vitals (FCP, LCP, CLS) and W3C Long Animation Frames API during slider sweeps. | `perandam-psi/test/e2e_loaf.mjs` | GitHub Actions CI (`.github/workflows/ci.yml`) |
+| **Multi-Node Kubernetes Dask Execution** | `Validated` | Distributed synthesis over 100,000+ galaxies sustaining $53{,}814\,\mathrm{gal/s}$ across Dask Operator nodes with shared NFS. | `k8s/dask-cluster.yaml` | `paper/benchmark_manifest_oci_oke_3node.json` |
+| **Autonomous Remediation Agent** | `Implemented` | SentryAgent isolating catalog corruptions, executing quarantined purges, and producing verified clean catalogs. | `specsynth/agent.py` | `tests/test_agent.py` |
+| **Multi-Survey Catalogs (Roman / Euclid / CosmoDC2)** | `Prototype` | Pre-configured schema adapters and mock lightcone projections for wide-field surveys. | `specsynth/adapters/` | Synthetic demonstration mocks |
+| **IFU Kinematic Spectral Slicing** | `Planned` | Spatial-spectral datacube generation modeling rotational velocity fields and velocity dispersion for JWST NIRSpec IFU. | Roadmap | Architectural Blueprint Phase 5 |
+

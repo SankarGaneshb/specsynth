@@ -178,7 +178,7 @@ test('MCP Server: Negative Unknown Tool Handling', async () => {
   assert.strictEqual(resp.id, 7);
   assert.strictEqual(resp.error.code, -32601);
   assert.ok(resp.error.message.includes('Unknown tool: non_existent_tool'));
-  assert.ok(resp.result.content[0].text.includes('Unknown tool'));
+  assert.strictEqual(resp.result, undefined, 'JSON-RPC response must not contain result when error is present');
 });
 
 test('MCP Server: Tool Call psi_check_bridge_status Rejects External Hosts', async () => {

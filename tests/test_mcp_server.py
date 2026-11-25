@@ -175,7 +175,9 @@ def test_mcp_server_unknown_tool() -> None:
         "params": {"name": "non_existent_tool", "arguments": {}},
     }
     resp = server.handle_request(req)
+    assert ("result" in resp) ^ ("error" in resp)
     assert "error" in resp
+    assert "result" not in resp
     assert resp["error"]["code"] == -32601
     assert "Unknown tool" in resp["error"]["message"]
 

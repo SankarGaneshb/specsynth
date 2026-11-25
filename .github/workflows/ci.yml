@@ -67,3 +67,20 @@ jobs:
     - name: Build frontend application
       working-directory: perandam-psi
       run: npm run build
+
+    - name: Set up Python for Bridge
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: 'pip'
+
+    - name: Install SpecSynth backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[test,astro]"
+
+    - name: Run Headless Browser E2E & LoAF Performance Tests
+      working-directory: perandam-psi
+      env:
+        CHROME_PATH: /usr/bin/google-chrome
+      run: npm run test:e2e

@@ -81,10 +81,66 @@ class CDPClient {
   }
 }
 
+function findPythonBinary(rootDir) {
+  if (process.env.PYTHON_BIN && fs.existsSync(process.env.PYTHON_BIN)) return process.env.PYTHON_BIN;
+  if (process.env.VIRTUAL_ENV) {
+    const venvWin = path.resolve(process.env.VIRTUAL_ENV, 'Scripts/python.exe');
+    const venvNix = path.resolve(process.env.VIRTUAL_ENV, 'bin/python');
+    if (fs.existsSync(venvWin)) return venvWin;
+    if (fs.existsSync(venvNix)) return venvNix;
+  }
+  const candidates = [
+    path.resolve(rootDir, '.venv/Scripts/python.exe'),
+    path.resolve(rootDir, '.venv/bin/python'),
+    path.resolve(rootDir, 'venv/Scripts/python.exe'),
+    path.resolve(rootDir, 'venv/bin/python'),
+    path.resolve(process.cwd(), '.venv/Scripts/python.exe'),
+    path.resolve(process.cwd(), '.venv/bin/python'),
+    path.resolve(process.cwd(), '../.venv/Scripts/python.exe'),
+    path.resolve(process.cwd(), '../.venv/bin/python'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return 'python';
+}
+
+function findChromiumBinary() {
+  if (process.env.CHROME_BIN && fs.existsSync(process.env.CHROME_BIN)) return process.env.CHROME_BIN;
+  if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) return process.env.CHROME_PATH;
+  if (process.env.CHROMIUM_PATH && fs.existsSync(process.env.CHROMIUM_PATH)) return process.env.CHROMIUM_PATH;
+
+  const candidates = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/snap/bin/chromium',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  if (process.platform !== 'win32') {
+    return 'chromium-browser';
+  }
+  return null;
+}
+
 async function isPortOpen(url) {
   try {
-    const res = await fetch(url);
-    return res.ok;
+    const headers = {};
+    if (process.env.SPECSYNTH_BRIDGE_TOKEN) {
+      headers['Authorization'] = `Bearer ${process.env.SPECSYNTH_BRIDGE_TOKEN}`;
+    }
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(2000) });
+    return res.status === 200 || res.status === 401;
   } catch {
     return false;
   }
@@ -101,25 +157,26 @@ async function main() {
     // 1. Ensure Bridge Server is running
     const bridgeAlive = await isPortOpen(`${APP_URL}/api/health`);
     if (!bridgeAlive) {
-      console.log('Starting local bridge server...');
-      const venvPy = path.resolve(rootDir, '.venv/Scripts/python.exe');
-      const pyBin = fs.existsSync(venvPy) ? venvPy : 'python';
+      const pyBin = findPythonBinary(rootDir);
+      console.log(`Starting local bridge server using ${pyBin}...`);
       bridgeProc = spawn(pyBin, ['-m', 'specsynth.mcp.bridge', '--port', String(BRIDGE_PORT)], {
         cwd: rootDir,
-        stdio: 'ignore',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          PYTHONIOENCODING: 'utf-8',
+          PYTHONUNBUFFERED: '1',
+        },
       });
-      for (let i = 0; i < 25; i++) {
-        await sleep(300);
+      for (let i = 0; i < 40; i++) {
+        await sleep(500);
         if (await isPortOpen(`${APP_URL}/api/health`)) break;
       }
     }
 
     // 2. Launch Chrome Headless
-    const chromePaths = [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    ];
-    const chromeBin = chromePaths.find((p) => fs.existsSync(p));
+    const chromeBin = findChromiumBinary();
+    if (!chromeBin) throw new Error('No supported Chromium browser found (Chrome, Edge, or Chromium)');
     const profileDir = path.resolve(process.env.TEMP || '.', `chrome_shot_${Date.now()}`);
     chromeProc = spawn(
       chromeBin,

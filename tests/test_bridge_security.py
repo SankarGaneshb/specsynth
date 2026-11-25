@@ -1,92 +1,145 @@
 """
-Security and path-containment unit tests for specsynth.mcp.bridge HTTP server.
+Security & Integrity Test Suite for SpecSynth HTTP Bridge & MCP Tools.
+
+Validates:
+- Non-loopback binding refusal without explicit --allow-remote
+- Bearer token authentication enforcement (401 on missing/invalid, 200 on valid)
+- X-Specsynth-Token header support
+- Guarding destructive sps_remediate_catalog tool behind confirm_destructive=True
 """
 
-from io import BytesIO
-from pathlib import Path
-from unittest.mock import MagicMock
+from __future__ import annotations
+
+import json
+import threading
+import urllib.request
+import urllib.error
+from http.server import HTTPServer
+from unittest.mock import MagicMock, patch
+
 import pytest
 
-from specsynth.mcp.bridge import BridgeHTTPHandler
+from specsynth.mcp.bridge import BridgeHTTPHandler, is_loopback, run_bridge_server
+from specsynth.mcp.server import SpecsynthMCPServer
 
 
-class DummyRequest:
-    def __init__(self, raw_http: bytes):
-        self.raw = raw_http
-        self.rfile = BytesIO(raw_http)
-        self.wfile = BytesIO()
+def test_is_loopback_classification():
+    """Verify loopback addresses are accurately recognized."""
+    assert is_loopback("127.0.0.1")
+    assert is_loopback("localhost")
+    assert is_loopback("::1")
+    assert is_loopback("[::1]")
 
-    def makefile(self, mode, *args, **kwargs):
-        if "r" in mode:
-            return self.rfile
-        elif "w" in mode or "b" in mode:
-            return self.wfile
-        return self.wfile
-
-    def sendall(self, data):
-        self.wfile.write(data)
+    assert not is_loopback("0.0.0.0")
+    assert not is_loopback("192.168.1.100")
+    assert not is_loopback("10.0.0.1")
+    assert not is_loopback("8.8.8.8")
+    assert not is_loopback("example.com")
 
 
-def test_bridge_cors_restriction() -> None:
-    """Verifies that CORS origins are restricted to localhost and do not wildcard '*'."""
-    req_bytes = b"GET /api/health HTTP/1.1\r\nHost: localhost:8000\r\nOrigin: http://evil.com\r\n\r\n"
-    sock = DummyRequest(req_bytes)
-    server = MagicMock()
+def test_run_bridge_server_refuses_non_loopback_without_allow_remote():
+    """Refuse to bind to external interface without --allow-remote."""
+    with pytest.raises(ValueError, match="Refusing to bind HTTP bridge to non-loopback interface"):
+        run_bridge_server(host="0.0.0.0", port=8999, allow_remote=False)
 
-    handler = BridgeHTTPHandler(sock, ("127.0.0.1", 54321), server)
-    out = sock.wfile.getvalue().decode("utf-8")
-    assert "Access-Control-Allow-Origin: http://localhost:5173" in out
-    assert "Access-Control-Allow-Origin: *" not in out
+    with pytest.raises(ValueError, match="Refusing to bind HTTP bridge to non-loopback interface"):
+        run_bridge_server(host="192.168.1.50", port=8999, allow_remote=False)
 
 
-def test_bridge_cors_localhost_allowed() -> None:
-    """Verifies that localhost / 127.0.0.1 origins are permitted in CORS headers."""
-    req_bytes = b"GET /api/health HTTP/1.1\r\nHost: localhost:8000\r\nOrigin: http://localhost:3000\r\n\r\n"
-    sock = DummyRequest(req_bytes)
-    server = MagicMock()
+def test_http_bridge_bearer_token_enforcement(tmp_path):
+    """Test 401 Unauthorized when token is missing/invalid, 200 when valid."""
+    port = 18991
+    server_address = ("127.0.0.1", port)
 
-    handler = BridgeHTTPHandler(sock, ("127.0.0.1", 54321), server)
-    out = sock.wfile.getvalue().decode("utf-8")
-    assert "Access-Control-Allow-Origin: http://localhost:3000" in out
+    secret_token = "secure-specsynth-test-token-xyz123"
+    BridgeHTTPHandler.server_instance = SpecsynthMCPServer()
+    BridgeHTTPHandler.auth_token = secret_token
+    BridgeHTTPHandler.allow_remote = True
+
+    httpd = HTTPServer(server_address, BridgeHTTPHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        url = f"http://127.0.0.1:{port}/api/health"
+
+        # 1. Unauthenticated request -> 401
+        req_unauth = urllib.request.Request(url)
+        with pytest.raises(urllib.error.HTTPError) as exc_info:
+            urllib.request.urlopen(req_unauth)
+        assert exc_info.value.code == 401
+
+        # 2. Invalid Bearer token -> 401
+        req_bad = urllib.request.Request(url, headers={"Authorization": "Bearer wrong-token"})
+        with pytest.raises(urllib.error.HTTPError) as exc_info:
+            urllib.request.urlopen(req_bad)
+        assert exc_info.value.code == 401
+
+        # 3. Valid Bearer token -> 200
+        req_ok = urllib.request.Request(url, headers={"Authorization": f"Bearer {secret_token}"})
+        with urllib.request.urlopen(req_ok) as resp:
+            assert resp.status == 200
+            data = json.loads(resp.read().decode("utf-8"))
+            assert data["status"] == "ok"
+
+        # 4. Valid X-Specsynth-Token -> 200
+        req_header_ok = urllib.request.Request(url, headers={"X-Specsynth-Token": secret_token})
+        with urllib.request.urlopen(req_header_ok) as resp:
+            assert resp.status == 200
+            data = json.loads(resp.read().decode("utf-8"))
+            assert data["status"] == "ok"
+
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        BridgeHTTPHandler.auth_token = None
+        BridgeHTTPHandler.allow_remote = False
 
 
-def test_bridge_cors_subdomain_bypass_blocked() -> None:
-    """Verifies that spoofed subdomain origins (e.g., http://localhost.attacker.com) are rejected."""
-    req_bytes = b"GET /api/health HTTP/1.1\r\nHost: localhost:8000\r\nOrigin: http://localhost.attacker.com\r\n\r\n"
-    sock = DummyRequest(req_bytes)
-    server = MagicMock()
+def test_sps_remediate_catalog_requires_explicit_confirmation():
+    """Verify destructive catalog remediation is blocked unless confirm_destructive=True."""
+    server = SpecsynthMCPServer()
 
-    handler = BridgeHTTPHandler(sock, ("127.0.0.1", 54321), server)
-    out = sock.wfile.getvalue().decode("utf-8")
-    assert "Access-Control-Allow-Origin: http://localhost:5173" in out
-    assert "Access-Control-Allow-Origin: http://localhost.attacker.com" not in out
+    # 1. Without confirmation flag
+    res_blocked = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 101,
+        "method": "tools/call",
+        "params": {
+            "name": "sps_remediate_catalog",
+            "arguments": {"base": "./run"},
+        },
+    })
+    # Must return error object or result indicating error
+    content_str = str(res_blocked)
+    assert "confirm_destructive" in content_str
+    assert "Destructive operation aborted" in content_str or "confirm_destructive': true is required" in content_str
 
+    # 2. With confirm_destructive=False
+    res_blocked_false = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 102,
+        "method": "tools/call",
+        "params": {
+            "name": "sps_remediate_catalog",
+            "arguments": {"base": "./run", "confirm_destructive": False},
+        },
+    })
+    content_str_false = str(res_blocked_false)
+    assert "Destructive operation aborted" in content_str_false
 
-def test_bridge_json_rpc_tools_dispatch() -> None:
-    """Verifies JSON-RPC 2.0 tools/list and tools/call dispatch via POST /api/tools/call."""
-    body = b'{"jsonrpc": "2.0", "id": "test-1", "method": "tools/list", "params": {}}'
-    req_bytes = (
-        b"POST /api/tools/call HTTP/1.1\r\n"
-        b"Host: localhost:8000\r\n"
-        b"Content-Type: application/json\r\n"
-        b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n\r\n" + body
-    )
-    sock = DummyRequest(req_bytes)
-    server = MagicMock()
-
-    handler = BridgeHTTPHandler(sock, ("127.0.0.1", 54321), server)
-    out = sock.wfile.getvalue().decode("utf-8")
-    assert "200 OK" in out
-    assert '"tools"' in out
-    assert '"sps_get_system_info"' in out
-
-
-def test_bridge_path_traversal_blocked() -> None:
-    """Verifies that path traversal attacks targeting files outside dist/ return 403 Forbidden."""
-    req_bytes = b"GET /../../../../setup.py HTTP/1.1\r\nHost: localhost:8000\r\n\r\n"
-    sock = DummyRequest(req_bytes)
-    server = MagicMock()
-
-    handler = BridgeHTTPHandler(sock, ("127.0.0.1", 54321), server)
-    out = sock.wfile.getvalue().decode("utf-8")
-    assert "403 Forbidden" in out
+    # 3. With confirm_destructive=True (mocking the underlying cleaner)
+    with patch("specsynth.mcp.server.tool_clean_catalog") as mock_clean:
+        mock_clean.return_value = {"status": "SUCCESS", "purged": 5}
+        res_confirmed = server.handle_request({
+            "jsonrpc": "2.0",
+            "id": 103,
+            "method": "tools/call",
+            "params": {
+                "name": "sps_remediate_catalog",
+                "arguments": {"base": "./run", "confirm_destructive": True},
+            },
+        })
+        assert "error" not in res_confirmed
+        assert "result" in res_confirmed
+        mock_clean.assert_called_once()

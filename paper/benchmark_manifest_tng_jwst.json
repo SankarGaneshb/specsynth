@@ -4,7 +4,8 @@
   "hardware": {
     "platform": "win32",
     "python_version": "3.13.1",
-    "cpu_threads": 14
+    "cpu_threads": 14,
+    "cpu_description": "Multi-core Workstation CPU (14 logical threads)"
   },
   "scientific_configuration": {
     "ssp_adapter": "FSPS",
@@ -35,7 +36,14 @@
   "performance_telemetry": {
     "total_elapsed_seconds": 1.18,
     "synthesis_time_seconds": 0.112,
-    "throughput_galaxies_per_sec": 896.6
+    "throughput_galaxies_per_sec": 896.6,
+    "gemm_contraction_throughput_galaxies_per_sec": 1510.5,
+    "laptop_single_core_throughput_galaxies_per_sec": 446.2,
+    "measurement_boundaries": {
+      "gemm_contraction": "Pure in-memory matrix contraction stage (sfh @ ssp with dust attenuation) on multi-threaded workstation CPU: 1,510.5 gal/s",
+      "full_pipeline_workstation": "End-to-end pipeline synthesis (SFH -> Dust -> IGM -> Distance Dimming -> Filter Projection) on multi-core workstation CPU: 896.6 gal/s",
+      "full_pipeline_laptop": "End-to-end pipeline synthesis on single-core / battery-constrained laptop CPU: 446.2 gal/s"
+    }
   },
   "numerical_accuracy": {
     "max_relative_error": 4.76623133922837e-08,

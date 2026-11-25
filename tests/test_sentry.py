@@ -664,4 +664,39 @@ def test_run_sentry_audit_tier3_population_collapse(monkeypatch, tmp_path):
     assert pop_anom.metric_name == "population_color_dispersion"
 
 
+@pytest.mark.sentry
+def test_compute_sentry_manifest_audit_clean_and_anomalies():
+    from scripts.export_tng_web_dataset import compute_sentry_manifest_audit
+
+    clean_galaxies = [
+        {"id": "G1", "sentry_status": "PRISTINE"},
+        {"id": "G2", "sentry_status": "PRISTINE"},
+    ]
+    audit_clean = compute_sentry_manifest_audit(clean_galaxies)
+    assert audit_clean["status"] == "PASSED"
+    assert audit_clean["passed_count"] == 2
+    assert audit_clean["flagged_count"] == 0
+    assert audit_clean["pass_rate_pct"] == 100.0
+    assert all(v == 0 for v in audit_clean["tier_summary"].values())
+
+    anom_galaxies = [
+        {"id": "A1", "sentry_status": "ANOMALY", "qc_failure_code": "ERR_TIER1_NEGATIVE_FLUX", "qc_failure_title": "Tier 1: Negative flux"},
+        {"id": "A2", "sentry_status": "ANOMALY", "qc_failure_code": "ERR_TIER2_INVERTED_DN4000", "qc_failure_title": "Tier 2: Inverted Dn4000"},
+        {"id": "A3", "sentry_status": "ANOMALY", "qc_failure_code": "ERR_TIER2_AGE_EXCEEDS_HUBBLE", "qc_failure_title": "Tier 2: Age exceeds Hubble"},
+        {"id": "A4", "sentry_status": "ANOMALY", "qc_failure_code": "ERR_TIER3_COLOR_OUTLIER", "qc_failure_title": "Tier 3: Color outlier"},
+        {"id": "P1", "sentry_status": "PRISTINE"},
+    ]
+    audit_anom = compute_sentry_manifest_audit(anom_galaxies)
+    assert audit_anom["status"] == "WARNING"
+    assert audit_anom["passed_count"] == 1
+    assert audit_anom["flagged_count"] == 4
+    assert audit_anom["tier_summary"]["tier1_numerical"] == 1
+    assert audit_anom["tier_summary"]["tier2_physical"] == 2
+    assert audit_anom["tier_summary"]["tier3_population"] == 1
+    assert audit_anom["tier_summary"]["tier4_quarantine"] == 0
+    assert audit_anom["category_summary"]["NUMERICAL_FAULT"] == 1
+    assert audit_anom["category_summary"]["PHYSICAL_ANOMALY"] == 2
+    assert audit_anom["category_summary"]["POPULATION_DRIFT"] == 1
+
+
 

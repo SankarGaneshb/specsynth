@@ -131,7 +131,9 @@ class SpecsynthMCPServer:
                     "properties": {
                         "base": {"type": "string", "description": "Base storage directory", "default": "./run"},
                         "output_csv": {"type": "string", "description": "Output path for the clean catalog CSV", "default": "clean_catalog.csv"},
+                        "confirm_destructive": {"type": "boolean", "description": "Explicit confirmation flag required to execute destructive remediation", "default": False},
                     },
+                    "required": ["confirm_destructive"],
                 },
                 "annotations": MCP_TOOL_ANNOTATIONS["sps_remediate_catalog"],
                 "handler": self._tool_remediate_catalog,
@@ -201,6 +203,10 @@ class SpecsynthMCPServer:
         return tool_run_sentry_audit(base=base, sample_size=size)
 
     def _tool_remediate_catalog(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        if not args.get("confirm_destructive"):
+            return {
+                "error": "Destructive operation aborted: 'confirm_destructive': true is required to execute catalog remediation."
+            }
         base = args.get("base") or str(REPO_ROOT / "run")
         out_csv = args.get("output_csv", "clean_catalog.csv")
         return tool_clean_catalog(base=base, output_path=out_csv)
@@ -283,10 +289,6 @@ class SpecsynthMCPServer:
                     "jsonrpc": "2.0",
                     "id": msg_id,
                     "error": {"code": -32601, "message": f"Unknown tool: {name}"},
-                    "result": {
-                        "content": [{"type": "text", "text": f"Unknown tool: {name}"}],
-                        "isError": True,
-                    },
                 }
 
             try:
@@ -303,10 +305,6 @@ class SpecsynthMCPServer:
                     "jsonrpc": "2.0",
                     "id": msg_id,
                     "error": {"code": -32000, "message": str(exc)},
-                    "result": {
-                        "content": [{"type": "text", "text": f"Error executing tool {name}: {str(exc)}"}],
-                        "isError": True,
-                    },
                 }
 
         else:

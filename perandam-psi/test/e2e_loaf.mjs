@@ -84,10 +84,66 @@ class CDPClient {
   }
 }
 
+function findPythonBinary(rootDir) {
+  if (process.env.PYTHON_BIN && fs.existsSync(process.env.PYTHON_BIN)) return process.env.PYTHON_BIN;
+  if (process.env.VIRTUAL_ENV) {
+    const venvWin = path.resolve(process.env.VIRTUAL_ENV, 'Scripts/python.exe');
+    const venvNix = path.resolve(process.env.VIRTUAL_ENV, 'bin/python');
+    if (fs.existsSync(venvWin)) return venvWin;
+    if (fs.existsSync(venvNix)) return venvNix;
+  }
+  const candidates = [
+    path.resolve(rootDir, '.venv/Scripts/python.exe'),
+    path.resolve(rootDir, '.venv/bin/python'),
+    path.resolve(rootDir, 'venv/Scripts/python.exe'),
+    path.resolve(rootDir, 'venv/bin/python'),
+    path.resolve(process.cwd(), '.venv/Scripts/python.exe'),
+    path.resolve(process.cwd(), '.venv/bin/python'),
+    path.resolve(process.cwd(), '../.venv/Scripts/python.exe'),
+    path.resolve(process.cwd(), '../.venv/bin/python'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return 'python';
+}
+
+function findChromiumBinary() {
+  if (process.env.CHROME_BIN && fs.existsSync(process.env.CHROME_BIN)) return process.env.CHROME_BIN;
+  if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) return process.env.CHROME_PATH;
+  if (process.env.CHROMIUM_PATH && fs.existsSync(process.env.CHROMIUM_PATH)) return process.env.CHROMIUM_PATH;
+
+  const candidates = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/snap/bin/chromium',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  if (process.platform !== 'win32') {
+    return 'chromium-browser';
+  }
+  return null;
+}
+
 async function isPortOpen(url) {
   try {
-    const res = await fetch(url);
-    return res.ok;
+    const headers = {};
+    if (process.env.SPECSYNTH_BRIDGE_TOKEN) {
+      headers['Authorization'] = `Bearer ${process.env.SPECSYNTH_BRIDGE_TOKEN}`;
+    }
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(2000) });
+    return res.status === 200 || res.status === 401;
   } catch {
     return false;
   }
@@ -107,34 +163,59 @@ async function main() {
     console.log('[1/6] Initializing SpecSynth HTTP Bridge backend...');
     const bridgeAlive = await isPortOpen(`${APP_URL}/api/health`);
     if (!bridgeAlive) {
-      console.log('  * Spawning local bridge server on port 8000...');
-      const venvPy = path.resolve(rootDir, '.venv/Scripts/python.exe');
-      const pyBin = fs.existsSync(venvPy) ? venvPy : 'python';
+      const pyBin = findPythonBinary(rootDir);
+      console.log(`  * Spawning local bridge server on port ${BRIDGE_PORT} using ${pyBin}...`);
+
+      let bridgeErrors = '';
       bridgeProc = spawn(pyBin, ['-m', 'specsynth.mcp.bridge', '--port', String(BRIDGE_PORT)], {
         cwd: rootDir,
-        stdio: 'ignore',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          PYTHONIOENCODING: 'utf-8',
+          PYTHONUNBUFFERED: '1',
+        },
+      });
+
+      bridgeProc.stderr?.on('data', (d) => {
+        bridgeErrors += d.toString();
+      });
+      bridgeProc.stdout?.on('data', (d) => {
+        // bridge startup banner
+      });
+      bridgeProc.on('error', (err) => {
+        bridgeErrors += `\nSpawn error: ${err.message}`;
       });
 
       let connected = false;
-      for (let i = 0; i < 25; i++) {
-        await sleep(300);
+      for (let i = 0; i < 40; i++) {
+        await sleep(500);
         if (await isPortOpen(`${APP_URL}/api/health`)) {
           connected = true;
           break;
         }
+        if (bridgeProc.exitCode !== null) {
+          throw new Error(
+            `SpecSynth HTTP Bridge process terminated prematurely with exit code ${bridgeProc.exitCode}.\n` +
+            `Binary: ${pyBin}\n` +
+            `Error output:\n${bridgeErrors || '(No stderr logged by Python process)'}`
+          );
+        }
       }
-      if (!connected) throw new Error('Failed to start SpecSynth HTTP Bridge on port 8000');
+      if (!connected) {
+        throw new Error(
+          `Failed to start SpecSynth HTTP Bridge on port ${BRIDGE_PORT} within 20 seconds.\n` +
+          `Binary: ${pyBin}\n` +
+          `Error output:\n${bridgeErrors || '(No stderr logged by Python process)'}`
+        );
+      }
     }
     console.log('  ✓ Bridge server online and verified at', `${APP_URL}/api/health`);
 
     // 2. Launch Headless Chrome with CDP
     console.log('\n[2/6] Launching Headless Chrome with remote debugging (CDP)...');
-    const chromePaths = [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    ];
-    const chromeBin = chromePaths.find((p) => fs.existsSync(p));
-    if (!chromeBin) throw new Error('No supported Chromium browser found (Chrome or Edge)');
+    const chromeBin = findChromiumBinary();
+    if (!chromeBin) throw new Error('No supported Chromium browser found (Chrome, Edge, or Chromium)');
 
     const profileDir = path.resolve(process.env.TEMP || '.', `chrome_e2e_${Date.now()}`);
     chromeProc = spawn(
@@ -263,16 +344,23 @@ async function main() {
     console.log('\n[5/6] Executing Modern UI Component & Interaction Validation:');
 
     // A. Check Brand and Engine status
-    const brandCheck = await cdp.evaluate(`
-      (() => {
-        const brand = document.querySelector('header')?.innerText || '';
-        return {
-          hasLogo: brand.includes('PerandamΨ'),
-          hasMark: brand.includes('PSI Space'),
-          engineStatus: brand.includes('Engine: SpecSynth') ? 'Connected' : brand.includes('Standalone') ? 'Standalone' : 'Unknown'
-        };
-      })()
-    `);
+    let brandCheck = { hasLogo: false, hasMark: false, engineStatus: 'Unknown' };
+    for (let i = 0; i < 15; i++) {
+      brandCheck = await cdp.evaluate(`
+        (() => {
+          const brand = document.querySelector('header')?.innerText || '';
+          return {
+            hasLogo: brand.includes('PerandamΨ'),
+            hasMark: brand.includes('PSI Space'),
+            engineStatus: (brand.includes('Local Bridge') || brand.includes('Engine: SpecSynth') || brand.includes('Connected'))
+              ? 'Connected'
+              : brand.includes('Standalone') ? 'Standalone' : 'Unknown'
+          };
+        })()
+      `);
+      if (brandCheck.engineStatus === 'Connected') break;
+      await sleep(300);
+    }
     console.log(`  * Header Branding    : ${brandCheck.hasLogo ? '✓ PASS' : '✗ FAIL'} (Brand: PerandamΨ, Mark: PSI Space)`);
     console.log(`  * Engine Heartbeat   : ${brandCheck.engineStatus === 'Connected' ? '✓ PASS' : '✗ FAIL'} (Status: ${brandCheck.engineStatus})`);
 

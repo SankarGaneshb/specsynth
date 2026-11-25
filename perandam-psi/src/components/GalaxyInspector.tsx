@@ -144,7 +144,7 @@ from specsynth.filters import get_filter
 log_mstar   = ${galaxy.log_mstar.toFixed(2)}
 redshift    = ${currentZ.toFixed(3)}
 av          = ${currentAv.toFixed(3)}
-sfr         = ${galaxy.sfr.toFixed(3)}  # M☉/yr
+sfr         = ${galaxy.sfr.toFixed(3)}  # M_sun/yr
 t_onset     = ${tOnsetVal.toFixed(3)}  # Gyr
 tau         = ${tauVal.toFixed(3)}  # Gyr e-folding timescale
 metallicity = ${metVal.toFixed(4)}  # log(Z/Z_sun)
@@ -165,7 +165,7 @@ ny = int((ssp_data.ages < 1e7).sum()) * len(ssp_data.mets)
 kd = attenuation_curve(ssp_data.wave, -0.7).astype(np.float32)
 kb = attenuation_curve(ssp_data.wave, -1.3).astype(np.float32)
 
-# 5. Contract Rest-frame Spectrum: L_lambda [L☉ / Å]
+# 5. Contract Rest-frame Spectrum: L_lambda [L_sun / A]
 spec_rest = synth_block(sfh, np.array([tau_d], dtype=np.float32), np.array([tau_b], dtype=np.float32), ssp_data.ssp, kd, kb, ny)
 
 # 6. In-flight Filter Projection into JWST NIRCam Bands
@@ -191,7 +191,7 @@ for i, fn in enumerate(target_filters):
     f_nu = phot[i] * (flt.pivot_wavelength ** 2) / c_ang_s
     m_ab = -2.5 * np.log10(f_nu) - 48.60 if f_nu > 0 else 99.0
     m_ab_dict[fn] = float(m_ab)
-    print(f"  {fn}: {m_ab:.2f} AB mag (f_nu = {f_nu*1e29:.2f} μJy)")
+    print(f"  {fn}: {m_ab:.2f} AB mag (f_nu = {f_nu*1e29:.2f} uJy)")
 
 # 8. Numerical Parity Validation vs. Web Browser Display (|Δm| < 0.05 mag)
 browser_mags = ${JSON.stringify(currentMags)}
@@ -199,7 +199,7 @@ for fn, m_browser in browser_mags.items():
     if fn in m_ab_dict and m_browser < 90.0 and m_ab_dict[fn] < 90.0:
         delta = abs(m_ab_dict[fn] - m_browser)
         assert delta < 0.05, f"Numerical divergence in {fn}: {delta:.4f} mag"
-print("✓ In-browser and Python numerical parity verified.")
+print("[OK] In-browser and Python numerical parity verified.")
 `;
 
   const handleCopyCode = () => {

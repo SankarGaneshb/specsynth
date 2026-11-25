@@ -29,7 +29,10 @@ Running the full validation pipeline on the 100-galaxy IllustrisTNG demonstratio
 - **Mean Relative Error**: $1.03 \times 10^{-8}$ (Tolerance: $< 1.0 \times 10^{-5}$)
 - **Photometric Root Mean Square Error (RMSE)**: $5.59 \times 10^{-23}$
 - **Scientific Sentry QA Pass Rate**: $100\%$ ($100/100$ pristine galaxies, zero anomalies detected)
-- **Synthesis Throughput**: $446.2\,\mathrm{galaxies/s}$ on laptop CPU.
+- **Synthesis Throughput**:
+  - $1{,}510.5\,\mathrm{galaxies/s}$ in-memory GEMM matrix contraction stage on multi-threaded workstation CPU.
+  - $896.6\,\mathrm{galaxies/s}$ full pipeline synthesis (SFH $\to$ Dust $\to$ IGM $\to$ Distance Dimming $\to$ Photometry) on multi-core workstation (`paper/benchmark_manifest_tng_jwst.json`).
+  - $446.2\,\mathrm{galaxies/s}$ full pipeline synthesis on single-core / battery-constrained laptop CPU.
 
 ---
 

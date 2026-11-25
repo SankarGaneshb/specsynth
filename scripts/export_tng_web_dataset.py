@@ -189,6 +189,72 @@ def calculate_mahalanobis_scores(galaxies: list[dict]) -> None:
         g["rarity_percentile"] = f"Top {pct:.2f}% Empirical Outlier"
 
 
+def compute_sentry_manifest_audit(
+    galaxies: list[dict],
+    provenance: str = "specsynth Scientific Sentry QA Audit (in-flight verification)",
+) -> dict:
+    """
+    Dynamically scan each galaxy record, evaluate against diagnostic tiers 1-4,
+    and compute passed/flagged counts, pass rates, and tier/category breakdowns.
+    """
+    iso_now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    total = len(galaxies)
+
+    tier_summary = {
+        "tier1_numerical": 0,
+        "tier2_physical": 0,
+        "tier3_population": 0,
+        "tier4_quarantine": 0,
+    }
+    category_summary = {
+        "INPUT_SCHEMA_FAULT": 0,
+        "NUMERICAL_FAULT": 0,
+        "PHYSICAL_ANOMALY": 0,
+        "POPULATION_DRIFT": 0,
+        "UNKNOWN_EXCEPTION": 0,
+    }
+
+    flagged_count = 0
+    for g in galaxies:
+        status = g.get("sentry_status", "PRISTINE")
+        if status in ("ANOMALY", "FLAGGED", "QUARANTINE"):
+            flagged_count += 1
+            code = str(g.get("qc_failure_code", "")).upper()
+            title = str(g.get("qc_failure_title", "")).upper()
+
+            if "TIER1" in code or "TIER 1" in title or "NEGATIVE_FLUX" in code or "NAN" in code or "INF" in code:
+                tier_summary["tier1_numerical"] += 1
+                category_summary["NUMERICAL_FAULT"] += 1
+            elif "TIER2" in code or "TIER 2" in title or "DN4000" in code or "HUBBLE" in code or "UV_SLOPE" in code:
+                tier_summary["tier2_physical"] += 1
+                category_summary["PHYSICAL_ANOMALY"] += 1
+            elif "TIER3" in code or "TIER 3" in title or "COLOR" in code or "POPULATION" in code:
+                tier_summary["tier3_population"] += 1
+                category_summary["POPULATION_DRIFT"] += 1
+            elif "TIER4" in code or "TIER 4" in title or "QUARANTINE" in code or "SCHEMA" in code:
+                tier_summary["tier4_quarantine"] += 1
+                category_summary["INPUT_SCHEMA_FAULT"] += 1
+            else:
+                category_summary["UNKNOWN_EXCEPTION"] += 1
+                tier_summary["tier1_numerical"] += 1
+
+    passed_count = total - flagged_count
+    pass_rate = round((passed_count / max(1, total)) * 100.0, 3)
+    status_str = "PASSED" if flagged_count == 0 else "WARNING"
+
+    return {
+        "timestamp": iso_now,
+        "provenance": provenance,
+        "total_galaxies_evaluated": total,
+        "passed_count": passed_count,
+        "flagged_count": flagged_count,
+        "pass_rate_pct": pass_rate,
+        "status": status_str,
+        "tier_summary": tier_summary,
+        "category_summary": category_summary,
+    }
+
+
 def export_all() -> None:
     tng_file = Path("data/examples/tng_sample/sample_catalog.parquet")
     assert tng_file.exists(), f"Missing {tng_file}"
@@ -218,7 +284,8 @@ def export_all() -> None:
         norm = np.trapezoid(flt.transmission * flt.wave, flt.wave)
         filter_data.append((fname, flt.wave, flt.transmission, norm))
         filter_pivots[fname] = float(flt.pivot_wavelength)
-        full_sha256 = flt.sha256 if hasattr(flt, "sha256") and flt.sha256 else "c0ffee1234567890abcdef1234567890c0ffee1234567890abcdef1234567890"
+        has_sha = hasattr(flt, "sha256") and bool(flt.sha256)
+        full_sha256 = flt.sha256 if has_sha else None
         filter_meta.append(
             {
                 "name": fname,
@@ -226,7 +293,8 @@ def export_all() -> None:
                 "wave": flt.wave.tolist(),
                 "transmission": flt.transmission.tolist(),
                 "sha256": full_sha256,
-                "sha256_short": full_sha256[:16],
+                "sha256_short": full_sha256[:16] if full_sha256 else None,
+                "checksum_status": "AUTHENTIC" if full_sha256 else "UNAVAILABLE",
                 "instrument": "JWST NIRCam",
                 "throughput_source": "STScI Module A+B Mean",
             }
@@ -1130,60 +1198,18 @@ def export_all() -> None:
     # -------------------------------------------------------------
     # 3. SENTRY QUALITY ASSURANCE AUDIT
     # -------------------------------------------------------------
-    iso_now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
     # In-flight validation of TNG-100 sample (all pristine)
     valid_mags, _ = check_magnitude_bounds(np.array([list(g["mags"].values()) for g in tng100_galaxies]))
     d4k_vals = measure_d4000_break(wave_full, spec_100)
     uv_vals = measure_uv_slope(wave_full, spec_100)
     all_physically_sound = bool(np.all(valid_mags) and np.all(np.isfinite(d4k_vals)) and np.all(np.isfinite(uv_vals)))
 
-    sentry_audit_tng100 = {
-        "timestamp": iso_now,
-        "provenance": "specsynth Scientific Sentry QA Audit (in-flight verification)",
-        "total_galaxies_evaluated": len(tng100_galaxies),
-        "passed_count": len(tng100_galaxies),
-        "flagged_count": 0,
-        "pass_rate_pct": 100.0,
-        "status": "PASSED" if all_physically_sound else "WARNING",
-        "tier_summary": {
-            "tier1_numerical": 0,
-            "tier2_physical": 0,
-            "tier3_population": 0,
-            "tier4_quarantine": 0,
-        },
-        "category_summary": {
-            "INPUT_SCHEMA_FAULT": 0,
-            "NUMERICAL_FAULT": 0,
-            "PHYSICAL_ANOMALY": 0,
-            "POPULATION_DRIFT": 0,
-            "UNKNOWN_EXCEPTION": 0,
-        },
-    }
+    sentry_audit_tng100 = compute_sentry_manifest_audit(tng100_galaxies)
+    if not all_physically_sound:
+        sentry_audit_tng100["status"] = "WARNING"
 
-    # Sentry audit of GOODS-S mock (with 4 injected test anomalies)
-    sentry_audit_goods_s = {
-        "timestamp": iso_now,
-        "provenance": "specsynth Scientific Sentry QA Audit (in-flight verification)",
-        "total_galaxies_evaluated": len(combined_goods_s),
-        "passed_count": len(combined_goods_s) - len(anomalies),
-        "flagged_count": len(anomalies),
-        "pass_rate_pct": round(((len(combined_goods_s) - len(anomalies)) / len(combined_goods_s)) * 100.0, 3),
-        "status": "WARNING",
-        "tier_summary": {
-            "tier1_numerical": 1,
-            "tier2_physical": 2,
-            "tier3_population": 1,
-            "tier4_quarantine": 0,
-        },
-        "category_summary": {
-            "INPUT_SCHEMA_FAULT": 0,
-            "NUMERICAL_FAULT": 1,
-            "PHYSICAL_ANOMALY": 2,
-            "POPULATION_DRIFT": 1,
-            "UNKNOWN_EXCEPTION": 0,
-        },
-    }
+    # Sentry audit of GOODS-S mock (evaluated dynamically from galaxy records)
+    sentry_audit_goods_s = compute_sentry_manifest_audit(combined_goods_s)
 
     # -------------------------------------------------------------
     # 4. WRITE MANIFESTS

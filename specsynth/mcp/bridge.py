@@ -9,10 +9,24 @@ import argparse
 from datetime import datetime
 import json
 import logging
+import os
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 from typing import Any, Dict
+
+# Ensure stdout and stderr handle UTF-8 without failing on Windows charmap/cp1252
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 from specsynth.filters import FILTER_SETS, STANDARD_FILTER_SPECS
 from specsynth.mcp.server import SpecsynthMCPServer
@@ -24,6 +38,30 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
     """CORS-enabled HTTP request handler for the PerandamΨ frontend."""
 
     server_instance: SpecsynthMCPServer | None = None
+    auth_token: str | None = None
+    allow_remote: bool = False
+
+    def _check_auth(self) -> bool:
+        """Validate bearer token authentication if auth_token is configured."""
+        if not self.auth_token:
+            return True
+
+        auth_header = self.headers.get("Authorization", "")
+        token_header = self.headers.get("X-Specsynth-Token", "")
+        token = ""
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+        elif auth_header:
+            token = auth_header.strip()
+        elif token_header:
+            token = token_header.strip()
+
+        if token == self.auth_token:
+            return True
+
+        self._set_cors_headers(401)
+        self.wfile.write(json.dumps({"error": "401 Unauthorized: Valid Bearer token required"}).encode("utf-8"))
+        return False
 
     def _set_cors_headers(self, status_code: int = 200, content_type: str = "application/json") -> None:
         self.send_response(status_code)
@@ -47,6 +85,9 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
         self._set_cors_headers(204)
 
     def do_GET(self) -> None:
+        if not self._check_auth():
+            return
+
         parsed = urlparse(self.path)
         path = parsed.path
         query = parse_qs(parsed.query)
@@ -140,7 +181,7 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
                 "timestamp": now,
             }
             self.wfile.write(json.dumps(res).encode("utf-8"))
-            print(f"[{now}] [Engine Heartbeat] GET /api/health -> 200 OK (PerandamΨ connected)")
+            print(f"[{now}] [Engine Heartbeat] GET /api/health -> 200 OK (Perandam-Psi connected)")
 
         elif path == "/api/filters":
             inst = query.get("instrument", [None])[0]
@@ -194,6 +235,9 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             print(f"[{now}] [404 Not Found] GET {path}")
 
     def do_POST(self) -> None:
+        if not self._check_auth():
+            return
+
         parsed = urlparse(self.path)
         path = parsed.path
         now = datetime.now().strftime("%H:%M:%S")
@@ -246,16 +290,42 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             print(f"[{timestamp}] [HTTP Log] {self.command} {self.path} -> {msg}")
 
 
-def run_bridge_server(host: str = "127.0.0.1", port: int = 8000) -> None:
-    server_address = (host, port)
+def is_loopback(host: str) -> bool:
+    """Check if host address is a local loopback interface."""
+    return host.strip().lower() in ("127.0.0.1", "localhost", "::1", "[::1]")
+
+
+def run_bridge_server(
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    allow_remote: bool = False,
+    token: str | None = None,
+) -> None:
+    if not is_loopback(host) and not allow_remote:
+        raise ValueError(
+            f"Refusing to bind HTTP bridge to non-loopback interface '{host}' without explicit '--allow-remote' flag."
+        )
+
+    resolved_token = token or os.environ.get("SPECSYNTH_BRIDGE_TOKEN")
+    if allow_remote and not resolved_token:
+        import secrets
+        resolved_token = secrets.token_hex(16)
+        print(f"[SECURITY WARNING] Binding to remote interface {host} without user token. Generated ephemeral token: {resolved_token}")
+
     BridgeHTTPHandler.server_instance = SpecsynthMCPServer()
+    BridgeHTTPHandler.auth_token = resolved_token
+    BridgeHTTPHandler.allow_remote = allow_remote
+
+    server_address = (host, port)
     httpd = HTTPServer(server_address, BridgeHTTPHandler)
+    auth_status = f"Enforced (Token: {resolved_token[:6]}...)" if resolved_token else "Disabled (Loopback Only)"
     banner = f"""
 ================================================================================
-  PerandamΨ (PSI) — SpecSynth Scientific Engine & HTTP Bridge v1.0.0
+  Perandam-Psi (PSI) - SpecSynth Scientific Engine & HTTP Bridge v1.0.0
 ================================================================================
   * Local Engine URL   : http://{host}:{port}
   * Web Explorer UI    : http://localhost:5173 (Dev) or http://{host}:{port} (Prod)
+  * Authentication     : {auth_status}
   * Active Endpoints   : /api/health, /api/filters, /api/system, /api/inspect, /api/audit
   * MCP Tool Endpoint  : POST /api/tools/call
   * Status             : Online & streaming live logs below
@@ -265,7 +335,7 @@ def run_bridge_server(host: str = "127.0.0.1", port: int = 8000) -> None:
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down PerandamΨ HTTP Bridge.")
+        print("\nShutting down Perandam-Psi HTTP Bridge.")
         httpd.server_close()
 
 
@@ -273,8 +343,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the PerandamΨ SpecSynth HTTP Bridge.")
     parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8000, help="Port (default: 8000)")
+    parser.add_argument("--allow-remote", action="store_true", help="Allow binding to non-loopback interfaces")
+    parser.add_argument("--token", default=None, help="Bearer token for HTTP authentication (or via SPECSYNTH_BRIDGE_TOKEN)")
     args = parser.parse_args()
-    run_bridge_server(host=args.host, port=args.port)
+    run_bridge_server(host=args.host, port=args.port, allow_remote=args.allow_remote, token=args.token)
 
 
 if __name__ == "__main__":

@@ -170,12 +170,11 @@ def test_mcp_fallback_jsonrpc() -> None:
     r_unknown = responses[5]
     assert r_unknown["id"] == 6
     assert r_unknown["jsonrpc"] == "2.0"
-    assert "error" in r_unknown or "result" in r_unknown
-    if "error" in r_unknown:
-        assert r_unknown["error"]["code"] == -32601
-        assert "Unknown tool" in r_unknown["error"]["message"]
-    if "result" in r_unknown:
-        assert "Unknown tool" in r_unknown["result"]["content"][0]["text"]
+    assert ("result" in r_unknown) ^ ("error" in r_unknown)
+    assert "error" in r_unknown
+    assert "result" not in r_unknown
+    assert r_unknown["error"]["code"] == -32601
+    assert "Unknown tool" in r_unknown["error"]["message"]
 
 
 def test_fastmcp_real_tool_annotations() -> None:
@@ -270,7 +269,8 @@ def test_mcp_tool_execution_exception_handling() -> None:
         })
 
         assert resp["id"] == 88
+        assert ("result" in resp) ^ ("error" in resp)
         assert "error" in resp
+        assert "result" not in resp
         assert resp["error"]["code"] == -32000
         assert "Zarr store corruption simulated" in resp["error"]["message"]
-        assert resp["result"]["isError"] is True
