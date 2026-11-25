@@ -66,6 +66,7 @@ clean_catalog.*
 node_modules/
 perandam-psi/dist/
 perandam-psi/node_modules/
+perandam_e2e_screenshot.png
 
 benchmark_data/
 *.tar.gz

@@ -22,6 +22,7 @@
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -157,6 +158,7 @@ async function main() {
   let bridgeProc = null;
   let chromeProc = null;
   let cdp = null;
+  let profileDir = null;
 
   try {
     // 1. Ensure Bridge Server is running
@@ -217,12 +219,15 @@ async function main() {
     const chromeBin = findChromiumBinary();
     if (!chromeBin) throw new Error('No supported Chromium browser found (Chrome, Edge, or Chromium)');
 
-    const profileDir = path.resolve(process.env.TEMP || '.', `chrome_e2e_${Date.now()}`);
+    profileDir = path.resolve(os.tmpdir(), `chrome_e2e_${Date.now()}`);
+    let chromeErrors = '';
     chromeProc = spawn(
       chromeBin,
       [
         '--headless=new',
         '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
         '--disable-gpu',
         '--disable-software-rasterizer',
         `--remote-debugging-port=${CDP_PORT}`,
@@ -230,20 +235,43 @@ async function main() {
         '--window-size=1600,1000',
         '--no-first-run',
         '--no-default-browser-check',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-extensions',
+        '--disable-sync',
         'about:blank',
       ],
-      { stdio: 'ignore' }
+      { stdio: ['ignore', 'pipe', 'pipe'] }
     );
+    chromeProc.stderr?.on('data', (d) => {
+      chromeErrors += d.toString();
+    });
+    chromeProc.on('error', (err) => {
+      chromeErrors += `\nSpawn error: ${err.message}`;
+    });
 
     let cdpReady = false;
-    for (let i = 0; i < 25; i++) {
-      await sleep(200);
+    for (let i = 0; i < 40; i++) {
+      await sleep(500);
       if (await isPortOpen(`http://127.0.0.1:${CDP_PORT}/json/version`)) {
         cdpReady = true;
         break;
       }
+      if (chromeProc.exitCode !== null) {
+        throw new Error(
+          `Chrome process terminated prematurely with exit code ${chromeProc.exitCode}.\n` +
+          `Binary: ${chromeBin}\n` +
+          `Error output:\n${chromeErrors || '(No stderr logged by browser process)'}`
+        );
+      }
     }
-    if (!cdpReady) throw new Error('Timed out waiting for Chrome CDP to bind port 9222');
+    if (!cdpReady) {
+      throw new Error(
+        `Timed out waiting for Chrome CDP to bind port ${CDP_PORT} after 20s.\n` +
+        `Binary: ${chromeBin}\n` +
+        `Error output:\n${chromeErrors || '(No stderr logged by browser process)'}`
+      );
+    }
 
     // Get active page tab
     const tabs = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`).then((r) => r.json());
@@ -592,6 +620,11 @@ async function main() {
     if (cdp) cdp.close();
     if (chromeProc) chromeProc.kill();
     if (bridgeProc) bridgeProc.kill();
+    try {
+      if (profileDir && fs.existsSync(profileDir)) {
+        fs.rmSync(profileDir, { recursive: true, force: true });
+      }
+    } catch {}
   }
 }
 

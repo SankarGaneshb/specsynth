@@ -10,6 +10,7 @@
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -177,12 +178,14 @@ async function main() {
     // 2. Launch Chrome Headless
     const chromeBin = findChromiumBinary();
     if (!chromeBin) throw new Error('No supported Chromium browser found (Chrome, Edge, or Chromium)');
-    const profileDir = path.resolve(process.env.TEMP || '.', `chrome_shot_${Date.now()}`);
+    const profileDir = path.resolve(os.tmpdir(), `chrome_shot_${Date.now()}`);
     chromeProc = spawn(
       chromeBin,
       [
         '--headless=new',
         '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
         '--disable-gpu',
         '--disable-software-rasterizer',
         `--remote-debugging-port=${CDP_PORT}`,
@@ -190,6 +193,10 @@ async function main() {
         '--window-size=1600,1000',
         '--no-first-run',
         '--no-default-browser-check',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-extensions',
+        '--disable-sync',
         'about:blank',
       ],
       { stdio: 'ignore' }
