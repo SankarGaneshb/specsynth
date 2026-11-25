@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { SkyCanvas } from './components/SkyCanvas';
+import { MilkyWayComparator3D } from './components/MilkyWayComparator3D';
+import { LightconeCanvas3D } from './components/LightconeCanvas3D';
 import { GalaxyInspector } from './components/GalaxyInspector';
 import { GuideModal } from './components/GuideModal';
-import { Galaxy, CatalogManifest, SkyColorMode } from './types/galaxy';
+import { Galaxy, CatalogManifest, SkyColorMode, ViewportMode } from './types/galaxy';
 import rawGoodsSManifest from './data/tng_goods_s_mock_508.json';
 import rawTng100Manifest from './data/tng_100_calibration.json';
-import { Sparkles, Layers } from 'lucide-react';
+import { Sparkles, Layers, Box } from 'lucide-react';
 
 export type DatasetId = 'goods_s_mock' | 'tng_100';
 
@@ -24,6 +26,7 @@ export const App: React.FC = () => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [colorMode, setColorMode] = useState<SkyColorMode>('rgb');
+  const [viewportMode, setViewportMode] = useState<ViewportMode>('2d');
   const [discoveryMode, setDiscoveryMode] = useState<boolean>(false);
 
   // Switch active dataset
@@ -86,6 +89,8 @@ export const App: React.FC = () => {
         isConnected={isConnected}
         colorMode={colorMode}
         onChangeColorMode={setColorMode}
+        viewportMode={viewportMode}
+        onToggleViewportMode={() => setViewportMode((prev) => (prev === 'twin' ? '2d' : 'twin'))}
         onResetView={() => setResetTrigger((prev) => prev + 1)}
         onSelectGalaxy={handleSelectById}
         onOpenGuide={() => setIsGuideOpen(true)}
@@ -101,43 +106,52 @@ export const App: React.FC = () => {
 
       {/* Main Sky & Inspector Area */}
       <div className="flex-1 relative flex overflow-hidden">
-        {/* Interactive Sky Canvas */}
-        <div className="flex-1 h-full relative">
-          <SkyCanvas
-            galaxies={galaxies}
-            selectedGalaxy={selectedGalaxy}
-            onSelectGalaxy={setSelectedGalaxy}
-            centerRa={manifest.field_center.ra}
-            centerDec={manifest.field_center.dec}
-            fieldRadius={manifest.field_center.radius_deg}
-            resetTrigger={resetTrigger}
-            colorMode={colorMode}
-            discoveryMode={discoveryMode}
+        {viewportMode === 'twin' ? (
+          <MilkyWayComparator3D
+            galaxy={selectedGalaxy || galaxies[0]}
+            allGalaxies={galaxies}
+            onSelectGalaxy={(g) => setSelectedGalaxy(g)}
+            onClose={() => setViewportMode('2d')}
           />
+        ) : (
+          <div className="flex-1 h-full relative">
+            <SkyCanvas
+              galaxies={galaxies}
+              selectedGalaxy={selectedGalaxy}
+              onSelectGalaxy={setSelectedGalaxy}
+              centerRa={manifest.field_center.ra}
+              centerDec={manifest.field_center.dec}
+              fieldRadius={manifest.field_center.radius_deg}
+              resetTrigger={resetTrigger}
+              colorMode={colorMode}
+              discoveryMode={discoveryMode}
+            />
 
-          {/* Floating Field Summary Badge (Bottom Left) */}
-          <div className="absolute bottom-4 left-4 z-10 flex items-center space-x-2 bg-cosmos-900/90 border border-cosmos-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs shadow-lg pointer-events-none font-mono">
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-slate-300 font-semibold font-sans">
-              {datasetId === 'goods_s_mock' ? 'GOODS-S Deep Mock' : 'TNG-100 Calibration'}
-            </span>
-            <span className="text-slate-500">•</span>
-            <span className="text-slate-400">
-              RA {manifest.field_center.ra.toFixed(2)}°, Dec {manifest.field_center.dec.toFixed(2)}°
-            </span>
-            <span className="text-slate-500">•</span>
-            <span className="text-amber-400 font-bold">{galaxies.length} galaxies</span>
+            {/* Floating Field Summary Badge (Bottom Left) */}
+            <div className="absolute bottom-4 left-4 z-10 flex items-center space-x-2 bg-cosmos-900/90 border border-cosmos-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs shadow-lg pointer-events-none font-mono">
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-slate-300 font-semibold font-sans">
+                {datasetId === 'goods_s_mock' ? 'GOODS-S Deep Mock' : 'TNG-100 Calibration'}
+              </span>
+              <span className="text-slate-500">•</span>
+              <span className="text-slate-400">
+                RA {manifest.field_center.ra.toFixed(2)}°, Dec {manifest.field_center.dec.toFixed(2)}°
+              </span>
+              <span className="text-slate-500">•</span>
+              <span className="text-amber-400 font-bold">{galaxies.length} galaxies</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Slide-over Galaxy Inspector */}
-        {selectedGalaxy && (
+        {selectedGalaxy && viewportMode !== 'twin' && (
           <GalaxyInspector
             galaxy={selectedGalaxy}
             allGalaxies={galaxies}
             filters={manifest.filters}
             onClose={() => setSelectedGalaxy(null)}
             onUpdateGalaxy={handleUpdateGalaxy}
+            onOpenGalaxyTwin={() => setViewportMode('twin')}
           />
         )}
       </div>

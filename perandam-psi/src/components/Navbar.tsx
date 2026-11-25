@@ -10,8 +10,9 @@ import {
   AlertTriangle,
   ShieldCheck,
   Layers,
+  Box,
 } from 'lucide-react';
-import { Galaxy, SkyColorMode } from '../types/galaxy';
+import { Galaxy, SkyColorMode, ViewportMode } from '../types/galaxy';
 
 interface NavbarProps {
   nGalaxies: number;
@@ -19,6 +20,8 @@ interface NavbarProps {
   isConnected: boolean;
   colorMode: SkyColorMode;
   onChangeColorMode: (mode: SkyColorMode) => void;
+  viewportMode: ViewportMode;
+  onToggleViewportMode: () => void;
   onResetView: () => void;
   onSelectGalaxy: (id: string) => void;
   onOpenGuide: () => void;
@@ -35,6 +38,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isConnected,
   colorMode,
   onChangeColorMode,
+  viewportMode,
+  onToggleViewportMode,
   onResetView,
   onSelectGalaxy,
   onOpenGuide,
@@ -109,6 +114,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             </option>
           </select>
         </div>
+
+        {/* 🌌 Galaxy Stage 3D Multi-Galaxy & Milky Way Benchmark */}
+        <button
+          onClick={onToggleViewportMode}
+          title="Perandam Ψ 3D Galaxy Stage — Multi-Galaxy Comparison & Milky Way Benchmark: Where simulations meet the real universe"
+          className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs border rounded-lg font-semibold transition-all cursor-pointer ${
+            viewportMode === 'twin'
+              ? 'bg-gradient-to-r from-indigo-950 to-cyan-950 border-cyan-400 text-cyan-200 shadow-lg shadow-cyan-950/50 ring-1 ring-cyan-400/50'
+              : 'bg-cosmos-950/80 hover:bg-cosmos-800 border-cosmos-700 text-slate-300'
+          }`}
+        >
+          <Sparkles className={`w-3.5 h-3.5 ${viewportMode === 'twin' ? 'text-amber-300 animate-pulse' : 'text-indigo-400'}`} />
+          <span>3D Galaxy Stage</span>
+          <span className="text-[10px] px-1 py-0.2 rounded bg-indigo-900/80 text-cyan-300 font-mono">
+            {viewportMode === 'twin' ? 'ACTIVE' : '3D'}
+          </span>
+        </button>
 
         {/* 🔭 Discovery Mode Toggle */}
         <button

@@ -27,6 +27,7 @@ interface GalaxyInspectorProps {
   filters: FilterCurveData[];
   onClose: () => void;
   onUpdateGalaxy?: (updated: Galaxy) => void;
+  onOpenGalaxyTwin?: () => void;
 }
 
 export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
@@ -35,6 +36,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   filters,
   onClose,
   onUpdateGalaxy,
+  onOpenGalaxyTwin,
 }) => {
   const [activeTab, setActiveTab] = useState<'sed' | 'color-color' | 'discovery' | 'phot' | 'code'>('sed');
   const [baseGalaxy, setBaseGalaxy] = useState<Galaxy | null>(null);
@@ -244,13 +246,26 @@ print("[OK] In-browser and Python numerical parity verified.")
           </span>
         </div>
 
-        <button
-          onClick={handleClose}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-cosmos-800 transition-colors"
-          title="Close Scientific Workspace"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-2">
+          {onOpenGalaxyTwin && (
+            <button
+              onClick={onOpenGalaxyTwin}
+              className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-lg bg-gradient-to-r from-indigo-950 to-cyan-950 hover:from-indigo-900 hover:to-cyan-900 border border-cyan-500/70 text-cyan-200 font-semibold transition-all shadow-sm"
+              title="Launch Perandam Ψ 3D Galaxy Stage — Multi-Galaxy Comparison & Milky Way Benchmark"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span>3D Galaxy Stage</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-cosmos-800 transition-colors"
+            title="Close Scientific Workspace"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Scientific Tab Switcher: Perfectly fits on one row with NO horizontal scroll */}

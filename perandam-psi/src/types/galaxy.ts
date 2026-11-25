@@ -1,4 +1,5 @@
 export type SkyColorMode = 'rgb' | 'redshift' | 'ssfr' | 'mass';
+export type ViewportMode = '2d' | 'twin' | '3d';
 
 export type DiscoveryClass =
   | 'COSMIC_NOON_SUPER_STARBURST'

@@ -35,6 +35,10 @@ jobs:
     - name: End-to-End Multi-Format & SPS Adapter Validation (Phases 2-4)
       run: |
         python scripts/test_end_to_end_validation.py
+
+    - name: Validate Kaggle GPU Benchmark Orchestrator (Dry-Run & Syntax)
+      run: |
+        python scripts/run_kaggle_gpu.py --dry-run --username specsynth-ci
     
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5

@@ -46,6 +46,24 @@ Workload: 50,000 galaxies, $K = 60$, $W = 1,200$ (5 timed runs after 2 warmups; 
 
 *Note: GPU throughput is measured end-to-end (including host-to-device memory copy, GPU GEMM contractions, dust/IGM attenuation, in-flight filter contraction, and device-to-host transfer). The 4.51x speedup is computed relative to the paired cloud VM CPU baseline.*
 
+#### Kaggle Tesla T4 GPU Benchmark & CI Integration
+Because standard GitHub Actions runners provide CPU-only execution, `specsynth` integrates with Kaggle's cloud GPU infrastructure via an automated orchestration pipeline (`scripts/run_kaggle_gpu.py` and `.github/workflows/kaggle-gpu.yml`):
+
+1. **GitHub Actions Workflow (`kaggle-gpu.yml`)**:
+   - Triggers on-demand via **Workflow Dispatch** (with configurable `n_galaxies`, `n_runs`, `commit_sha`, and `public` flags), weekly on a scheduled cron, and on published GitHub releases.
+   - Requires `KAGGLE_USERNAME` and `KAGGLE_KEY` in GitHub Repository Secrets.
+   - Pushes the benchmark kernel to Kaggle, monitors execution, retrieves `gpu_manifest.json`, and records the verified metrics in `$GITHUB_STEP_SUMMARY`.
+2. **Local / Developer Execution**:
+   ```bash
+   # Dry-run validation (tests worker compilation and metadata formatting without hitting Kaggle API):
+   python scripts/run_kaggle_gpu.py --dry-run --username <your_kaggle_username>
+
+   # Live Kaggle GPU dispatch:
+   python scripts/run_kaggle_gpu.py --username <your_kaggle_username> --n-gal 50000 --n-runs 5
+   ```
+3. **Public Verified Kaggle Notebook**:
+   Explore the live interactive GPU benchmark on Kaggle: [https://www.kaggle.com/code/bsankarganesh/specsynth-gpu-benchmark](https://www.kaggle.com/code/bsankarganesh/specsynth-gpu-benchmark).
+
 ### Out-of-Core Memory Boundedness (`psutil` RSS)
 Streaming 100k to 1M galaxies sequentially in 20,000-galaxy chunks (measured as single-process sequential chunk RSS, distinguished from client graph overhead or distributed multi-worker memory):
 

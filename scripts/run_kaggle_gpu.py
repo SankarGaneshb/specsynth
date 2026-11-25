@@ -125,6 +125,26 @@ print("\\n[+] Benchmark worker completed successfully.")
 '''
 
 
+def resolve_kaggle_cmd() -> list[str] | None:
+    """Resolve Kaggle execution prefix: binary 'kaggle', adjacent venv binary, or '[sys.executable, '-m', 'kaggle']'."""
+    if shutil.which("kaggle"):
+        return ["kaggle"]
+
+    bin_name = "kaggle.exe" if sys.platform == "win32" else "kaggle"
+    local_bin = Path(sys.executable).parent / bin_name
+    if local_bin.exists():
+        return [str(local_bin)]
+
+    try:
+        import importlib.util
+        if importlib.util.find_spec("kaggle") is not None:
+            return [sys.executable, "-m", "kaggle"]
+    except Exception:
+        pass
+
+    return None
+
+
 def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
     """Run a subprocess command and return the completed process."""
     return subprocess.run(cmd, capture_output=True, text=True, check=check)
@@ -136,10 +156,52 @@ def main() -> int:
     parser.add_argument("--kernel-slug", default="specsynth-gpu-benchmark", help="Kernel slug identifier")
     parser.add_argument("--n-gal", type=int, default=50000, help="Number of galaxies (default: 50,000)")
     parser.add_argument("--n-runs", type=int, default=5, help="Number of benchmark runs (default: 5)")
+    parser.add_argument("--commit-sha", default="", help="Git commit SHA or ref to benchmark on Kaggle")
     parser.add_argument("--output", default="paper/benchmark_manifest_gpu_t4.json", help="Destination manifest path")
     parser.add_argument("--timeout", type=int, default=900, help="Timeout in seconds (default: 900s / 15m)")
     parser.add_argument("--public", action="store_true", help="Make the Kaggle notebook publicly visible on Kaggle")
+    parser.add_argument("--dry-run", action="store_true", help="Stage files, validate worker syntax and kernel metadata without dispatching to Kaggle API")
     args = parser.parse_args()
+
+    # Dry-run mode for CI syntax & configuration validation without API calls
+    if args.dry_run:
+        print("[*] Running in DRY-RUN mode (validating configuration and worker syntax without API calls)...")
+        staging_dir = Path(tempfile.mkdtemp(prefix="specsynth_kaggle_dryrun_"))
+        try:
+            commit_sha = (args.commit_sha or "").strip()
+            if not commit_sha:
+                try:
+                    res = run_command(["git", "rev-parse", "HEAD"], check=False)
+                    if res.returncode == 0:
+                        commit_sha = res.stdout.strip()
+                except Exception:
+                    commit_sha = "dryrun-commit-sha"
+            worker_code = generate_worker_script(args.n_gal, args.n_runs, commit_sha)
+            # Verify Python syntax
+            compile(worker_code, "benchmark_worker.py", "exec")
+            worker_file = staging_dir / "benchmark_worker.py"
+            worker_file.write_text(worker_code, encoding="utf-8")
+
+            username = (args.username or "").strip() or "specsynth-dryrun"
+            kernel_id = f"{username}/{args.kernel_slug}"
+            metadata = {
+                "id": kernel_id,
+                "title": args.kernel_slug.replace("-", " ").title(),
+                "code_file": "benchmark_worker.py",
+                "language": "python",
+                "kernel_type": "script",
+                "is_private": "false" if args.public else "true",
+                "enable_gpu": "true",
+                "enable_internet": "true",
+            }
+            meta_file = staging_dir / "kernel-metadata.json"
+            meta_file.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+            print(f"[+] Dry-run validation passed: Worker script ({len(worker_code)} chars) syntax valid.")
+            print(f"[+] Kernel metadata valid for ID: {kernel_id}")
+            return 0
+        finally:
+            shutil.rmtree(staging_dir, ignore_errors=True)
 
     # Self-healing: ensure 'six' is installed (known Kaggle CLI packaging bug)
     try:
@@ -151,8 +213,9 @@ def main() -> int:
         except Exception:
             pass
 
-    # Verify Kaggle CLI is installed
-    if not shutil.which("kaggle"):
+    # Verify Kaggle CLI or module is installed
+    kaggle_cmd = resolve_kaggle_cmd()
+    if not kaggle_cmd:
         print("[!] Error: 'kaggle' CLI is not installed or not in PATH.", file=sys.stderr)
         print("    Install it via: pip install kaggle", file=sys.stderr)
         return 1
@@ -168,23 +231,47 @@ def main() -> int:
         print("    If running locally, pass --username <your_kaggle_username> or set KAGGLE_USERNAME in your environment.", file=sys.stderr)
         return 1
 
-    # Synchronize authentication token for both modern and legacy Kaggle CLI
+    # Configure Kaggle config directory & synchronize credentials
+    config_dir = Path.home() / ".kaggle"
+    try:
+      config_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+      # Fallback to user-writable temp directory if ~/.kaggle has restricted permissions
+      config_dir = Path(tempfile.gettempdir()) / "specsynth_kaggle_cfg"
+      config_dir.mkdir(parents=True, exist_ok=True)
+      os.environ["KAGGLE_CONFIG_DIR"] = str(config_dir)
+
     if key_env:
-        key_clean = key_env.strip()
-        os.environ["KAGGLE_KEY"] = key_clean
-        os.environ["KAGGLE_API_TOKEN"] = key_clean
-        try:
-            acc_file = Path.home() / ".kaggle" / "access_token"
-            acc_file.parent.mkdir(parents=True, exist_ok=True)
-            acc_file.write_text(key_clean, encoding="utf-8")
-        except Exception:
-            pass
-        try:
-            cfg_file = Path.home() / ".kaggle" / "kaggle.json"
-            cfg_file.parent.mkdir(parents=True, exist_ok=True)
-            cfg_file.write_text(json.dumps({"username": username, "key": key_clean}), encoding="utf-8")
-        except Exception:
-            pass
+      key_clean = key_env.strip()
+      os.environ["KAGGLE_KEY"] = key_clean
+      os.environ["KAGGLE_API_TOKEN"] = key_clean
+      try:
+        (config_dir / "access_token").write_text(key_clean, encoding="utf-8")
+      except Exception:
+        pass
+      try:
+        (config_dir / "kaggle.json").write_text(
+            json.dumps({"username": username, "key": key_clean}),
+            encoding="utf-8",
+        )
+      except Exception:
+        pass
+    elif not (config_dir / "kaggle.json").exists():
+      print(
+          "[*] Note: No Kaggle API key detected in environment (KAGGLE_KEY) or in"
+          f" {config_dir / 'kaggle.json'}.",
+          file=sys.stderr,
+      )
+      print(
+          "    If authentication fails, get an API token from"
+          " https://www.kaggle.com/settings -> 'Create New Token'",
+          file=sys.stderr,
+      )
+      print(
+          "    and set KAGGLE_KEY in your environment, or place kaggle.json in"
+          f" {config_dir}.",
+          file=sys.stderr,
+      )
 
     kernel_id = f"{username}/{args.kernel_slug}"
     print(f"[*] Target Kaggle Kernel ID: {kernel_id}")
@@ -194,13 +281,14 @@ def main() -> int:
     staging_dir = Path(tempfile.mkdtemp(prefix="specsynth_kaggle_"))
     try:
         # Resolve current commit sha if available
-        commit_sha = ""
-        try:
-            res = run_command(["git", "rev-parse", "HEAD"], check=False)
-            if res.returncode == 0:
-                commit_sha = res.stdout.strip()
-        except Exception:
-            pass
+        commit_sha = (args.commit_sha or "").strip()
+        if not commit_sha:
+            try:
+                res = run_command(["git", "rev-parse", "HEAD"], check=False)
+                if res.returncode == 0:
+                    commit_sha = res.stdout.strip()
+            except Exception:
+                pass
 
         # Write worker script
         worker_file = staging_dir / "benchmark_worker.py"
@@ -224,7 +312,7 @@ def main() -> int:
 
         # Push kernel to Kaggle
         print(f"[*] Pushing kernel to Kaggle ({kernel_id})...")
-        push_res = run_command(["kaggle", "kernels", "push", "-p", str(staging_dir)], check=False)
+        push_res = run_command(kaggle_cmd + ["kernels", "push", "-p", str(staging_dir)], check=False)
         if push_res.returncode != 0:
             print(f"[!] Kaggle push failed:\n{push_res.stderr}\n{push_res.stdout}", file=sys.stderr)
             return 1
@@ -236,7 +324,7 @@ def main() -> int:
         completed = False
 
         while time.time() - start_time < args.timeout:
-            status_res = run_command(["kaggle", "kernels", "status", kernel_id], check=False)
+            status_res = run_command(kaggle_cmd + ["kernels", "status", kernel_id], check=False)
             status_text = status_res.stdout.strip()
             print(f"    [{int(time.time() - start_time):03d}s] {status_text}")
 
@@ -255,7 +343,7 @@ def main() -> int:
             # Retrieve output to show failure log
             out_fail_dir = staging_dir / "failed_output"
             out_fail_dir.mkdir(exist_ok=True)
-            run_command(["kaggle", "kernels", "output", kernel_id, "-p", str(out_fail_dir)], check=False)
+            run_command(kaggle_cmd + ["kernels", "output", kernel_id, "-p", str(out_fail_dir)], check=False)
             for f in out_fail_dir.glob("*"):
                 if f.is_file():
                     print(f"\n--- Artifact: {f.name} ---")
@@ -269,7 +357,7 @@ def main() -> int:
         print(f"\n[*] Fetching generated artifacts from Kaggle...")
         out_dir = staging_dir / "output"
         out_dir.mkdir(exist_ok=True)
-        fetch_res = run_command(["kaggle", "kernels", "output", kernel_id, "-p", str(out_dir)], check=False)
+        fetch_res = run_command(kaggle_cmd + ["kernels", "output", kernel_id, "-p", str(out_dir)], check=False)
         if fetch_res.returncode != 0:
             print(f"[!] Failed to fetch kernel output:\n{fetch_res.stderr}", file=sys.stderr)
             return 1

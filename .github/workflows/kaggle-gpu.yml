@@ -11,15 +11,57 @@ on:
         description: 'Number of benchmark runs'
         required: false
         default: '5'
+      commit_sha:
+        description: 'Git commit SHA or ref to benchmark (leave empty for current commit)'
+        required: false
+        default: ''
+      public:
+        description: 'Make Kaggle notebook publicly visible on Kaggle'
+        type: boolean
+        required: false
+        default: false
+  workflow_call:
+    inputs:
+      n_galaxies:
+        type: string
+        default: '50000'
+      n_runs:
+        type: string
+        default: '5'
+      commit_sha:
+        type: string
+        default: ''
+      public:
+        type: boolean
+        default: false
+    secrets:
+      KAGGLE_USERNAME:
+        required: true
+      KAGGLE_KEY:
+        required: true
+  schedule:
+    # Weekly Sunday run at 02:00 UTC to maintain verified benchmark provenance
+    - cron: '0 2 * * 0'
+  release:
+    types: [published]
 
 jobs:
-  kaggle-gpu-test:
+  kaggle-gpu-benchmark:
     name: Run Tesla T4 GPU Benchmark on Kaggle
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify Kaggle Secrets Configuration
+        run: |
+          if [ -z "${{ secrets.KAGGLE_USERNAME }}" ] || [ -z "${{ secrets.KAGGLE_KEY }}" ]; then
+            echo "::error::Kaggle credentials not configured in GitHub Secrets."
+            echo "Please configure 'KAGGLE_USERNAME' and 'KAGGLE_KEY' in Repository Settings -> Secrets and variables -> Actions."
+            echo "See docs/guides/validation-and-benchmarks.md for setup instructions."
+            exit 1
+          fi
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -30,7 +72,7 @@ jobs:
       - name: Install Kaggle CLI
         run: |
           python -m pip install --upgrade pip
-          pip install kaggle
+          pip install kaggle six
 
       - name: Configure Kaggle API credentials
         env:
@@ -46,10 +88,23 @@ jobs:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
+          COMMIT_ARG=""
+          TARGET_COMMIT="${{ inputs.commit_sha || github.sha }}"
+          if [ -n "$TARGET_COMMIT" ]; then
+            COMMIT_ARG="--commit-sha $TARGET_COMMIT"
+          fi
+
+          PUBLIC_ARG=""
+          if [ "${{ inputs.public }}" = "true" ]; then
+            PUBLIC_ARG="--public"
+          fi
+
           python scripts/run_kaggle_gpu.py \
             --username "${{ secrets.KAGGLE_USERNAME }}" \
-            --n-gal ${{ github.event.inputs.n_galaxies }} \
-            --n-runs ${{ github.event.inputs.n_runs }}
+            --n-gal "${{ inputs.n_galaxies || '50000' }}" \
+            --n-runs "${{ inputs.n_runs || '5' }}" \
+            $COMMIT_ARG \
+            $PUBLIC_ARG
 
       - name: Upload GPU Benchmark Manifest Artifact
         uses: actions/upload-artifact@v4
