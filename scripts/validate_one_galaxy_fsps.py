@@ -23,10 +23,12 @@ import numpy as np
 import pyarrow.parquet as pq
 
 from specsynth.adapters.fsps import FSPSAdapter, find_default_fsps_grid
+from specsynth.contracts.photometry import PhotometryPointContract, SyntheticObservationContract
 from specsynth.core import attenuation_curve, sfh_from_params, synth_block
 from specsynth.cosmology import TNG_COSMOLOGY, project_per_galaxy_photometry_chunk
 from specsynth.filters import get_filter
 from specsynth.igm import madau_transmission
+from specsynth.provenance import generate_provenance_manifest
 
 C_ANG_S = 2.99792458e18   # Speed of light in Angstrom / s
 L_SUN_ERG_S = 3.828e33    # Solar luminosity in erg / s
@@ -159,7 +161,60 @@ def validate_one_galaxy(subhalo_target_id: str = "tng100_subhalo_009873") -> dic
         delta_mags[fname] = round(delta, 4)
 
     max_delta = max(delta_mags.values())
-    passed = max_delta < 0.02
+    tolerance_mag = 0.005
+    passed = max_delta < tolerance_mag
+
+    # Build Photometry Points & Observation Contract
+    phot_points = [
+        PhotometryPointContract(
+            filter_name=fname,
+            pivot_wavelength_angstrom=filter_pivots[fname],
+            flux_density_ujy=specsynth_fnu_ujy[fname],
+            ab_magnitude=specsynth_mags[fname],
+            ab_mag_error=0.01,
+            snr=100.0,
+            transmission_sha256=get_filter(fname).sha256,
+        )
+        for fname in TARGET_FILTERS
+    ]
+
+    obs_contract = SyntheticObservationContract(
+        galaxy_id=subhalo_target_id,
+        redshift=redshift,
+        cosmology={"H0": TNG_COSMOLOGY.H0, "Om0": TNG_COSMOLOGY.Om0, "Ol0": TNG_COSMOLOGY.Ode0},
+        dust_model="charlot_fall_2000",
+        igm_model="madau_1995",
+        ssp_model=ssp_data.metadata.get("model", "FSPS"),
+        photometry=phot_points,
+        sed_wave_angstrom=wave_obs,
+        sed_flux_obs_cgs=f_lam_obs_full.astype(np.float32),
+        sed_flux_rest_lsun_angstrom=spec_rest.astype(np.float32),
+        provenance={"subhalo": subhalo_target_id, "simulation": "IllustrisTNG-100"},
+    )
+
+    # Build Provenance Manifest
+    manifest = generate_provenance_manifest(
+        galaxy_id=subhalo_target_id,
+        simulation_name="IllustrisTNG-100",
+        redshift=redshift,
+        physical_parameters={
+            "log_mstar": log_m,
+            "stellar_mass_msun": 10.0 ** log_m,
+            "sfr_msun_yr": sfr,
+            "metallicity": metallicity,
+            "tau_diffuse": tau_diffuse,
+            "tau_birth": tau_birth,
+            "t_onset_gyr": t_onset,
+            "tau_gyr": tau,
+        },
+        engine_name=ssp_data.metadata.get("model", "FSPS"),
+        engine_version="3.2",
+        grid_path=grid_path,
+        is_genuine_engine=ssp_data.metadata.get("is_genuine_fsps", False),
+        cosmology={"H0": TNG_COSMOLOGY.H0, "Om0": TNG_COSMOLOGY.Om0, "Ol0": TNG_COSMOLOGY.Ode0},
+        filter_checksums={fname: get_filter(fname).sha256 for fname in TARGET_FILTERS},
+        photometry_results=specsynth_mags,
+    )
 
     return {
         "subhalo_id": subhalo_target_id,
@@ -176,7 +231,10 @@ def validate_one_galaxy(subhalo_target_id: str = "tng100_subhalo_009873") -> dic
         "ref_fnu_ujy": ref_fnu_ujy,
         "delta_mags": delta_mags,
         "max_delta_mag": max_delta,
+        "tolerance_mag": tolerance_mag,
         "passed": passed,
+        "observation_contract": obs_contract,
+        "manifest": manifest,
     }
 
 
@@ -200,13 +258,21 @@ def main() -> None:
         sm = res["specsynth_mags"][fname]
         rm = res["ref_mags"][fname]
         dm = res["delta_mags"][fname]
-        status = "PASS (<0.02)" if dm < 0.02 else "FAIL"
+        status = f"PASS (<{res['tolerance_mag']})" if dm < res["tolerance_mag"] else "FAIL"
         print(f"{fname:<15} {sm:<16.3f} {rm:<16.3f} {dm:<12.4f} {status}")
 
     print("-" * 80)
     print(f"Max Absolute Divergence : {res['max_delta_mag']:.4f} mag")
-    print(f"Parity Test Result      : {'PASSED (Within 0.02 mag)' if res['passed'] else 'FAILED'}")
+    print(f"Declared Tolerance      : {res['tolerance_mag']:.4f} mag")
+    print(f"Parity Test Result      : {'PASSED' if res['passed'] else 'FAILED'}")
     print("=" * 80)
+
+    # Save manifest artifact
+    manifest_path = Path("benchmark_one_galaxy_manifest.json")
+    import json
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(res["manifest"], f, indent=2)
+    print(f"Provenance manifest written to: {manifest_path.resolve()}")
 
     if not res["passed"]:
         sys.exit(1)

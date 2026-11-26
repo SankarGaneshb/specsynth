@@ -11,14 +11,16 @@ from specsynth.adapters.base import BaseAdapter, SSPData
 def parse_fsps_spec_file(
     filepath: str | Path,
     return_mets: bool = False,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray] | tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray] | tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict]:
     """
     Parse a standard Fortran or SpecSynth FSPS ASCII spectrum output file.
-    Extracts explicit age and metallicity metadata from file headers if present.
+    Extracts explicit age, metallicity, and layout metadata from file headers if present.
     """
     filepath = Path(filepath)
     parsed_ages = None
     parsed_mets = None
+    parsed_meta = {}
+    col_order = "met_major"  # Default Fortran FSPS spstot layout
 
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
@@ -27,24 +29,34 @@ def parse_fsps_spec_file(
                     break
                 line_str = line.lstrip("#").strip()
                 line_lower = line_str.lower()
-                if (
-                    line_lower.startswith("ages (yr):")
-                    or line_lower.startswith("ages_yr:")
-                    or line_lower.startswith("ages:")
-                ):
-                    parts = line_str.split(":", 1)[1].replace(",", " ").split()
-                    try:
-                        parsed_ages = np.array([float(x) for x in parts], dtype=np.float64)
-                    except Exception:
-                        pass
-                elif line_lower.startswith("metallicities:") or line_lower.startswith("mets:"):
-                    parts = line_str.split(":", 1)[1].replace(",", " ").split()
-                    try:
-                        parsed_mets = np.array([float(x) for x in parts], dtype=np.float64)
-                    except Exception:
-                        pass
+
+                if ":" in line_str:
+                    key, val = line_str.split(":", 1)
+                    key_clean = key.strip().lower()
+                    val_clean = val.strip()
+
+                    if key_clean in ("ages (yr)", "ages_yr", "ages"):
+                        parts = val_clean.replace(",", " ").split()
+                        try:
+                            parsed_ages = np.array([float(x) for x in parts], dtype=np.float64)
+                        except Exception:
+                            pass
+                    elif key_clean in ("metallicities", "mets", "mets_z"):
+                        parts = val_clean.replace(",", " ").split()
+                        try:
+                            parsed_mets = np.array([float(x) for x in parts], dtype=np.float64)
+                        except Exception:
+                            pass
+                    elif key_clean in ("col_order", "layout"):
+                        col_order = val_clean.lower()
+                    elif key_clean in ("is_genuine_fsps", "genuine"):
+                        parsed_meta["is_genuine_fsps"] = val_clean.lower() in ("true", "1", "yes")
+                    elif key_clean in ("imf", "isochrone", "isochrones", "model"):
+                        parsed_meta[key_clean] = val_clean
     except Exception:
         pass
+
+    parsed_meta["col_order"] = col_order
 
     # If whitespace-separated grid
     data = np.loadtxt(filepath, comments="#")
@@ -127,11 +139,14 @@ class FSPSAdapter(BaseAdapter):
         if self.filepath:
             ages, wave, fluxes, mets = parse_fsps_spec_file(self.filepath, return_mets=True)
             is_analytical = False
+            col_order = "met_major"
             try:
                 with open(self.filepath, "r", encoding="utf-8") as f:
-                    head = f.read(1024).lower()
+                    head = f.read(2048).lower()
                     if "analytical_reference" in head or "is_genuine_fsps: false" in head:
                         is_analytical = True
+                    if "col_order: age_major" in head or "layout: age_major" in head:
+                        col_order = "age_major"
             except Exception:
                 pass
             model_name = "analytical_reference" if is_analytical else "FSPS"
@@ -139,6 +154,7 @@ class FSPSAdapter(BaseAdapter):
                 "model": model_name,
                 "is_genuine_fsps": not is_analytical,
                 "file": str(self.filepath),
+                "col_order": col_order,
             }
             if is_analytical:
                 meta["note"] = "SpecSynth analytical reference grid (continuum & break proxy; python-fsps not used)"
@@ -146,8 +162,10 @@ class FSPSAdapter(BaseAdapter):
             n_age = len(ages)
             n_met = len(mets)
             if fluxes.shape[0] == n_age * n_met and n_met > 1:
-                # Multi-metallicity grid: reshape to (N_age, N_met, N_wave)
-                grid_3d = fluxes.reshape(n_met, n_age, len(wave)).transpose(1, 0, 2)
+                if col_order == "age_major":
+                    grid_3d = fluxes.reshape(n_age, n_met, len(wave))
+                else:
+                    grid_3d = fluxes.reshape(n_met, n_age, len(wave)).transpose(1, 0, 2)
             else:
                 grid_3d = fluxes[:, None, :]
                 if n_met == 1 and self.metallicity:
@@ -245,3 +263,76 @@ class FSPSAdapter(BaseAdapter):
                 "nebular": self.add_nebular_emission,
             },
         )
+
+    def to_contract(self) -> Any:
+        """Load and convert to a validated SSPGridContract (v1.0.0)."""
+        from specsynth.contracts.ssp import SSPGridContract
+        ssp_data = self.load()
+        meta = ssp_data.metadata
+        return SSPGridContract(
+            source_engine=meta.get("model", "FSPS"),
+            engine_version="3.2",
+            imf=str(self.imf_type),
+            isochrones=str(self.isochrone),
+            ages_yr=ssp_data.ages,
+            mets_z=ssp_data.mets,
+            wave_angstrom=ssp_data.wave,
+            ssp_flux_2d=ssp_data.ssp,
+            metadata=meta,
+        )
+
+    def get_capabilities(self) -> dict[str, Any]:
+        """Declare FSPS adapter capabilities and runtime mode."""
+        try:
+            import fsps
+            dynamic_available = True
+        except ImportError:
+            dynamic_available = False
+
+        return {
+            "name": "FSPSAdapter",
+            "version": "3.2.0",
+            "dynamic_metallicity": True,
+            "resampling_supported": True,
+            "supported_imfs": ["salpeter", "chabrier", "kroupa"],
+            "supported_isochrones": ["mist", "padova", "parsec"],
+            "dynamic_python_fsps_available": dynamic_available,
+            "bundled_reference_available": find_default_fsps_grid() is not None,
+        }
+
+    @staticmethod
+    def export_spec_file(
+        filepath: str | Path,
+        ages_yr: np.ndarray,
+        mets_z: np.ndarray,
+        wave_angstrom: np.ndarray,
+        fluxes_2d: np.ndarray,
+        is_genuine_fsps: bool = False,
+        imf: str = "chabrier",
+        isochrone: str = "mist",
+        col_order: str = "age_major",
+    ) -> None:
+        """
+        Export a multi-metallicity or single-metallicity grid to a standardized FSPS .spec table
+        with self-documenting headers and layout conventions.
+        """
+        filepath = Path(filepath)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write("# SpecSynth FSPS Spectral Grid Table\n")
+            f.write(f"# is_genuine_fsps: {is_genuine_fsps}\n")
+            f.write(f"# model: {'FSPS' if is_genuine_fsps else 'analytical_reference'}\n")
+            f.write(f"# imf: {imf}\n")
+            f.write(f"# isochrone: {isochrone}\n")
+            f.write(f"# col_order: {col_order}\n")
+            f.write(f"# N_WAVE={len(wave_angstrom)}, N_AGE={len(ages_yr)}, N_MET={len(mets_z)}\n")
+            f.write(f"# Ages_yr: {', '.join(f'{a:.4e}' for a in ages_yr)}\n")
+            f.write(f"# Metallicities: {', '.join(f'{m:.4e}' for m in mets_z)}\n")
+            f.write("# Col 0: Wavelength (Angstroms), Cols 1..K: Flux (L_sun/A per M_sun formed)\n")
+
+            # Table data: shape (N_wave, 1 + N_cols)
+            # fluxes_2d is shape (N_cols, N_wave), so fluxes_2d.T is shape (N_wave, N_cols)
+            combined = np.column_stack([wave_angstrom, fluxes_2d.T])
+            np.savetxt(f, combined, fmt="%.8e")
+

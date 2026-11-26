@@ -255,3 +255,100 @@ def test_dust_power_law_scaling_limits():
     assert np.isclose(kd[0], (1500.0 / 5500.0) ** -0.7, rtol=1e-4)
     assert np.isclose(kd[2], (22000.0 / 5500.0) ** -0.7, rtol=1e-4)
     assert kd[0] > kd[1] > kd[2], "Dust extinction must decrease monotonically with wavelength"
+
+
+# -----------------------------------------------------------------------------
+# 5. Direct Astropy FLRW and SFH Mass Conservation Parity (Milestone 2 / P1)
+# -----------------------------------------------------------------------------
+
+def test_astropy_flrw_cosmology_direct_parity():
+    """
+    Directly verify Specsynth FlatLambdaCDM against Astropy's native FlatLambdaCDM.
+    Tests comoving, luminosity, and angular diameter distances for z in [0.05, 5.0].
+    Tolerance: relative error < 1e-5.
+    Requires scipy for Astropy's hypergeometric elliptic integration.
+    """
+    pytest.importorskip("scipy.special")
+    from astropy.cosmology import FlatLambdaCDM as AstropyFlatLambdaCDM
+    from specsynth.cosmology import FlatLambdaCDM
+
+    H0 = 67.74
+    Om0 = 0.3089
+    spec_cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+    astro_cosmo = AstropyFlatLambdaCDM(H0=H0, Om0=Om0)
+
+    for z in [0.05, 0.5, 1.0, 2.0, 3.5, 5.0]:
+        d_c_spec = float(spec_cosmo.comoving_distance(z))
+        d_c_astro = float(astro_cosmo.comoving_distance(z).value)
+        assert abs(d_c_spec - d_c_astro) / d_c_astro < 1e-5
+
+        d_l_spec = float(spec_cosmo.luminosity_distance(z))
+        d_l_astro = float(astro_cosmo.luminosity_distance(z).value)
+        assert abs(d_l_spec - d_l_astro) / d_l_astro < 1e-5
+
+        d_a_spec = float(spec_cosmo.angular_diameter_distance(z))
+        d_a_astro = float(astro_cosmo.angular_diameter_distance(z).value)
+        assert abs(d_a_spec - d_a_astro) / d_a_astro < 1e-5
+
+
+def test_sfh_delayed_tau_exact_mass_conservation():
+    """
+    Verify that compute_delayed_tau_sfh exactly conserves formed stellar mass:
+    sum_{age, met} SFH_matrix[gal, :] == M_formed[gal] within relative tolerance 1e-5.
+    """
+    from specsynth.sfh import compute_delayed_tau_sfh
+
+    ages = np.logspace(6.0, np.log10(1.35e10), 50)
+    mets = np.array([0.004, 0.008, 0.019, 0.03])
+    masses = np.array([1e9, 5e10, 2.5e11], dtype=np.float64)
+    t_onsets = np.array([10.0, 12.0, 8.5], dtype=np.float64)
+    taus = np.array([1.5, 3.0, 0.8], dtype=np.float64)
+    log_zs = np.array([-2.1, -1.8, -1.5], dtype=np.float64)
+
+    sfh = compute_delayed_tau_sfh(
+        mass_formed_msun=masses,
+        t_onset_gyr=t_onsets,
+        tau_gyr=taus,
+        ages_yr=ages,
+        mets_z=mets,
+        log_z_centre=log_zs,
+    )
+
+    summed_masses = np.sum(sfh, axis=1)
+    for expected, actual in zip(masses, summed_masses):
+        rel_diff = abs(actual - expected) / expected
+        assert rel_diff < 1e-5, f"Mass conservation failed: expected {expected:.2e}, got {actual:.2e}"
+
+
+def test_fsps_multiz_export_and_import(tmp_path):
+    """
+    Verify exporting and header-driven importing of multi-metallicity FSPS grids.
+    """
+    from specsynth.adapters.fsps import FSPSAdapter, parse_fsps_spec_file
+
+    ages = np.array([1e7, 1e8, 1e9])
+    mets = np.array([0.004, 0.019])
+    wave = np.linspace(2000, 8000, 40)
+    fluxes = np.ones((len(ages) * len(mets), len(wave)), dtype=np.float32)
+
+    export_path = tmp_path / "test_multiz.spec"
+    FSPSAdapter.export_spec_file(
+        filepath=export_path,
+        ages_yr=ages,
+        mets_z=mets,
+        wave_angstrom=wave,
+        fluxes_2d=fluxes,
+        is_genuine_fsps=True,
+        col_order="age_major",
+    )
+
+    assert export_path.exists()
+    adapter = FSPSAdapter(filepath=export_path)
+    ssp_data = adapter.load()
+
+    assert ssp_data.metadata["is_genuine_fsps"] is True
+    assert len(ssp_data.ages) == 3
+    assert len(ssp_data.mets) == 2
+    assert len(ssp_data.wave) == 40
+    assert ssp_data.ssp.shape == (6, 40)
+

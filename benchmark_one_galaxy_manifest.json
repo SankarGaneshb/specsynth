@@ -1,0 +1,63 @@
+{
+  "manifest_version": "1.0.0",
+  "timestamp_utc": "2026-11-26T13:23:26.171903+00:00",
+  "git_commit": "8e36648d7bad3959cdd8ed32c0232f0370fec461",
+  "environment": {
+    "python_version": "3.13.1",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "system": "Windows"
+  },
+  "target": {
+    "galaxy_id": "tng100_subhalo_009873",
+    "simulation_name": "IllustrisTNG-100",
+    "dataset_type": "empirical_simulation",
+    "redshift": 0.998479962348938,
+    "parameters": {
+      "log_mstar": 9.249207496643066,
+      "stellar_mass_msun": 1775037353.3249526,
+      "sfr_msun_yr": 0.3066003918647766,
+      "metallicity": -0.15938641130924225,
+      "tau_diffuse": 0.1462569385766983,
+      "tau_birth": 0.22677558660507202,
+      "t_onset_gyr": 3.1297855377197266,
+      "tau_gyr": 1.6240816116333008
+    }
+  },
+  "sps_engine": {
+    "name": "analytical_reference",
+    "version": "3.2",
+    "is_genuine": false,
+    "grid_file": "C:\\Users\\bsank\\specsynth\\sample_models\\fsps\\fsps_full_chabrier_mist.spec",
+    "grid_sha256": "f842dbfb8941d27e3b6b78aebc04bb6a7556aba05cabc6bd7f2d1f49de2cc576"
+  },
+  "physics": {
+    "dust_model": "charlot_fall_2000",
+    "igm_model": "madau_1995",
+    "cosmology": {
+      "H0": 67.74,
+      "Om0": 0.3089,
+      "Ol0": 0.6911
+    }
+  },
+  "filters": {
+    "checksums": {
+      "jwst_f090w": "58eb808d6ecc4ff698234173bab99d9e998c2ea6651fa98ff636de21d9e7ffb8",
+      "jwst_f150w": "3a47ccc4006658d4ed704283e97d914516e13c9f90e795c3ef16b06f4487c9b1",
+      "jwst_f200w": "6c1091caa32451e4f7f4426ac8598e72f16916cf35573f54e39beb0de76c3f5d",
+      "jwst_f277w": "f4fe1a9373c090af558f3772e29c3bf46be0377eb2877885c01c154585abb308",
+      "jwst_f356w": "e9682e1a21a18abb9e2f50ca34fc6a95d09ec393fedd7f98dacbf6819ef7847b",
+      "jwst_f444w": "a6582a07bafde3c6e89a1008a7e5f63dbde6d5cd2be822d51266720950083b57"
+    }
+  },
+  "photometry_summary": {
+    "jwst_f090w": 17.6495,
+    "jwst_f150w": 17.6075,
+    "jwst_f200w": 17.8131,
+    "jwst_f277w": 18.1874,
+    "jwst_f356w": 18.5547,
+    "jwst_f444w": 18.9208
+  },
+  "reproducibility": {
+    "code_snippet": "# SpecSynth Deterministic Reproduction Script\n# Galaxy: tng100_subhalo_009873 (z = 0.9985)\nfrom specsynth.adapters.fsps import FSPSAdapter\nfrom specsynth.cosmology import FlatLambdaCDM\nfrom specsynth.contracts.photometry import SyntheticObservationContract\n\n# 1. Cosmology\ncosmo = FlatLambdaCDM(H0=67.74, Om0=0.3089)\n\n# 2. Physics & Engine: analytical_reference 3.2\n# Input grid SHA-256: f842dbfb8941d27e3b6b78aebc04bb6a7556aba05cabc6bd7f2d1f49de2cc576\nprint(\"Target Galaxy: tng100_subhalo_009873, Log(M*/Msun) = 9.249207496643066\")\n"
+  }
+}

@@ -305,21 +305,21 @@ def _gen_params(block: np.ndarray, seed: int, block_info=None) -> np.ndarray:
 
 def sfh_from_params(p: np.ndarray, ages: np.ndarray, mets: np.ndarray) -> np.ndarray:
     """Delayed-tau SFH x Gaussian metallicity distribution -> (n, T*Z) masses."""
-    edges = np.sqrt(ages[1:] * ages[:-1])
-    edges = np.concatenate([[ages[0] ** 2 / edges[0]], edges, [ages[-1] ** 2 / edges[-1]]])
-    dt = np.diff(edges)  # yr
+    from specsynth.sfh import compute_delayed_tau_sfh
+
     mass = 10.0 ** p[:, 0].astype(np.float64)
-    t_on = p[:, 1, None] * 1e9
-    tau = p[:, 2, None] * 1e9
-    t_form = np.clip(t_on - ages[None, :], 0.0, None)  # time since onset
-    sfr = t_form * np.exp(-t_form / tau)
-    w_t = sfr * dt[None, :] + 1e-30
-    w_t /= w_t.sum(1, keepdims=True)
-    lz = np.log10(mets)[None, :]
-    w_z = np.exp(-0.5 * ((lz - p[:, 3, None]) / 0.3) ** 2) + 1e-30
-    w_z /= w_z.sum(1, keepdims=True)
-    sfh = mass[:, None, None] * w_t[:, :, None] * w_z[:, None, :]
-    return sfh.reshape(len(p), -1).astype(np.float32)
+    t_on = p[:, 1].astype(np.float64)
+    tau = p[:, 2].astype(np.float64)
+    log_z = p[:, 3].astype(np.float64)
+    return compute_delayed_tau_sfh(
+        mass_formed_msun=mass,
+        t_onset_gyr=t_on,
+        tau_gyr=tau,
+        ages_yr=ages,
+        mets_z=mets,
+        log_z_centre=log_z,
+        z_dispersion=0.3,
+    )
 
 
 def synth_block(
