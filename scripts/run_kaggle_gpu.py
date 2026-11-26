@@ -25,16 +25,21 @@ def get_kaggle_credentials() -> tuple[str | None, str | None]:
     user = os.environ.get("KAGGLE_USERNAME")
     key = os.environ.get("KAGGLE_KEY") or os.environ.get("KAGGLE_API_TOKEN")
 
-    acc_file = Path.home() / ".kaggle" / "access_token"
-    if not key and acc_file.exists():
-        try:
-            key = acc_file.read_text(encoding="utf-8").strip()
-        except Exception:
-            pass
+    if user and key:
+        return user, key
 
-    cfg_file = Path.home() / ".kaggle" / "kaggle.json"
-    if cfg_file.exists():
-        try:
+    config_dir = Path(os.environ.get("KAGGLE_CONFIG_DIR", str(Path.home() / ".kaggle")))
+
+    acc_file = config_dir / "access_token"
+    try:
+        if not key and acc_file.exists():
+            key = acc_file.read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+
+    cfg_file = config_dir / "kaggle.json"
+    try:
+        if cfg_file.exists():
             with open(cfg_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 u = data.get("username")
@@ -43,8 +48,8 @@ def get_kaggle_credentials() -> tuple[str | None, str | None]:
                     user = u
                 if not key and k:
                     key = k
-        except Exception:
-            pass
+    except Exception:
+        pass
 
     return user, key
 

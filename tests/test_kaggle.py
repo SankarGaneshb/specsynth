@@ -68,13 +68,27 @@ def test_cli_dry_run(monkeypatch, capsys):
 
 
 def test_resolve_kaggle_cmd(monkeypatch):
+    # 1. System PATH binary available
     monkeypatch.setattr(rkg.shutil, "which", lambda cmd: "/usr/bin/kaggle")
     assert rkg.resolve_kaggle_cmd() == ["kaggle"]
 
+    # 2. Virtualenv adjacent binary available
     monkeypatch.setattr(rkg.shutil, "which", lambda cmd: None)
+    monkeypatch.setattr(rkg.Path, "exists", lambda self: True)
+    bin_name = "kaggle.exe" if sys.platform == "win32" else "kaggle"
+    expected_local = str(Path(sys.executable).parent / bin_name)
+    assert rkg.resolve_kaggle_cmd() == [expected_local]
+
+    # 3. Python module available via -m kaggle
     monkeypatch.setattr(rkg.Path, "exists", lambda self: False)
+    mock_spec = MagicMock()
+    monkeypatch.setattr("importlib.util.find_spec", lambda name: mock_spec if name == "kaggle" else None)
     cmd = rkg.resolve_kaggle_cmd()
     assert cmd == [sys.executable, "-m", "kaggle"]
+
+    # 4. Neither binary nor module available
+    monkeypatch.setattr("importlib.util.find_spec", lambda name: None)
+    assert rkg.resolve_kaggle_cmd() is None
 
 
 def test_cli_missing_username_fails(monkeypatch, capsys):

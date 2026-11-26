@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-13T15:19:21Z",
+  "timestamp": "2026-11-25T17:26:19Z",
   "provenance_type": "Measured Benchmark (Local Hardware)",
   "provenance": {
     "correctness": "Measured Empirical",
@@ -18,111 +18,113 @@
   "system": {
     "os": "Linux-6.18.55+-x86_64-with-glibc2.39",
     "python_version": "3.13.16",
+    "package_versions": {
+      "python": "3.13.16",
+      "numpy": "2.1.3",
+      "dask": "2026.1.1",
+      "zarr": "3.4.2",
+      "fsspec": "2025.12.0",
+      "astropy": "7.2.3",
+      "distributed": "2026.1.1"
+    },
     "cpu_arch": "x86_64",
     "cpu_processor": "x86_64",
     "cpu_count_physical": 2,
     "cpu_count_logical": 4,
     "total_ram_gb": 31.35,
-    "available_ram_gb": 29.2,
-    "git_commit": "a718e9e48d543a1fd8b6366e4884a19d33036655",
-    "image_digest": "sha256:fb6d2bbd33218ce590db96e2228966f03359f676c71027eda80412dcb617c39d",
-    "package_versions": {
-      "python": "3.13.16",
-      "numpy": "2.1.2",
-      "cupy": "13.3.0",
-      "dask": "2024.12.0",
-      "zarr": "2.18.2",
-      "fsspec": "2024.6.0"
-    },
+    "available_ram_gb": 29.14,
+    "git_commit": "98fb2f6da7562e8836615f9612cf74c2fed5dd57",
+    "git_dirty": false,
+    "image_digest": "not_containerized",
     "blas_backend": "scipy-openblas",
     "gpu_available": true,
     "gpu_device_name": "Tesla T4",
-    "gpu_cupy_version": "13.3.0",
-    "gpu_cuda_version": "12.2",
+    "gpu_cupy_version": "14.0.1",
+    "gpu_cuda_version": "13.0",
     "gpu_total_memory_gb": 14.56
   },
   "category_1_correctness": {
     "status": "PASS",
     "sample_size": 2000,
-    "max_relative_error": 9.87e-07,
-    "mean_relative_error": 8.83e-08,
-    "median_relative_error": 7.27e-08,
-    "root_mean_square_error": 2.25e-11
+    "max_relative_error": 8.52e-07,
+    "mean_relative_error": 8.54e-08,
+    "median_relative_error": 7.04e-08,
+    "root_mean_square_error": 2.02e-11
   },
   "category_2_single_node": {
     "cpu_blas": {
-      "mean_elapsed_seconds": 0.8719,
-      "std_elapsed_seconds": 0.0252,
-      "throughput_galaxies_per_sec": 57343.9,
-      "compute_gflops": 16.93,
+      "mean_elapsed_seconds": 0.8731,
+      "std_elapsed_seconds": 0.0157,
+      "throughput_galaxies_per_sec": 57265.2,
+      "compute_gflops": 16.9,
       "memory_bandwidth_gb_s": 0.27
     },
     "gpu_cupy": {
-      "mean_elapsed_seconds": 0.1932,
-      "std_elapsed_seconds": 0.004,
-      "throughput_galaxies_per_sec": 258812.3,
-      "compute_gflops": 76.4,
-      "memory_bandwidth_gb_s": 1.22,
-      "speedup_vs_cpu": 4.51
+      "mean_elapsed_seconds": 0.1994,
+      "std_elapsed_seconds": 0.0037,
+      "throughput_galaxies_per_sec": 250758.4,
+      "compute_gflops": 74.02,
+      "memory_bandwidth_gb_s": 1.18,
+      "speedup_vs_cpu": 4.38
     }
   },
   "cpu_performance": {
-    "mean_elapsed_seconds": 0.8719,
-    "std_elapsed_seconds": 0.0252,
-    "throughput_galaxies_per_sec": 57343.9,
-    "compute_gflops": 16.93,
+    "mean_elapsed_seconds": 0.8731,
+    "std_elapsed_seconds": 0.0157,
+    "throughput_galaxies_per_sec": 57265.2,
+    "compute_gflops": 16.9,
     "memory_bandwidth_gb_s": 0.27
   },
   "gpu_performance": {
-    "mean_elapsed_seconds": 0.1932,
-    "std_elapsed_seconds": 0.004,
-    "throughput_galaxies_per_sec": 258812.3,
-    "compute_gflops": 76.4,
-    "memory_bandwidth_gb_s": 1.22,
-    "speedup_vs_cpu": 4.51
+    "mean_elapsed_seconds": 0.1994,
+    "std_elapsed_seconds": 0.0037,
+    "throughput_galaxies_per_sec": 250758.4,
+    "compute_gflops": 74.02,
+    "memory_bandwidth_gb_s": 1.18,
+    "speedup_vs_cpu": 4.38
   },
   "category_3_distributed_scaling": {
     "strong_scaling_10m_galaxies": [
       {
         "workers": 1,
-        "runtime_seconds": 174.4,
-        "throughput_gal_s": 57344.0,
+        "runtime_seconds": 174.6,
+        "throughput_gal_s": 57265.0,
         "scaling_efficiency": 1.0
       },
       {
         "workers": 2,
-        "runtime_seconds": 89.0,
-        "throughput_gal_s": 112394.0,
+        "runtime_seconds": 89.1,
+        "throughput_gal_s": 112240.0,
         "scaling_efficiency": 0.98
       },
       {
         "workers": 4,
-        "runtime_seconds": 45.4,
-        "throughput_gal_s": 220201.0,
+        "runtime_seconds": 45.5,
+        "throughput_gal_s": 219898.0,
         "scaling_efficiency": 0.96
       },
       {
         "workers": 8,
-        "runtime_seconds": 23.4,
-        "throughput_gal_s": 426639.0,
+        "runtime_seconds": 23.5,
+        "throughput_gal_s": 426053.0,
         "scaling_efficiency": 0.93
       },
       {
         "workers": 16,
         "runtime_seconds": 12.4,
-        "throughput_gal_s": 807403.0,
+        "throughput_gal_s": 806294.0,
         "scaling_efficiency": 0.88
       },
       {
         "workers": 32,
-        "runtime_seconds": 6.6,
-        "throughput_gal_s": 1504705.0,
+        "runtime_seconds": 6.7,
+        "throughput_gal_s": 1502640.0,
         "scaling_efficiency": 0.82
       },
       {
         "workers": 64,
         "runtime_seconds": 3.6,
-        "throughput_gal_s": 2752509.0,
+        "throughput_gal_s": 2748731.0,
         "scaling_efficiency": 0.75
       }
     ],
@@ -142,12 +144,12 @@
     "assumptions": "Dask distributed cluster on GCP Spot VMs ($0.088/hr per 8 vCPU)",
     "estimates": {
       "8_cpu_workers": {
-        "projected_throughput_gal_s": 412876.0,
+        "projected_throughput_gal_s": 412310.0,
         "time_for_1m_galaxies_s": 2.4,
         "estimated_cost_per_million_usd": 0.0001
       },
       "32_cpu_workers": {
-        "projected_throughput_gal_s": 1559755.0,
+        "projected_throughput_gal_s": 1557614.0,
         "time_for_100m_galaxies_min": 1.1,
         "estimated_cost_per_100m_usd": 0.01
       }
@@ -155,15 +157,15 @@
   },
   "category_4_cloud_economics": {
     "10_million_galaxies": {
-      "runtime_seconds": 24.2,
+      "runtime_seconds": 24.3,
       "cost_usd": 0.02
     },
     "100_million_galaxies": {
-      "runtime_seconds": 64.1,
+      "runtime_seconds": 64.2,
       "cost_usd": 0.25
     },
     "1_billion_galaxies": {
-      "runtime_seconds": 340.6,
+      "runtime_seconds": 341.1,
       "cost_usd": 4.2
     }
   }
