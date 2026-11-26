@@ -126,9 +126,32 @@ class SSPData:
 
 
 class BaseAdapter(ABC):
-    """Abstract base class for SSP model adapters."""
+    """
+    Abstract base class for SSP model adapters.
+    Defines the standard lifecycle: initialize -> validate -> load -> resample.
+    """
 
     @abstractmethod
     def load(self) -> SSPData:
         """Load and return validated SSP data."""
         pass
+
+    def validate(self) -> bool:
+        """
+        Validate prerequisites, input grids, or runtime dependencies.
+        Returns True if adapter is ready to load; raises an exception otherwise.
+        """
+        return True
+
+    def get_capabilities(self) -> dict[str, Any]:
+        """
+        Return structured capability declaration:
+        supported ages, metallicities, wavelengths, IMF options, and limitations.
+        """
+        return {
+            "name": self.__class__.__name__,
+            "version": getattr(self, "version", "1.0.0"),
+            "dynamic_metallicity": False,
+            "resampling_supported": True,
+        }
+
