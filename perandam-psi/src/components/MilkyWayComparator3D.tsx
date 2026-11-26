@@ -1012,6 +1012,16 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
                     </option>
                   ))}
                 </select>
+                {s.galaxy3d?.geometry_source === 'simulation_derived' ? (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-400 text-emerald-300 font-mono font-bold flex items-center space-x-1 flex-shrink-0 shadow-sm" title="Empirical 3D simulation particles">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>SIM-DERIVED</span>
+                  </span>
+                ) : !isMW ? (
+                  <span className="text-[9px] px-1 py-0.5 rounded bg-amber-950/70 border border-amber-600/50 text-amber-300/80 font-mono flex-shrink-0" title="Procedural illustrative model">
+                    ILLUSTRATIVE
+                  </span>
+                ) : null}
                 {slots.length > 1 && (
                   <button
                     onClick={() => handleRemoveSlot(idx)}
@@ -1076,7 +1086,7 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
       </div>
 
       {/* Bottom Comparative Analysis Sheet */}
-      <div className="h-48 bg-cosmos-900/95 border-t border-cosmos-800 p-3 flex flex-col z-20 backdrop-blur overflow-hidden">
+      <div className="h-60 min-h-[240px] bg-cosmos-900/95 border-t border-cosmos-800 p-3 flex flex-col z-20 backdrop-blur overflow-hidden">
         {/* Tab Header */}
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-cosmos-800 text-xs">
           <div className="flex items-center space-x-4">
@@ -1140,6 +1150,20 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
                         <span className="font-bold text-xs truncate" style={{ color: theme.hex }}>
                           #{idx + 1} {isMW ? 'Milky Way' : s.id}
                         </span>
+                        {isMW ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-600/70 text-amber-300 font-mono font-semibold flex-shrink-0">
+                            Reference
+                          </span>
+                        ) : s.galaxy3d?.geometry_source === 'simulation_derived' ? (
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-400 text-emerald-300 font-mono font-bold flex items-center space-x-1 shadow-md shadow-emerald-950/60 flex-shrink-0" title="Empirical simulation particles">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>SIMULATION-DERIVED</span>
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-600/50 text-amber-300/90 font-mono flex-shrink-0" title="Procedural illustrative model">
+                            ILLUSTRATIVE
+                          </span>
+                        )}
                       </div>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cosmos-900 text-slate-300 flex-shrink-0">
                         z = {s.redshift.toFixed(2)}
