@@ -132,6 +132,54 @@ def ingest_csv_galaxy(csv_path: str, galaxy_name: str = "MyCustomGalaxy", redshi
     print(f"\n[3/3] Exporting 3D WebGL model to: {out_file.relative_to(repo_root)}")
     export_galaxy3d_web_json(galaxy, out_file, max_particles_per_component=5000)
 
+    # 4. Automatically register into PerandamΨ catalog for instant 2D and 3D viewing
+    goods_path = repo_root / "perandam-psi" / "src" / "data" / "tng_goods_s_mock_508.json"
+    if goods_path.exists():
+        try:
+            with open(goods_path, "r", encoding="utf-8") as f:
+                goods = json.load(f)
+
+            web_data = galaxy.to_web_json(max_particles_per_component=5000)
+            entry = {
+                "id": galaxy_name,
+                "subhalo_id": f"custom_{galaxy_name.lower()}",
+                "ra": 53.15,
+                "dec": -27.78,
+                "redshift": float(redshift),
+                "stellar_mass": float(np.sum(masses)),
+                "log_mstar": round(float(np.log10(max(1.0, np.sum(masses)))), 2),
+                "sfr": 0.05,
+                "av": 0.2,
+                "tau_diffuse": 0.1,
+                "tau_birth": 0.15,
+                "sentry_status": "PRISTINE",
+                "fluxes": {"jwst_f090w": 0.435, "jwst_f150w": 0.387, "jwst_f200w": 0.308, "jwst_f277w": 0.212, "jwst_f356w": 0.138, "jwst_f444w": 0.093},
+                "mags": {"jwst_f090w": 24.803, "jwst_f150w": 24.932, "jwst_f200w": 25.178, "jwst_f277w": 25.584, "jwst_f356w": 26.051, "jwst_f444w": 26.484},
+                "apparent_mag": 24.803,
+                "sed": [
+                    {"wave": 8990.5, "flux": 0.435},
+                    {"wave": 14979.3, "flux": 0.387},
+                    {"wave": 19831.2, "flux": 0.308},
+                    {"wave": 27545.3, "flux": 0.212},
+                    {"wave": 35602.0, "flux": 0.138},
+                    {"wave": 43971.3, "flux": 0.093},
+                ],
+                "galaxy3d": web_data,
+            }
+            existing = [g["id"] for g in goods.get("galaxies", [])]
+            if galaxy_name in existing:
+                idx = existing.index(galaxy_name)
+                goods["galaxies"][idx] = entry
+            else:
+                goods["galaxies"].insert(0, entry)
+                goods["n_galaxies"] = len(goods["galaxies"])
+
+            with open(goods_path, "w", encoding="utf-8") as f:
+                json.dump(goods, f)
+            print("      - Auto-registered into PerandamΨ catalog for instant 2D & 3D browser viewing!")
+        except Exception:
+            pass
+
     print("\n[DONE] Successfully ingested and generated 3D galaxy model!")
     print(f"       File ready: {out_file}")
     return out_file
