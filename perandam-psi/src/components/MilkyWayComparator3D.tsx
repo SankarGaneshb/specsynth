@@ -23,6 +23,8 @@ import {
   Clock,
   RotateCcw,
   Sliders,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export interface SlotTheme {
@@ -588,6 +590,21 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
   const [showOrbits, setShowOrbits] = useState<boolean>(true);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'matrix' | 'timeline' | 'proposal'>('matrix');
+  const [isSheetCollapsed, setIsSheetCollapsed] = useState<boolean>(false);
+
+  // Auto-resize Three.js canvas when bottom drawer collapses or expands
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!canvasRef.current?.parentElement || !threeRef.current) return;
+      const parent = canvasRef.current.parentElement;
+      const w = parent.clientWidth;
+      const h = parent.clientHeight;
+      threeRef.current.camera.aspect = w / h;
+      threeRef.current.camera.updateProjectionMatrix();
+      threeRef.current.renderer.setSize(w, h);
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [isSheetCollapsed]);
 
   // Three.js instances ref
   const threeRef = useRef<{
@@ -1083,15 +1100,34 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
           <span className="text-slate-500">•</span>
           <span className="text-slate-300 font-mono">{slots.length} Galaxies on Stage</span>
         </div>
+
+        {/* Floating Expand Pill when bottom drawer is pushed down */}
+        {isSheetCollapsed && (
+          <button
+            onClick={() => setIsSheetCollapsed(false)}
+            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-cosmos-900/90 hover:bg-cosmos-800 border border-cyan-500/70 text-cyan-300 text-xs font-semibold shadow-2xl backdrop-blur transition-all cursor-pointer z-20 group hover:border-cyan-400 hover:scale-105"
+            title="Push up galaxy comparison details"
+          >
+            <ChevronUp className="w-3.5 h-3.5 text-cyan-400 group-hover:-translate-y-0.5 transition-transform" />
+            <span>Show Comparison Matrix ({slots.length} Galaxies)</span>
+          </button>
+        )}
       </div>
 
       {/* Bottom Comparative Analysis Sheet */}
-      <div className="h-60 min-h-[240px] bg-cosmos-900/95 border-t border-cosmos-800 p-3 flex flex-col z-20 backdrop-blur overflow-hidden">
-        {/* Tab Header */}
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-cosmos-800 text-xs">
+      <div
+        className={`transition-all duration-300 ease-in-out bg-cosmos-900/95 border-t border-cosmos-800 px-3 pt-2.5 pb-2 flex flex-col z-20 backdrop-blur overflow-hidden ${
+          isSheetCollapsed ? 'h-11 min-h-[44px]' : 'h-64 min-h-[256px]'
+        }`}
+      >
+        {/* Tab Header & Pushdown/Pushup Toggle */}
+        <div className="flex items-center justify-between pb-2 border-b border-cosmos-800 text-xs flex-shrink-0">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setActiveTab('matrix')}
+              onClick={() => {
+                setActiveTab('matrix');
+                if (isSheetCollapsed) setIsSheetCollapsed(false);
+              }}
               className={`font-semibold transition-colors pb-0.5 ${
                 activeTab === 'matrix' ? 'text-cyan-300 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -1099,7 +1135,10 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
               Multi-Galaxy Matrix ({slots.length})
             </button>
             <button
-              onClick={() => setActiveTab('timeline')}
+              onClick={() => {
+                setActiveTab('timeline');
+                if (isSheetCollapsed) setIsSheetCollapsed(false);
+              }}
               className={`font-semibold transition-colors pb-0.5 ${
                 activeTab === 'timeline' ? 'text-cyan-300 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -1107,7 +1146,10 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
               Cosmic Timeline (Lookback Time)
             </button>
             <button
-              onClick={() => setActiveTab('proposal')}
+              onClick={() => {
+                setActiveTab('proposal');
+                if (isSheetCollapsed) setIsSheetCollapsed(false);
+              }}
               className={`font-semibold transition-colors pb-0.5 ${
                 activeTab === 'proposal' ? 'text-cyan-300 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -1116,13 +1158,34 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
             </button>
           </div>
 
-          <div className="text-[11px] text-slate-500 font-mono hidden sm:inline">
-            Baseline Reference: <strong className="text-slate-300">Slot #1 ({baseline.id})</strong>
+          <div className="flex items-center space-x-3">
+            <div className="text-[11px] text-slate-500 font-mono hidden sm:inline">
+              Baseline Reference: <strong className="text-slate-300">Slot #1 ({baseline.id})</strong>
+            </div>
+
+            {/* Pushdown / Pushup Toggle Button */}
+            <button
+              onClick={() => setIsSheetCollapsed((prev) => !prev)}
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cosmos-800 hover:bg-cosmos-700 text-cyan-300 hover:text-cyan-100 text-xs font-semibold transition-all border border-cosmos-700/80 shadow-sm cursor-pointer"
+              title={isSheetCollapsed ? "Push up to view galaxy comparison details" : "Push down to expand full 3D space view"}
+            >
+              {isSheetCollapsed ? (
+                <>
+                  <ChevronUp className="w-3.5 h-3.5 text-cyan-400 animate-bounce" />
+                  <span>Push Up Details</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Push Down</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
         {/* Tab 1: Multi-Galaxy Matrix */}
-        {activeTab === 'matrix' && (
+        {!isSheetCollapsed && activeTab === 'matrix' && (
           <div className="flex-1 overflow-x-auto">
             <div className="flex gap-2.5 min-w-full pb-1">
               {slots.map((s, idx) => {
@@ -1248,7 +1311,7 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
         )}
 
         {/* Tab 2: Cosmic Timeline */}
-        {activeTab === 'timeline' && (
+        {!isSheetCollapsed && activeTab === 'timeline' && (
           <div className="flex-1 overflow-x-auto flex items-center px-2">
             <div className="flex items-center space-x-3 min-w-full">
               {[...slots].sort((a, b) => a.redshift - b.redshift).map((s, idx) => {
@@ -1280,7 +1343,7 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
         )}
 
         {/* Tab 3: Proposal Table Export */}
-        {activeTab === 'proposal' && (
+        {!isSheetCollapsed && activeTab === 'proposal' && (
           <div className="flex-1 flex flex-col justify-between text-xs">
             <div className="bg-cosmos-950/90 border border-cosmos-800 rounded-lg p-2 font-mono text-[11px] text-slate-300 overflow-y-auto max-h-24">
               <pre>
