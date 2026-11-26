@@ -26,10 +26,12 @@ sample_catalogs/
 sample_models/*
 !sample_models/fsps/
 !sample_models/fsps/fsps_full_chabrier_mist.spec
+!sample_models/my_galaxy_template.csv
 !sample_models/3d/
 !sample_models/3d/tng100_subhalo_009873_manifest.json
 !sample_models/3d/tng100_subhalo_009873_web.json
 !sample_models/3d/tng100_subhalo_009873.hdf5
+!sample_models/3d/MyGalaxy_web.json
 tmp/
 
 # Testing & coverage

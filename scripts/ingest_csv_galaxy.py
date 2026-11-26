@@ -132,12 +132,12 @@ def ingest_csv_galaxy(csv_path: str, galaxy_name: str = "MyCustomGalaxy", redshi
     print(f"\n[3/3] Exporting 3D WebGL model to: {out_file.relative_to(repo_root)}")
     export_galaxy3d_web_json(galaxy, out_file, max_particles_per_component=5000)
 
-    # 4. Automatically register into PerandamΨ catalog for instant 2D and 3D viewing
-    goods_path = repo_root / "perandam-psi" / "src" / "data" / "tng_goods_s_mock_508.json"
-    if goods_path.exists():
+    # 4. Automatically register into PerandamΨ custom catalog for instant 2D and 3D viewing
+    custom_path = repo_root / "perandam-psi" / "src" / "data" / "custom_galaxies.json"
+    if custom_path.exists():
         try:
-            with open(goods_path, "r", encoding="utf-8") as f:
-                goods = json.load(f)
+            with open(custom_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
             web_data = galaxy.to_web_json(max_particles_per_component=5000)
             entry = {
@@ -166,17 +166,16 @@ def ingest_csv_galaxy(csv_path: str, galaxy_name: str = "MyCustomGalaxy", redshi
                 ],
                 "galaxy3d": web_data,
             }
-            existing = [g["id"] for g in goods.get("galaxies", [])]
+            existing = [g["id"] for g in data.get("galaxies", [])]
             if galaxy_name in existing:
                 idx = existing.index(galaxy_name)
-                goods["galaxies"][idx] = entry
+                data["galaxies"][idx] = entry
             else:
-                goods["galaxies"].insert(0, entry)
-                goods["n_galaxies"] = len(goods["galaxies"])
+                data["galaxies"].insert(0, entry)
 
-            with open(goods_path, "w", encoding="utf-8") as f:
-                json.dump(goods, f)
-            print("      - Auto-registered into PerandamΨ catalog for instant 2D & 3D browser viewing!")
+            with open(custom_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            print("      - Auto-registered into PerandamΨ custom catalog for instant 2D & 3D browser viewing!")
         except Exception:
             pass
 

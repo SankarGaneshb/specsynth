@@ -8,6 +8,7 @@ import { GuideModal } from './components/GuideModal';
 import { Galaxy, CatalogManifest, SkyColorMode, ViewportMode } from './types/galaxy';
 import rawGoodsSManifest from './data/tng_goods_s_mock_508.json';
 import rawTng100Manifest from './data/tng_100_calibration.json';
+import customGalaxiesData from './data/custom_galaxies.json';
 import { Sparkles, Layers, Box } from 'lucide-react';
 
 export type DatasetId = 'goods_s_mock' | 'tng_100';
@@ -17,10 +18,15 @@ const DATASETS: Record<DatasetId, CatalogManifest> = {
   tng_100: rawTng100Manifest as unknown as CatalogManifest,
 };
 
+const customGalaxies: Galaxy[] = ((customGalaxiesData as any)?.galaxies || []) as Galaxy[];
+
 export const App: React.FC = () => {
   const [datasetId, setDatasetId] = useState<DatasetId>('goods_s_mock');
   const manifest = DATASETS[datasetId];
-  const [galaxies, setGalaxies] = useState<Galaxy[]>(() => manifest.galaxies.map((g) => ({ ...g })));
+  const [galaxies, setGalaxies] = useState<Galaxy[]>(() => [
+    ...customGalaxies.map((g) => ({ ...g })),
+    ...manifest.galaxies.map((g) => ({ ...g }))
+  ]);
   const [selectedGalaxy, setSelectedGalaxy] = useState<Galaxy | null>(null);
   const [resetTrigger, setResetTrigger] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -32,7 +38,10 @@ export const App: React.FC = () => {
   // Switch active dataset
   const handleSwitchDataset = (newId: DatasetId) => {
     setDatasetId(newId);
-    setGalaxies(DATASETS[newId].galaxies.map((g) => ({ ...g })));
+    setGalaxies([
+      ...customGalaxies.map((g) => ({ ...g })),
+      ...DATASETS[newId].galaxies.map((g) => ({ ...g }))
+    ]);
     setSelectedGalaxy(null);
     setResetTrigger((prev) => prev + 1);
   };
