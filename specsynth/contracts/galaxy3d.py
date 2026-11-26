@@ -249,17 +249,23 @@ class Galaxy3DContract:
 
         # Logarithmic bin edges for age
         log_ages = np.log10(np.maximum(ages_yr, 1.0))
-        age_edges = np.zeros(n_age + 1)
-        age_edges[1:-1] = 10.0 ** (0.5 * (log_ages[:-1] + log_ages[1:]))
-        age_edges[0] = 10.0 ** (log_ages[0] - 0.5 * (log_ages[1] - log_ages[0]))
-        age_edges[-1] = 10.0 ** (log_ages[-1] + 0.5 * (log_ages[-1] - log_ages[-2]))
+        if n_age == 1:
+            age_edges = np.array([ages_yr[0] * 0.5, ages_yr[0] * 1.5], dtype=np.float64)
+        else:
+            age_edges = np.zeros(n_age + 1, dtype=np.float64)
+            age_edges[1:-1] = 10.0 ** (0.5 * (log_ages[:-1] + log_ages[1:]))
+            age_edges[0] = 10.0 ** (log_ages[0] - 0.5 * (log_ages[1] - log_ages[0]))
+            age_edges[-1] = 10.0 ** (log_ages[-1] + 0.5 * (log_ages[-1] - log_ages[-2]))
 
         # Logarithmic bin edges for metallicity
         log_mets = np.log10(np.maximum(mets_z, 1e-6))
-        met_edges = np.zeros(n_met + 1)
-        met_edges[1:-1] = 10.0 ** (0.5 * (log_mets[:-1] + log_mets[1:]))
-        met_edges[0] = 10.0 ** (log_mets[0] - 0.5 * (log_mets[1] - log_mets[0]))
-        met_edges[-1] = 10.0 ** (log_mets[-1] + 0.5 * (log_mets[-1] - log_mets[-2]))
+        if n_met == 1:
+            met_edges = np.array([mets_z[0] * 0.5, mets_z[0] * 1.5], dtype=np.float64)
+        else:
+            met_edges = np.zeros(n_met + 1, dtype=np.float64)
+            met_edges[1:-1] = 10.0 ** (0.5 * (log_mets[:-1] + log_mets[1:]))
+            met_edges[0] = 10.0 ** (log_mets[0] - 0.5 * (log_mets[1] - log_mets[0]))
+            met_edges[-1] = 10.0 ** (log_mets[-1] + 0.5 * (log_mets[-1] - log_mets[-2]))
 
         # Clamp particles slightly inside bounds so no mass is lost outside the grid
         clamped_ages = np.clip(p_ages, age_edges[0] * 1.00001, age_edges[-1] * 0.99999)
