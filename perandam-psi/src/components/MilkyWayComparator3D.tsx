@@ -218,7 +218,49 @@ function buildGalaxyModel(
   const isQuenched = (g.discovery_profile?.classification === 'EARLY_QUENCHED_GIANT') || ((g.sfr / Math.pow(10, g.log_mstar)) < 1e-11);
   const isDusty = (g.av > 1.2) || (g.discovery_profile?.classification === 'HST_DARK_MONSTER');
 
-  if (isMilkyWay) {
+  // Check for empirical simulation-derived 3D particle data (M3.7 Truth in Labeling)
+  const simStars = g.galaxy3d?.particles?.star || (g.galaxy3d?.particles as any)?.stars;
+  const isSimDerived = g.galaxy3d?.geometry_source === 'simulation_derived' && simStars?.coordinates_kpc?.length > 0;
+
+  if (isSimDerived && simStars) {
+    // 0. Empirical Simulation-Derived Particle Geometry (P2 Milestone 3 Foundation)
+    const count = Math.min(simStars.coordinates_kpc.length, nStars);
+    const rHalfKpc = Math.max(0.5, g.galaxy3d?.half_mass_radius_kpc ?? 3.0);
+    const coordScale = (visualRadius * 0.45) / rHalfKpc;
+
+    for (let i = 0; i < count; i++) {
+      const [x, y, z] = simStars.coordinates_kpc[i];
+      // In Three.js, Y is vertical axis, X and Z are horizontal disk plane.
+      // Simulation coords aligned J with +Z, so disk is in X-Y. Map (x, z, y) into Three.js:
+      positions[i * 3] = x * coordScale;
+      positions[i * 3 + 1] = z * coordScale;
+      positions[i * 3 + 2] = y * coordScale;
+
+      const ageGyr = (simStars.ages_yr?.[i] ?? 3.0e9) / 1.0e9;
+      const metZ = simStars.metallicities_z?.[i] ?? 0.019;
+
+      if (ageGyr < 0.6) {
+        // Hot young OB stars: luminous blue-cyan
+        colors[i * 3] = 0.45;
+        colors[i * 3 + 1] = 0.78 + Math.random() * 0.15;
+        colors[i * 3 + 2] = 1.0;
+        sizes[i] = 5.2 + Math.random() * 2.5;
+      } else if (ageGyr < 3.5) {
+        // Intermediate main sequence: crisp ivory/white
+        colors[i * 3] = 0.92;
+        colors[i * 3 + 1] = 0.94;
+        colors[i * 3 + 2] = 0.98;
+        sizes[i] = 4.0 + Math.random() * 1.5;
+      } else {
+        // Old evolved giants: warm golden amber
+        const redBoost = Math.min(0.2, (metZ / 0.02) * 0.1);
+        colors[i * 3] = 1.0;
+        colors[i * 3 + 1] = Math.max(0.4, 0.78 - redBoost);
+        colors[i * 3 + 2] = Math.max(0.2, 0.42 - redBoost);
+        sizes[i] = 3.6 + Math.random() * 1.8;
+      }
+    }
+  } else if (isMilkyWay) {
     // 1. Milky Way: Barred Spiral with Bulge & Spiral Arms
     const nBulge = Math.floor(nStars * 0.35);
     for (let i = 0; i < nBulge; i++) {
@@ -509,9 +551,10 @@ function buildGalaxyModel(
   });
   group.add(new THREE.Line(haloGeo, haloMat));
 
-  // 6. Sleek Hologram Nameplate directly above the 3D ring
+  // 6. Sleek Hologram Nameplate directly above the 3D ring (with Truth in Labeling)
   const title = isMilkyWay ? 'Milky Way (z = 0)' : `${g.id} (z = ${g.redshift.toFixed(2)})`;
-  const category = `SLOT ${slotIndex + 1} • ${isMilkyWay ? 'BENCHMARK' : (g.discovery_profile?.class_title ?? 'TARGET')}`;
+  const provenanceTag = isMilkyWay ? 'BENCHMARK' : isSimDerived ? 'SIM-DERIVED' : 'ILLUSTRATIVE';
+  const category = `SLOT ${slotIndex + 1} • [${provenanceTag}] ${isMilkyWay ? 'BENCHMARK' : (g.discovery_profile?.class_title ?? 'TARGET')}`;
   const rKpc = estimatePhysicalRadiusKpc(g.log_mstar, g.redshift);
   const subtext = isMilkyWay
     ? '6.0 × 10¹⁰ M☉ • D₂₅ = 26.8 kpc'
@@ -1140,20 +1183,38 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
                       </div>
                     </div>
 
-                    {/* Footer: Set Reference or Classification */}
-                    <div className="flex items-center justify-between pt-1 border-t border-cosmos-800/60 text-[10px]">
-                      <span className="text-slate-400 truncate max-w-[120px]">
-                        {isMW ? 'Reference Benchmark' : (s.discovery_profile?.class_title ?? 'Field Target')}
-                      </span>
-                      {idx !== 0 && (
-                        <button
-                          onClick={() => handleSetBaseline(idx)}
-                          className="text-cyan-400 hover:text-cyan-200 hover:underline cursor-pointer"
-                          title="Set this galaxy as Slot #1 baseline"
-                        >
-                          Make Ref
-                        </button>
-                      )}
+                    {/* Footer: Set Reference or Classification & Truth in Labeling */}
+                    <div className="pt-1 border-t border-cosmos-800/60 text-[10px] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400 truncate max-w-[120px]">
+                          {isMW ? 'Reference Benchmark' : (s.discovery_profile?.class_title ?? 'Field Target')}
+                        </span>
+                        {idx !== 0 && (
+                          <button
+                            onClick={() => handleSetBaseline(idx)}
+                            className="text-cyan-400 hover:text-cyan-200 hover:underline cursor-pointer"
+                            title="Set this galaxy as Slot #1 baseline"
+                          >
+                            Make Ref
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        {isMW ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-950/70 border border-amber-600/70 text-amber-300 font-mono font-semibold">
+                            🌌 Benchmark Reference
+                          </span>
+                        ) : s.galaxy3d?.geometry_source === 'simulation_derived' ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/80 text-emerald-300 font-mono font-semibold flex items-center space-x-1" title="Empirical simulation particles">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>SIMULATION-DERIVED</span>
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-950/50 border border-amber-500/50 text-amber-300/90 font-mono" title="Procedural heuristic model for visual context; not direct simulation particle data">
+                            PROVISIONALLY ILLUSTRATIVE
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

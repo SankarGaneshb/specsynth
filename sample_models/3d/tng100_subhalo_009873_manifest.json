@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "galaxy_id": "tng100_subhalo_009873",
+  "geometry_source": "simulation_derived",
+  "coordinate_frame": "physical_rest",
+  "redshift": 0.0,
+  "center_of_mass_kpc": [
+    -0.03952809350822712,
+    -0.0012744283668735307,
+    -0.024383276035486144
+  ],
+  "half_mass_radius_kpc": 2.1561825275421143,
+  "total_stellar_mass_msun": 18399997952.0,
+  "particle_counts": {
+    "star": 12000,
+    "gas": 4000,
+    "dark_matter": 6000
+  },
+  "linked_files": {
+    "hdf5_snapshot": "sample_models\\3d\\tng100_subhalo_009873.hdf5",
+    "webgl_json": "sample_models\\3d\\tng100_subhalo_009873_web.json",
+    "photometry_manifest": "tests/test_validation_galaxy_benchmark.py"
+  },
+  "provenance": {
+    "generator": "specsynth.simulation.generate_mock_simulation_snapshot",
+    "simulation": "IllustrisTNG-100-1",
+    "snapshot": 99,
+    "subhalo_id": 9873,
+    "redshift": 0.0,
+    "total_stellar_mass_msun": 18400000000.0,
+    "kinematics": "aligned_angular_momentum",
+    "seed": 9873,
+    "geometry_source": "simulation_derived",
+    "pipeline": "specsynth.contracts.Galaxy3DContract.from_particles"
+  }
+}

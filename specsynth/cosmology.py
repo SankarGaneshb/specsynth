@@ -26,11 +26,42 @@ class FlatLambdaCDM:
         self.Ode0 = 1.0 - self.Om0
         self.c_km_s = C_KM_S
         self.Mpc_to_cm = MPC_TO_CM
+        # Hubble time in Gyr: (1 Mpc in km) / (1 Gyr in s) = 977.79222168 / H0
+        self.t_H_gyr = 977.79222168 / self.H0
 
     def E(self, z: np.ndarray | float) -> np.ndarray:
         """Dimensionless Hubble parameter: E(z) = H(z) / H0."""
         z = np.asarray(z)
         return np.sqrt(self.Om0 * (1.0 + z) ** 3 + self.Ode0)
+
+    def cosmic_time_gyr(self, z: float | np.ndarray) -> float | np.ndarray:
+        """
+        Exact cosmic age of the universe at redshift z in Gyr for Flat Lambda-CDM:
+          t(z) = (2 / (3 * H0 * sqrt(Omega_Lambda))) * arcsinh( sqrt(Omega_Lambda / (Omega_m * (1+z)^3)) )
+        Supports scalar float or array.
+        """
+        z_arr = np.asarray(z, dtype=np.float64)
+        is_scalar = z_arr.ndim == 0
+        z_arr = np.atleast_1d(z_arr)
+
+        term = np.sqrt(self.Ode0 / (self.Om0 * (1.0 + z_arr) ** 3))
+        factor = (2.0 / (3.0 * np.sqrt(self.Ode0))) * self.t_H_gyr
+        t_gyr = factor * np.arcsinh(term)
+        return float(t_gyr[0]) if is_scalar else t_gyr
+
+    def lookback_time_gyr(self, z: float | np.ndarray) -> float | np.ndarray:
+        """
+        Lookback time from z=0 to redshift z in Gyr:
+          t_lookback(z) = t(0) - t(z).
+        """
+        z_arr = np.asarray(z, dtype=np.float64)
+        is_scalar = z_arr.ndim == 0
+        z_arr = np.atleast_1d(z_arr)
+
+        t_0 = self.cosmic_time_gyr(0.0)
+        t_z = self.cosmic_time_gyr(z_arr)
+        t_lb = np.maximum(0.0, t_0 - t_z)
+        return float(t_lb[0]) if is_scalar else t_lb
 
     def comoving_distance(self, z: float | np.ndarray, n_steps: int = 100) -> float | np.ndarray:
         r"""

@@ -52,6 +52,36 @@ export interface FilterCurveData {
   throughput_source?: string;
 }
 
+export interface ParticleData3D {
+  particle_type: 'star' | 'gas' | 'dark_matter' | 'black_hole';
+  coordinates_kpc: number[][]; // [N, 3] in physical kpc
+  masses_msun: number[]; // [N]
+  velocities_km_s?: number[][]; // [N, 3]
+  ages_yr?: number[]; // [N]
+  metallicities_z?: number[]; // [N]
+}
+
+export interface Galaxy3DModel {
+  version: string;
+  galaxy_id: string;
+  geometry_source: 'simulation_derived' | 'procedural_illustrative';
+  coordinate_frame: 'physical_rest' | 'comoving_box' | 'observer_sky';
+  redshift: number;
+  center_of_mass_kpc: [number, number, number];
+  half_mass_radius_kpc: number;
+  total_stellar_mass_msun: number;
+  particles: Record<string, ParticleData3D>;
+  provenance?: {
+    simulation?: string;
+    snapshot?: number | string;
+    subhalo_id?: number | string;
+    redshift?: number;
+    git_sha?: string;
+    pipeline?: string;
+    [key: string]: any;
+  };
+}
+
 export interface Galaxy {
   id: string;
   subhalo_id?: string;
@@ -69,6 +99,7 @@ export interface Galaxy {
   metallicity?: number;
   is_synthetic_scenario?: boolean;
   provenance_type?: string;
+  galaxy3d?: Galaxy3DModel;
   sentry_status: 'PRISTINE' | 'ANOMALY';
   qc_failure_code?: string;
   qc_failure_title?: string;
