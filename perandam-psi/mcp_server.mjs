@@ -196,13 +196,24 @@ export const CANONICAL_MCP_TOOLS = {
     },
     handler: (args) => {
       loadManifests();
-      const ds = args?.dataset || 'goods_s_mock';
-      const manifest = ds === 'tng_100' ? tng100Manifest : goodsSManifest;
+      let ds = args?.dataset;
+      if (!ds && args?.galaxy_id && (args.galaxy_id.toLowerCase().includes('tng') || args.galaxy_id.toLowerCase().includes('subhalo'))) {
+        ds = 'tng_100';
+      } else if (!ds) {
+        ds = 'goods_s_mock';
+      }
+      let manifest = ds === 'tng_100' ? tng100Manifest : goodsSManifest;
       if (!manifest) return { error: `Dataset ${ds} not available` };
 
       let galaxy = null;
       if (args?.galaxy_id) {
         galaxy = manifest.galaxies.find((g) => g.id.toLowerCase() === args.galaxy_id.toLowerCase());
+        if (!galaxy) {
+          const fallbackManifest = ds === 'tng_100' ? goodsSManifest : tng100Manifest;
+          if (fallbackManifest) {
+            galaxy = fallbackManifest.galaxies.find((g) => g.id.toLowerCase() === args.galaxy_id.toLowerCase());
+          }
+        }
       } else if (typeof args?.galaxy_index === 'number') {
         galaxy = manifest.galaxies[args.galaxy_index] || null;
       } else {

@@ -1,7 +1,7 @@
 {
   "manifest_version": "1.0.0",
-  "timestamp_utc": "2026-11-27T19:50:43.947152+00:00",
-  "git_commit": "56acfedb25ff1c195026ba17996e324191ea3e83",
+  "timestamp_utc": "2026-11-27T20:38:41.283053+00:00",
+  "git_commit": "e901b1e05aaee74a4a86d4cb8f9b8ac88610d5fe",
   "environment": {
     "python_version": "3.13.1",
     "platform": "Windows-11-10.0.26300-SP0",

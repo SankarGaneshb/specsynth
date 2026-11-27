@@ -1,0 +1,139 @@
+{
+  "milestone": "P4",
+  "title": "Independent MCP Transport and Client End-to-End Acceptance",
+  "verified_at": "2026-11-27T20:36:43.952582+00:00",
+  "total_criteria": 7,
+  "passed_criteria": 7,
+  "all_passed": true,
+  "total_elapsed_sec": 4.3079,
+  "criteria": [
+    {
+      "id": "CRITERION_1_LIFECYCLE",
+      "name": "Out-of-Process stdio Transport Lifecycle",
+      "passed": true,
+      "elapsed_sec": 0.726,
+      "details": {
+        "python_server_name": "specsynth-mcp",
+        "python_server_version": "1.0.0",
+        "python_shutdown_clean": true,
+        "node_server_name": "perandam-psi-mcp",
+        "node_server_version": "1.0.0",
+        "node_shutdown_clean": true
+      }
+    },
+    {
+      "id": "CRITERION_2_TOOL_DISCOVERY",
+      "name": "Tool Discovery via tools/list",
+      "passed": true,
+      "elapsed_sec": 0.6421,
+      "details": {
+        "python_tool_count": 26,
+        "python_canonical_tools_present": [
+          "specsynth_calculate_cosmology",
+          "specsynth_get_3d_galaxy",
+          "specsynth_get_evolution_track",
+          "specsynth_inspect_galaxy",
+          "specsynth_list_filters"
+        ],
+        "node_tool_count": 21,
+        "node_canonical_tools_present": [
+          "specsynth_calculate_cosmology",
+          "specsynth_get_3d_galaxy",
+          "specsynth_get_evolution_track",
+          "specsynth_inspect_galaxy",
+          "specsynth_list_filters"
+        ]
+      }
+    },
+    {
+      "id": "CRITERION_3_WORKFLOW_EXECUTION",
+      "name": "End-to-End Scientific Workflow Execution",
+      "passed": true,
+      "elapsed_sec": 0.9618,
+      "details": {
+        "python_workflow_steps_executed": 5,
+        "python_galaxy_inspected": "tng100_subhalo_009873",
+        "python_dl_z1_5_mpc": 11199.03,
+        "node_workflow_steps_executed": 5,
+        "node_galaxy_inspected": "tng100_subhalo_009873",
+        "node_dl_z1_5_mpc": 11199.05
+      }
+    },
+    {
+      "id": "CRITERION_4_CROSS_LANGUAGE_PARITY",
+      "name": "Cross-Language Schema & Unit Parity",
+      "passed": true,
+      "elapsed_sec": 0.7484,
+      "details": {
+        "cosmology_parity": [
+          {
+            "z": 0.5,
+            "py_dl": 2918.48,
+            "node_dl": 2918.48,
+            "rel_diff_pct": 0.0
+          },
+          {
+            "z": 1.5,
+            "py_dl": 11199.03,
+            "node_dl": 11199.05,
+            "rel_diff_pct": 0.00018
+          },
+          {
+            "z": 3.0,
+            "py_dl": 26044.62,
+            "node_dl": 26044.75,
+            "rel_diff_pct": 0.0005
+          }
+        ],
+        "max_cosmology_divergence_pct": 0.0005,
+        "filter_set_parity_jwst_nircam": [
+          "jwst_f090w",
+          "jwst_f115w",
+          "jwst_f150w",
+          "jwst_f200w",
+          "jwst_f277w",
+          "jwst_f356w",
+          "jwst_f444w"
+        ]
+      }
+    },
+    {
+      "id": "CRITERION_5_ROBUSTNESS_NEGATIVE",
+      "name": "Protocol Robustness & Error Handling",
+      "passed": true,
+      "elapsed_sec": 0.6717,
+      "details": {
+        "python_malformed_code": -32700,
+        "python_unknown_method_code": -32601,
+        "python_unknown_tool_handled": true,
+        "node_malformed_code": -32700,
+        "node_unknown_method_code": -32601,
+        "node_unknown_tool_handled": true
+      }
+    },
+    {
+      "id": "CRITERION_6_INSPECTOR_FIXTURES",
+      "name": "MCP Inspector Documentation & Fixtures",
+      "passed": true,
+      "elapsed_sec": 0.0017,
+      "details": {
+        "python_fixture": "sample_models\\mcp\\inspector_session_python.json",
+        "python_interactions": 6,
+        "node_fixture": "sample_models\\mcp\\inspector_session_node.json",
+        "node_interactions": 6,
+        "guide_doc_referenced": true
+      }
+    },
+    {
+      "id": "CRITERION_7_SECURITY_LOOPBACK",
+      "name": "Loopback Interface Security & Isolation",
+      "passed": true,
+      "elapsed_sec": 0.5549,
+      "details": {
+        "loopback_checks_passed": true,
+        "non_loopback_rejected": true,
+        "required_binding": "127.0.0.1"
+      }
+    }
+  ]
+}

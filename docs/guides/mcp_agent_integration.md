@@ -123,7 +123,68 @@ echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"specsynth_
 
 ---
 
+## 🚀 Supported Transports & Lifecycle
+
+Specsynth MCP servers use standard **JSON-RPC 2.0 over standard I/O (`stdio`)** as the primary, production-grade transport for local AI agents, IDEs, and workflow engines.
+
+### stdio Message Framing
+- Each message is a single UTF-8 encoded JSON object terminated by a newline (`\n`).
+- Logging and diagnostic text are routed exclusively to `stderr`, leaving `stdout` purely dedicated to clean JSON-RPC protocol frames.
+- Child processes should run unbuffered (`PYTHONUNBUFFERED=1` in Python).
+
+### Standard MCP Lifecycle
+1. **Spawn**: The MCP client launches the server process with piped `stdin`, `stdout`, and `stderr`.
+2. **Initialize**: Client sends `{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", ...}}`.
+3. **Initialized Notification**: Client sends `{"jsonrpc": "2.0", "method": "notifications/initialized"}` to confirm readiness.
+4. **Tool Discovery**: Client discovers capabilities with `{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}`.
+5. **Tool Execution**: Client calls tools via `{"jsonrpc": "2.0", "id": N, "method": "tools/call", "params": {"name": "...", "arguments": {...}}}`.
+6. **Graceful Shutdown**: The client closes `stdin` or issues a termination signal. Servers terminate cleanly with zero dangling threads or locks.
+
+---
+
+## 🔍 Interactive Debugging with MCP Inspector
+
+You can inspect, interact with, and debug both Specsynth MCP servers using the official Model Context Protocol Inspector UI:
+
+### Inspecting the Python Server
+```bash
+npx @modelcontextprotocol/inspector python -m specsynth.mcp.server
+```
+
+### Inspecting the Node.js Server
+```bash
+npx @modelcontextprotocol/inspector node perandam-psi/mcp_server.mjs
+```
+
+### Recorded Inspector Sessions
+Standard serialized Inspector session transcripts are recorded in the repository under:
+- `sample_models/mcp/inspector_session_python.json` — Verified Python session transcript.
+- `sample_models/mcp/inspector_session_node.json` — Verified Node.js session transcript.
+
+These fixtures record live `initialize`, `notifications/initialized`, `tools/list`, and tool call invocations, enabling headless CI verification and offline regression benchmarking.
+
+---
+
+## 🧪 Automated Transport Acceptance Client
+
+To verify stdio transport and scientific workflows out-of-process without an external agent:
+
+```bash
+# Run standalone transport client against both servers
+python scripts/mcp_client_transport.py --server both
+
+# Run automated pytest transport acceptance suite
+pytest -v tests/test_mcp_transport_acceptance.py
+
+# Run standalone P4 acceptance verification harness
+python scripts/verify_p4_mcp_transport.py
+```
+
+---
+
 ## 🔒 Security & Invariants
 
 1. **Read-Only / Sandboxed Execution**: All MCP tool endpoints operate strictly on user-specified local caches or bundled demonstration catalogs without remote socket binding by default.
-2. **Schema Invariant Checking**: All payloads pass through versioned dataclass contracts (`specsynth.contracts`), guaranteeing that external agents receive mathematically consistent astronomical units.
+2. **Loopback Isolation**: The HTTP bridge binds strictly to loopback interfaces (`127.0.0.1`, `localhost`, `::1`). Non-loopback binding (`0.0.0.0`) is prohibited unless explicitly commanded with `--allow-remote` and an authenticated token.
+3. **Cross-Origin Protection**: The HTTP bridge enforces explicit origin filtering against local dev origins (`http://localhost:5173`) and denies untrusted foreign web origins.
+4. **Schema Invariant Checking**: All payloads pass through versioned dataclass contracts (`specsynth.contracts`), guaranteeing that external agents receive mathematically consistent astronomical units.

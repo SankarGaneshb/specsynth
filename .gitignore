@@ -38,6 +38,9 @@ sample_models/*
 !sample_models/evolution/
 !sample_models/evolution/tng100_subhalo_424601_sublink_tree.json
 !sample_models/evolution/tng100_subhalo_424601_sublink_manifest.json
+!sample_models/mcp/
+!sample_models/mcp/inspector_session_python.json
+!sample_models/mcp/inspector_session_node.json
 tmp/
 
 # Testing & coverage
