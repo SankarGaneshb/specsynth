@@ -42,7 +42,9 @@ from external_adapter import CB2026Adapter
 def main():
     print("=" * 72)
     print("Specsynth External Engine Plugin Demonstration: CB2026")
-    print("North Star Pillar 1: Zero-Core-Modification Pluggability")
+    print("North Star Pillar 1: Zero-Core-Modification Pluggability (Contract Fixture)")
+    print("NOTICE: CB2026 is an illustrative mock fixture for interface testing.")
+    print("For genuine scientific validation, see run_genuine_external_workflow.py.")
     print("=" * 72)
 
     # 1. Verify dynamic registration
@@ -88,9 +90,11 @@ def main():
         wave_angstrom=ssp_data.wave,
         ssp_flux_2d=ssp_data.ssp,
         metadata={
-            "engine_label": caps.get("provenance_badge", "External Engine: Charlot & Bruzual (CB2026 Preview)"),
-            "source": "Charlot & Bruzual (CB2026 Preview)",
-            "provenance": "external_plugin_demo",
+            "engine_label": caps.get("provenance_badge", "Illustrative Demo Engine: CB2026 Mock (Contract Fixture)"),
+            "source": "Procedural Mock (CB2026 Fixture)",
+            "provenance": "mock_contract_fixture",
+            "is_mock": True,
+            "data_mode": "illustrative_demo",
         },
     )
     contract.validate()

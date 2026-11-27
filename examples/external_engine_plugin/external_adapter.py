@@ -82,9 +82,12 @@ class CB2026Adapter(BaseAdapter):
         """Return engine metadata and parameter boundaries."""
         return {
             "name": "cb2026_external",
-            "full_name": "External Engine: Charlot & Bruzual 2026 Next-Gen Preview (CB2026)",
-            "engine_source": "Charlot & Bruzual (CB2026 Preview)",
-            "provenance_badge": "External Engine: Charlot & Bruzual (CB2026 Preview)",
+            "full_name": "Illustrative Demo Engine: Charlot & Bruzual 2026 Mock (Contract Fixture)",
+            "engine_source": "Procedural Mock (CB2026 Fixture)",
+            "provenance_badge": "Illustrative Demo Engine: CB2026 Mock (Contract Fixture)",
+            "is_mock": True,
+            "data_mode": "illustrative_demo",
+            "scientific_validation": False,
             "imf": self.imf,
             "isochrone": self.isochrone,
             "resolution": "R~2000-5000",

@@ -1,9 +1,10 @@
 """
 Simulated Third-Party Astrophysics Engine (Charlot & Bruzual 2026 Preview - CB2026).
 ==================================================================================
-This module represents an external scientific codebase completely outside Specsynth.
-It could be an external Fortran library wrapped via f2py, a C++ hydro-simulation reader,
-or a proprietary stellar population synthesis code developed by an independent research group.
+TRUTH-IN-LABELING NOTICE:
+This module is an ILLUSTRATIVE MOCK FIXTURE designed strictly for adapter interface,
+coordinate translation, and schema contract testing (Pillar 1). It is NOT an authentic
+astrophysical engine and MUST NOT be presented as external scientific validation.
 """
 
 from __future__ import annotations
@@ -13,13 +14,24 @@ import numpy as np
 
 class CB2026Engine:
     """
-    Simulated external SPS engine producing stellar population grids with
-    custom parameters and external unit conventions.
+    Simulated external SPS engine producing procedural stellar population grids
+    for adapter wiring and schema conformance testing only.
+
+    Attributes:
+        is_mock: True (strictly a synthetic test fixture).
+        data_mode: "illustrative_demo"
+        engine_type: "mock_contract_fixture"
     """
+
+    is_mock: bool = True
+    data_mode: str = "illustrative_demo"
+    engine_type: str = "mock_contract_fixture"
 
     def __init__(self, imf: str = "chabrier", isochrone: str = "parsec_v1.2"):
         self.imf = imf
         self.isochrone = isochrone
+        self.is_mock = True
+        self.data_mode = "illustrative_demo"
 
     def compute_ssp_grid(
         self,

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "specsynth-external-engine-plugin"
+version = "1.0.0"
+description = "Genuine external SPS engine reference plugin for Specsynth"
+authors = [{ name = "Specsynth Community", email = "dev@specsynth.org" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "specsynth>=1.0.0",
+    "numpy>=1.22",
+    "astropy>=5.0",
+]
+
+[project.entry-points."specsynth.adapters"]
+fsps_external = "fsps_external_adapter:FSPSExternalAdapter"
+cb2026_mock = "external_adapter:CB2026Adapter"

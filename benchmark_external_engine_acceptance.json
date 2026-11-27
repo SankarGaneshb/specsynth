@@ -1,0 +1,69 @@
+{
+  "issue": 28,
+  "milestone": "P6",
+  "title": "Genuine external-engine synthetic-observation conformance workflow",
+  "all_criteria_passed": true,
+  "environment": {
+    "os_platform": "Windows-11-10.0.26300-SP0",
+    "python_version": "3.13.1",
+    "system": "Windows",
+    "machine": "AMD64",
+    "numpy_version": "2.5.4",
+    "astropy_version": "8.0.2",
+    "timestamp_utc": "2026-11-27T19:35:41Z"
+  },
+  "criteria_results": {
+    "criterion_1_genuine_external_engine": {
+      "passed": true,
+      "engine": "Flexible Stellar Population Synthesis (FSPS v3.2 Reference Adapter)",
+      "is_mock": false,
+      "data_mode": "genuine_external_engine",
+      "grid_shape": [
+        25,
+        2500
+      ]
+    },
+    "criterion_2_photometric_parity": {
+      "passed": true,
+      "max_delta_mag": 0.0001,
+      "declared_tolerance_mag": 0.005,
+      "band_deltas": {
+        "jwst_f090w": 0.0001,
+        "jwst_f150w": 0.0,
+        "jwst_f200w": 0.0,
+        "jwst_f277w": 0.0,
+        "jwst_f356w": 0.0,
+        "jwst_f444w": 0.0
+      }
+    },
+    "criterion_3_dimensional_correctness": {
+      "passed": true,
+      "ab_zero_point_mag": -6.562228222861677e-05,
+      "tolerance": 0.0001
+    },
+    "criterion_4_zero_core_discovery": {
+      "passed": true,
+      "discovered_entry_points": [
+        "fsps_external"
+      ],
+      "adapter_class": "FSPSExternalAdapter"
+    },
+    "criterion_5_provenance_and_reproducibility": {
+      "passed": true,
+      "manifest_file": "benchmark_p6_external_acceptance_manifest.json",
+      "manifest_exists": true,
+      "max_repro_delta_mag": 0.0
+    },
+    "criterion_6_automated_test_suite": {
+      "passed": true,
+      "exit_code": 0,
+      "pytest_output_lines": 17
+    },
+    "criterion_7_mock_fixture_quarantine": {
+      "passed": true,
+      "cb2026_is_mock": true,
+      "cb2026_data_mode": "illustrative_demo",
+      "cb2026_scientific_validation": false
+    }
+  }
+}
