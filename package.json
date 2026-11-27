@@ -1,0 +1,12 @@
+{
+  "name": "specsynth-workspace",
+  "private": true,
+  "description": "Root workspace proxy scripts for Perandam PSI frontend",
+  "scripts": {
+    "build": "npm --prefix perandam-psi run build",
+    "dev": "npm --prefix perandam-psi run dev",
+    "preview": "npm --prefix perandam-psi run preview",
+    "test:frontend": "npm --prefix perandam-psi test",
+    "bridge": "npm --prefix perandam-psi run bridge"
+  }
+}

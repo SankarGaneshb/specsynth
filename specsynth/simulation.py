@@ -264,6 +264,17 @@ def _load_hdf5_snapshot(
                 particle_ids=p_ids,
             )
 
+        # Determine trustworthy geometry source classification (do not blindly infer simulation authenticity)
+        h_sim = str(header.attrs.get("Simulation", "")) if header is not None else ""
+        h_geom = str(header.attrs.get("GeometrySource", "")) if header is not None else ""
+
+        if "mock" in h_sim.lower() or "procedural" in h_sim.lower() or h_geom == GeometrySource.PROCEDURAL_ILLUSTRATIVE.value or "mock" in filepath.name.lower():
+            inferred_source = GeometrySource.PROCEDURAL_ILLUSTRATIVE
+        elif ("tng" in h_sim.lower() or "illustris" in h_sim.lower() or "eagle" in h_sim.lower() or "fire" in h_sim.lower()) and not ("mock" in h_sim.lower()):
+            inferred_source = GeometrySource.SIMULATION_DERIVED
+        else:
+            inferred_source = GeometrySource.PROCEDURAL_ILLUSTRATIVE
+
         provenance = {
             "source_file": str(filepath.name),
             "sim_type": sim_type,
@@ -273,7 +284,7 @@ def _load_hdf5_snapshot(
             "box_size_ckpc": snap_box,
             "datasets_consumed": datasets_consumed,
             "particle_ids_preserved": any(c.particle_ids is not None for c in components.values()),
-            "geometry_source": GeometrySource.SIMULATION_DERIVED.value,
+            "geometry_source": inferred_source.value,
             "unit_conversions": {
                 "coordinates": "comoving ckpc/h -> physical kpc via r_phys = r_comov * a / h",
                 "velocities": "v_pec * sqrt(a) -> km/s via v_phys = v_code * sqrt(a)",
@@ -286,7 +297,7 @@ def _load_hdf5_snapshot(
             galaxy_id=galaxy_id,
             redshift=snap_z,
             components=components,
-            geometry_source=GeometrySource.SIMULATION_DERIVED,
+            geometry_source=inferred_source,
             align_angular_momentum=align_angular_momentum,
             provenance=provenance,
         )

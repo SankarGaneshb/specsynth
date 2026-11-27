@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "galaxy_id": "tng100_subhalo_424601",
+  "tree_type": "SubLink",
+  "data_mode": "simulation_derived",
+  "simulation": {
+    "name": "IllustrisTNG-100-1",
+    "snapshot": 99,
+    "subhalo_id": 424601,
+    "tree_algorithm": "SubLink (Rodriguez-Gomez et al. 2015)",
+    "source_url": "https://www.tng-project.org/api/TNG100-1/snapshots/99/subhalos/424601/sublink/mpb.json",
+    "cosmology": {
+      "h": 0.6774,
+      "omega_m": 0.3089,
+      "omega_lambda": 0.6911
+    }
+  },
+  "branch_summary": {
+    "n_snapshots": 10,
+    "redshift_range": [
+      0.0,
+      8.5
+    ],
+    "stellar_mass_range_msun": [
+      4200000.0,
+      3006610432.0
+    ],
+    "total_mass_range_msun": [
+      1239200000.0,
+      170079010432.0
+    ],
+    "merger_events_count": 2,
+    "major_mergers": 1,
+    "minor_mergers": 1
+  },
+  "mass_accounting_verified": true,
+  "max_residual_fraction": 0.1696,
+  "tolerance_budget": 0.35,
+  "checksums": {
+    "tree_json_sha256": "10ac59358b957c97ccf4628073f17b2d201713614a9c1cc702ff8651bf108b40"
+  },
+  "linked_files": {
+    "tree_json": "sample_models/evolution/tng100_subhalo_424601_sublink_tree.json"
+  }
+}

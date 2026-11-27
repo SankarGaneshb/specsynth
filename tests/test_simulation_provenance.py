@@ -169,7 +169,9 @@ def test_mock_fixture_is_clearly_labeled() -> None:
             redshift=0.0,
             h=0.6774,
         )
-        assert loaded_mock.geometry_source == GeometrySource.SIMULATION_DERIVED or loaded_mock.geometry_source == GeometrySource.PROCEDURAL_ILLUSTRATIVE
+        # MUST strictly pass only as PROCEDURAL_ILLUSTRATIVE (no loophole)
+        assert loaded_mock.geometry_source == GeometrySource.PROCEDURAL_ILLUSTRATIVE
+        assert loaded_mock.geometry_source != GeometrySource.SIMULATION_DERIVED
 
     # 3. Bundled mock web JSON
     mock_web = Path("sample_models/3d/mock_procedural_specimen_web.json")
@@ -282,3 +284,55 @@ def test_fetch_tng_cutout_script_verification() -> None:
         manifest_path=Path("sample_models/3d/tng100_subhalo_real_manifest.json"),
     )
     assert ok is True
+
+
+def test_tampered_hdf5_fails_checksum_verification() -> None:
+    """Verify that any modification or tampering of the HDF5 file strictly fails verification."""
+    pytest.importorskip("h5py")
+    h5_orig = Path("sample_models/3d/tng100_subhalo_real.hdf5")
+    manifest_path = Path("sample_models/3d/tng100_subhalo_real_manifest.json")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tampered_h5 = Path(tmpdir) / "tampered_cutout.hdf5"
+        tampered_h5.write_bytes(h5_orig.read_bytes() + b"\x00\xff")
+
+        # Must fail-closed due to SHA-256 mismatch
+        ok = verify_tng_provenance(h5_path=tampered_h5, manifest_path=manifest_path)
+        assert ok is False
+
+
+def test_mismatched_metadata_fails_verification() -> None:
+    """Verify that mismatched simulation, snapshot, or subhalo metadata fails verification."""
+    pytest.importorskip("h5py")
+    h5_path = Path("sample_models/3d/tng100_subhalo_real.hdf5")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create manifest expecting a different subhalo
+        bad_manifest_path = Path(tmpdir) / "bad_manifest.json"
+        with open("sample_models/3d/tng100_subhalo_real_manifest.json", "r", encoding="utf-8") as f:
+            m = json.load(f)
+        m["simulation"]["subhalo_id"] = 999999
+        with open(bad_manifest_path, "w", encoding="utf-8") as f:
+            json.dump(m, f)
+
+        ok = verify_tng_provenance(h5_path=h5_path, manifest_path=bad_manifest_path)
+        assert ok is False
+
+
+def test_download_without_api_key_fails_closed() -> None:
+    """Verify that attempting to download without a TNG API key fails closed rather than producing a mock."""
+    from scripts.fetch_tng_cutout import download_tng_cutout
+    import os
+
+    old_key = os.environ.pop("TNG_API_KEY", None)
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_file = Path(tmpdir) / "cutout.hdf5"
+            with pytest.raises(RuntimeError, match="TNG_API_KEY is not set"):
+                download_tng_cutout(subhalo_id=424601, snapshot=99, api_key=None, output_path=out_file)
+            # Must NOT produce a synthetic file
+            assert not out_file.exists()
+    finally:
+        if old_key is not None:
+            os.environ["TNG_API_KEY"] = old_key
+

@@ -303,7 +303,24 @@ class SpecsynthMCPServer:
         }
 
     def _tool_get_evolution_track(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        galaxy_id = str(args.get("galaxy_id", "TNG-DISC-01"))
+        galaxy_id = str(args.get("galaxy_id", "tng100_subhalo_424601"))
+        data_mode = args.get("data_mode")  # None, "simulation_derived", or "illustrative_demo"
+
+        # Check for genuine SubLink simulation requests
+        is_sim_request = (
+            data_mode == "simulation_derived"
+            or "subhalo" in galaxy_id.lower()
+            or "sublink" in galaxy_id.lower()
+            or galaxy_id.strip() in ("424601", "tng100_subhalo_424601", "TNG-SUBLINK-424601")
+        )
+
+        if is_sim_request and data_mode != "illustrative_demo":
+            try:
+                from specsynth.evolution import build_tng_sublink_track
+                track = build_tng_sublink_track(subhalo_id=424601)
+                return track.to_dict()
+            except Exception as exc:
+                logger.warning("Error loading SubLink merger tree track: %s", exc)
 
         # 1. Check bundled tracks in perandam-psi
         tracks_file = REPO_ROOT / "perandam-psi" / "src" / "data" / "evolution_tracks.json"
@@ -314,17 +331,27 @@ class SpecsynthMCPServer:
                 tracks = manifest.get("tracks", {})
                 for tid, trk in tracks.items():
                     if tid.lower() == galaxy_id.lower() or trk.get("galaxy_id", "").lower() == galaxy_id.lower():
+                        # If data_mode filter is requested, enforce it
+                        if data_mode and trk.get("data_mode") != data_mode:
+                            continue
                         return trk
             except Exception as exc:
                 logger.warning("Error reading evolution tracks file: %s", exc)
 
         # 2. Dynamically generate via specsynth.evolution
         try:
-            from specsynth.evolution import build_demo_disk_track, build_demo_starburst_track
+            from specsynth.evolution import (
+                build_tng_sublink_track,
+                generate_highz_starburst_evolution_track,
+                generate_reference_tng_evolution_track,
+            )
+            if data_mode == "simulation_derived":
+                return build_tng_sublink_track().to_dict()
+
             if "starburst" in galaxy_id.lower() or "anom" in galaxy_id.lower():
-                contract = build_demo_starburst_track()
+                contract = generate_highz_starburst_evolution_track()
             else:
-                contract = build_demo_disk_track()
+                contract = generate_reference_tng_evolution_track()
             return contract.to_dict()
         except Exception as exc:
             return {"error": f"Failed to generate evolutionary track for {galaxy_id}: {str(exc)}"}

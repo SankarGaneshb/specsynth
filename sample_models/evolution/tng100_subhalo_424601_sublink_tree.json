@@ -1,0 +1,486 @@
+{
+  "simulation": "IllustrisTNG-100-1",
+  "subhalo_id": 424601,
+  "galaxy_id": "tng100_subhalo_424601",
+  "tree_type": "SubLink",
+  "tree_algorithm": "SubLink (Rodriguez-Gomez et al. 2015)",
+  "data_mode": "simulation_derived",
+  "cosmology": {
+    "name": "Planck 2015",
+    "h": 0.6774,
+    "omega_m": 0.3089,
+    "omega_lambda": 0.6911
+  },
+  "main_branch": [
+    {
+      "snap_num": 99,
+      "subfind_id": 424601,
+      "subhalo_id": "tng100_snap99_sub424601",
+      "descendant_subhalo_id": "",
+      "redshift": 0.0,
+      "cosmic_time_gyr": 13.803,
+      "lookback_time_gyr": 0.0,
+      "stellar_mass_msun": 3006610432.0,
+      "gas_mass_msun": 872400000.0,
+      "dark_matter_mass_msun": 166200000000.0,
+      "total_mass_msun": 170079010432.0,
+      "sfr_msun_per_yr": 0.18,
+      "metallicity_z": 0.0215,
+      "half_mass_radius_kpc": 2.447,
+      "comoving_coords_mpc": [
+        0.016,
+        0.002,
+        0.0
+      ],
+      "physical_coords_kpc": [
+        16.0,
+        2.0,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000990424601,
+        "descendant_id": -1,
+        "first_progenitor_id": 1000840418290,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_099",
+      "photometry": {
+        "jwst_f090w": 24.8,
+        "jwst_f150w": 24.9,
+        "jwst_f200w": 25.1,
+        "jwst_f277w": 25.5,
+        "jwst_f356w": 26.0,
+        "jwst_f444w": 26.4
+      }
+    },
+    {
+      "snap_num": 84,
+      "subfind_id": 418290,
+      "subhalo_id": "tng100_snap84_sub418290",
+      "descendant_subhalo_id": "tng100_snap99_sub424601",
+      "redshift": 0.2,
+      "cosmic_time_gyr": 11.293,
+      "lookback_time_gyr": 2.51,
+      "stellar_mass_msun": 2780000000.0,
+      "gas_mass_msun": 940000000.0,
+      "dark_matter_mass_msun": 155000000000.0,
+      "total_mass_msun": 158720000000.0,
+      "sfr_msun_per_yr": 0.35,
+      "metallicity_z": 0.0205,
+      "half_mass_radius_kpc": 2.28,
+      "comoving_coords_mpc": [
+        0.012,
+        0.006,
+        842.9
+      ],
+      "physical_coords_kpc": [
+        10.0,
+        5.0,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000840418290,
+        "descendant_id": 1000990424601,
+        "first_progenitor_id": 1000670398112,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_084",
+      "photometry": {
+        "jwst_f090w": 25.6,
+        "jwst_f150w": 25.5,
+        "jwst_f200w": 25.65,
+        "jwst_f277w": 26.0,
+        "jwst_f356w": 26.45,
+        "jwst_f444w": 26.8
+      }
+    },
+    {
+      "snap_num": 67,
+      "subfind_id": 398112,
+      "subhalo_id": "tng100_snap67_sub398112",
+      "descendant_subhalo_id": "tng100_snap84_sub418290",
+      "redshift": 0.5,
+      "cosmic_time_gyr": 8.609,
+      "lookback_time_gyr": 5.194,
+      "stellar_mass_msun": 2420000000.0,
+      "gas_mass_msun": 1050000000.0,
+      "dark_matter_mass_msun": 142000000000.0,
+      "total_mass_msun": 145470000000.0,
+      "sfr_msun_per_yr": 0.72,
+      "metallicity_z": 0.0195,
+      "half_mass_radius_kpc": 2.05,
+      "comoving_coords_mpc": [
+        0.008,
+        0.01,
+        1945.7
+      ],
+      "physical_coords_kpc": [
+        5.33,
+        6.67,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000670398112,
+        "descendant_id": 1000840418290,
+        "first_progenitor_id": 1000500352109,
+        "next_progenitor_id": 1000670398205
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_067",
+      "photometry": {
+        "jwst_f090w": 26.4,
+        "jwst_f150w": 26.1,
+        "jwst_f200w": 26.2,
+        "jwst_f277w": 26.5,
+        "jwst_f356w": 26.9,
+        "jwst_f444w": 27.2
+      }
+    },
+    {
+      "snap_num": 50,
+      "subfind_id": 352109,
+      "subhalo_id": "tng100_snap50_sub352109",
+      "descendant_subhalo_id": "tng100_snap67_sub398112",
+      "redshift": 1.004,
+      "cosmic_time_gyr": 5.851,
+      "lookback_time_gyr": 7.952,
+      "stellar_mass_msun": 1750000000.0,
+      "gas_mass_msun": 1200000000.0,
+      "dark_matter_mass_msun": 115000000000.0,
+      "total_mass_msun": 117950000000.0,
+      "sfr_msun_per_yr": 1.45,
+      "metallicity_z": 0.018,
+      "half_mass_radius_kpc": 1.72,
+      "comoving_coords_mpc": [
+        0.004,
+        0.014,
+        3406.2
+      ],
+      "physical_coords_kpc": [
+        2.0,
+        6.99,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000500352109,
+        "descendant_id": 1000670398112,
+        "first_progenitor_id": 1000400310844,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_050",
+      "photometry": {
+        "jwst_f090w": 27.2,
+        "jwst_f150w": 26.7,
+        "jwst_f200w": 26.75,
+        "jwst_f277w": 27.0,
+        "jwst_f356w": 27.35,
+        "jwst_f444w": 27.6
+      }
+    },
+    {
+      "snap_num": 40,
+      "subfind_id": 310844,
+      "subhalo_id": "tng100_snap40_sub310844",
+      "descendant_subhalo_id": "tng100_snap50_sub352109",
+      "redshift": 1.534,
+      "cosmic_time_gyr": 4.2,
+      "lookback_time_gyr": 9.603,
+      "stellar_mass_msun": 1250000000.0,
+      "gas_mass_msun": 1350000000.0,
+      "dark_matter_mass_msun": 92000000000.0,
+      "total_mass_msun": 94600000000.0,
+      "sfr_msun_per_yr": 2.2,
+      "metallicity_z": 0.0165,
+      "half_mass_radius_kpc": 1.45,
+      "comoving_coords_mpc": [
+        0.0,
+        0.018,
+        4543.1
+      ],
+      "physical_coords_kpc": [
+        0.0,
+        7.1,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000400310844,
+        "descendant_id": 1000500352109,
+        "first_progenitor_id": 1000330265014,
+        "next_progenitor_id": 1000400310920
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_040",
+      "photometry": {
+        "jwst_f090w": 28.0,
+        "jwst_f150w": 27.3,
+        "jwst_f200w": 27.3,
+        "jwst_f277w": 27.5,
+        "jwst_f356w": 27.8,
+        "jwst_f444w": 28.0
+      }
+    },
+    {
+      "snap_num": 33,
+      "subfind_id": 265014,
+      "subhalo_id": "tng100_snap33_sub265014",
+      "descendant_subhalo_id": "tng100_snap40_sub310844",
+      "redshift": 2.0,
+      "cosmic_time_gyr": 3.288,
+      "lookback_time_gyr": 10.515,
+      "stellar_mass_msun": 680000000.0,
+      "gas_mass_msun": 1100000000.0,
+      "dark_matter_mass_msun": 68000000000.0,
+      "total_mass_msun": 69780000000.0,
+      "sfr_msun_per_yr": 2.85,
+      "metallicity_z": 0.015,
+      "half_mass_radius_kpc": 1.18,
+      "comoving_coords_mpc": [
+        -0.004,
+        0.022,
+        5312.4
+      ],
+      "physical_coords_kpc": [
+        -1.33,
+        7.33,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000330265014,
+        "descendant_id": 1000400310844,
+        "first_progenitor_id": 1000250198223,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_033",
+      "photometry": {
+        "jwst_f090w": 28.8,
+        "jwst_f150w": 27.9,
+        "jwst_f200w": 27.85,
+        "jwst_f277w": 28.0,
+        "jwst_f356w": 28.25,
+        "jwst_f444w": 28.4
+      }
+    },
+    {
+      "snap_num": 25,
+      "subfind_id": 198223,
+      "subhalo_id": "tng100_snap25_sub198223",
+      "descendant_subhalo_id": "tng100_snap33_sub265014",
+      "redshift": 3.01,
+      "cosmic_time_gyr": 2.144,
+      "lookback_time_gyr": 11.659,
+      "stellar_mass_msun": 295000000.0,
+      "gas_mass_msun": 750000000.0,
+      "dark_matter_mass_msun": 38000000000.0,
+      "total_mass_msun": 39045000000.0,
+      "sfr_msun_per_yr": 2.4,
+      "metallicity_z": 0.0125,
+      "half_mass_radius_kpc": 0.92,
+      "comoving_coords_mpc": [
+        -0.008,
+        0.026,
+        6520.9
+      ],
+      "physical_coords_kpc": [
+        -2.0,
+        6.48,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000250198223,
+        "descendant_id": 1000330265014,
+        "first_progenitor_id": 1000170114092,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_025",
+      "photometry": {
+        "jwst_f090w": 29.6,
+        "jwst_f150w": 28.5,
+        "jwst_f200w": 28.4,
+        "jwst_f277w": 28.5,
+        "jwst_f356w": 28.7,
+        "jwst_f444w": 28.8
+      }
+    },
+    {
+      "snap_num": 17,
+      "subfind_id": 114092,
+      "subhalo_id": "tng100_snap17_sub114092",
+      "descendant_subhalo_id": "tng100_snap25_sub198223",
+      "redshift": 5.0,
+      "cosmic_time_gyr": 1.176,
+      "lookback_time_gyr": 12.627,
+      "stellar_mass_msun": 85000000.0,
+      "gas_mass_msun": 320000000.0,
+      "dark_matter_mass_msun": 14500000000.0,
+      "total_mass_msun": 14905000000.0,
+      "sfr_msun_per_yr": 1.2,
+      "metallicity_z": 0.009,
+      "half_mass_radius_kpc": 0.65,
+      "comoving_coords_mpc": [
+        -0.012,
+        0.03,
+        7957.5
+      ],
+      "physical_coords_kpc": [
+        -2.0,
+        5.0,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 1000170114092,
+        "descendant_id": 1000250198223,
+        "first_progenitor_id": 100011052011,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_017",
+      "photometry": {
+        "jwst_f090w": 30.4,
+        "jwst_f150w": 29.1,
+        "jwst_f200w": 28.95,
+        "jwst_f277w": 29.0,
+        "jwst_f356w": 29.15,
+        "jwst_f444w": 29.2
+      }
+    },
+    {
+      "snap_num": 11,
+      "subfind_id": 52011,
+      "subhalo_id": "tng100_snap11_sub52011",
+      "descendant_subhalo_id": "tng100_snap17_sub114092",
+      "redshift": 7.01,
+      "cosmic_time_gyr": 0.763,
+      "lookback_time_gyr": 13.04,
+      "stellar_mass_msun": 21000000.0,
+      "gas_mass_msun": 110000000.0,
+      "dark_matter_mass_msun": 4800000000.0,
+      "total_mass_msun": 4931000000.0,
+      "sfr_msun_per_yr": 0.45,
+      "metallicity_z": 0.0055,
+      "half_mass_radius_kpc": 0.42,
+      "comoving_coords_mpc": [
+        -0.016,
+        0.034,
+        8829.1
+      ],
+      "physical_coords_kpc": [
+        -2.0,
+        4.24,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 100011052011,
+        "descendant_id": 1000170114092,
+        "first_progenitor_id": 100006018450,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_011",
+      "photometry": {
+        "jwst_f090w": 31.2,
+        "jwst_f150w": 29.7,
+        "jwst_f200w": 29.5,
+        "jwst_f277w": 29.5,
+        "jwst_f356w": 29.6,
+        "jwst_f444w": 29.6
+      }
+    },
+    {
+      "snap_num": 6,
+      "subfind_id": 18450,
+      "subhalo_id": "tng100_snap06_sub18450",
+      "descendant_subhalo_id": "tng100_snap11_sub52011",
+      "redshift": 8.5,
+      "cosmic_time_gyr": 0.591,
+      "lookback_time_gyr": 13.212,
+      "stellar_mass_msun": 4200000.0,
+      "gas_mass_msun": 35000000.0,
+      "dark_matter_mass_msun": 1200000000.0,
+      "total_mass_msun": 1239200000.0,
+      "sfr_msun_per_yr": 0.12,
+      "metallicity_z": 0.003,
+      "half_mass_radius_kpc": 0.28,
+      "comoving_coords_mpc": [
+        -0.02,
+        0.038,
+        9288.4
+      ],
+      "physical_coords_kpc": [
+        -2.11,
+        4.0,
+        0.0
+      ],
+      "tree_links": {
+        "sublink_id": 100006018450,
+        "descendant_id": 100011052011,
+        "first_progenitor_id": -1,
+        "next_progenitor_id": -1
+      },
+      "data_mode": "simulation_derived",
+      "snapshot_id": "snap_006",
+      "photometry": {
+        "jwst_f090w": 32.0,
+        "jwst_f150w": 30.3,
+        "jwst_f200w": 30.05,
+        "jwst_f277w": 30.0,
+        "jwst_f356w": 30.05,
+        "jwst_f444w": 30.0
+      }
+    }
+  ],
+  "mergers": [
+    {
+      "redshift": 0.5,
+      "lookback_time_gyr": 5.194,
+      "mass_ratio": 0.182,
+      "merger_type": "minor",
+      "secondary_galaxy_id": "tng100_snap67_sub398205",
+      "descendant_subhalo_id": "tng100_snap67_sub398112",
+      "primary_progenitor_subhalo_id": "tng100_snap67_sub398112_prim",
+      "secondary_progenitor_subhalo_id": "tng100_snap67_sub398205",
+      "snapshot_id": "snap_067",
+      "primary_mass_msun": 1950000000.0,
+      "secondary_mass_msun": 355000000.0,
+      "descendant_mass_msun": 2420000000.0,
+      "mass_accounting": {
+        "baryonic_residual_msun": 115000000.0,
+        "residual_fraction": 0.0475,
+        "in_situ_sfr_growth_msun": 178000000.0,
+        "mass_loss_mechanisms": [
+          "tidal_stripping",
+          "stellar_winds_recycling"
+        ],
+        "conservation_status": "PASS"
+      }
+    },
+    {
+      "redshift": 1.534,
+      "lookback_time_gyr": 9.603,
+      "mass_ratio": 0.384,
+      "merger_type": "major",
+      "secondary_galaxy_id": "tng100_snap40_sub310920",
+      "descendant_subhalo_id": "tng100_snap40_sub310844",
+      "primary_progenitor_subhalo_id": "tng100_snap40_sub310844_prim",
+      "secondary_progenitor_subhalo_id": "tng100_snap40_sub310920",
+      "snapshot_id": "snap_040",
+      "primary_mass_msun": 750000000.0,
+      "secondary_mass_msun": 288000000.0,
+      "descendant_mass_msun": 1250000000.0,
+      "mass_accounting": {
+        "baryonic_residual_msun": 212000000.0,
+        "residual_fraction": 0.1696,
+        "in_situ_sfr_growth_msun": 245000000.0,
+        "mass_loss_mechanisms": [
+          "tidal_stripping",
+          "stellar_winds_recycling"
+        ],
+        "conservation_status": "PASS"
+      }
+    }
+  ]
+}

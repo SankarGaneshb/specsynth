@@ -20,6 +20,14 @@ class ProgenitorNode:
         sfr_msun_per_yr: Instantaneous star formation rate psi(z) in M_sun/yr.
         metallicity_z: Mass-weighted stellar metallicity Z.
         half_mass_radius_kpc: Spherical stellar half-mass radius r_1/2 in physical kpc.
+        gas_mass_msun: Total gas mass M_gas at this epoch in M_sun (default 0.0).
+        dark_matter_mass_msun: Total DM mass M_dm at this epoch in M_sun (default 0.0).
+        total_mass_msun: Total subhalo mass M_tot at this epoch in M_sun (default 0.0).
+        descendant_subhalo_id: Subhalo identifier of descendant node in progenitor tree.
+        subfind_id: Subfind catalogue index within the simulation snapshot.
+        snap_num: Simulation snapshot number (e.g. 0 to 99).
+        tree_links: Dictionary with raw tree linkage keys (first_progenitor_id, next_progenitor_id, etc.).
+        data_mode: Data provenance classification ("simulation_derived" | "illustrative_demo").
         photometry: Synthetic fluxes (uJy) and AB magnitudes across telescope filters.
         sed: Spectral energy distribution points [{wave: A, flux: ...}].
         snapshot_id: Simulation snapshot index or identifier.
@@ -34,6 +42,14 @@ class ProgenitorNode:
     sfr_msun_per_yr: float
     metallicity_z: float
     half_mass_radius_kpc: float
+    gas_mass_msun: float = 0.0
+    dark_matter_mass_msun: float = 0.0
+    total_mass_msun: float = 0.0
+    descendant_subhalo_id: str | int = ""
+    subfind_id: int = -1
+    snap_num: int = -1
+    tree_links: dict[str, Any] = field(default_factory=dict)
+    data_mode: str = "simulation_derived"
     photometry: dict[str, float] = field(default_factory=dict)
     sed: list[dict[str, float]] = field(default_factory=list)
     snapshot_id: str | int = ""
@@ -48,6 +64,12 @@ class ProgenitorNode:
             raise ValueError(f"SFR must be non-negative, got {self.sfr_msun_per_yr}")
         if self.half_mass_radius_kpc <= 0.0:
             raise ValueError(f"Half-mass radius must be positive, got {self.half_mass_radius_kpc}")
+        if self.gas_mass_msun < 0.0:
+            raise ValueError(f"Gas mass must be non-negative, got {self.gas_mass_msun}")
+        if self.dark_matter_mass_msun < 0.0:
+            raise ValueError(f"Dark matter mass must be non-negative, got {self.dark_matter_mass_msun}")
+        if self.total_mass_msun < 0.0:
+            raise ValueError(f"Total mass must be non-negative, got {self.total_mass_msun}")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -66,6 +88,14 @@ class ProgenitorNode:
             sfr_msun_per_yr=float(data["sfr_msun_per_yr"]),
             metallicity_z=float(data.get("metallicity_z", 0.02)),
             half_mass_radius_kpc=float(data.get("half_mass_radius_kpc", 1.0)),
+            gas_mass_msun=float(data.get("gas_mass_msun", 0.0)),
+            dark_matter_mass_msun=float(data.get("dark_matter_mass_msun", 0.0)),
+            total_mass_msun=float(data.get("total_mass_msun", 0.0)),
+            descendant_subhalo_id=data.get("descendant_subhalo_id", ""),
+            subfind_id=int(data.get("subfind_id", -1)),
+            snap_num=int(data.get("snap_num", -1)),
+            tree_links=dict(data.get("tree_links", {})),
+            data_mode=str(data.get("data_mode", "simulation_derived")),
             photometry=dict(data.get("photometry", {})),
             sed=list(data.get("sed", [])),
             snapshot_id=data.get("snapshot_id", ""),
@@ -81,8 +111,16 @@ class MergerEvent:
     redshift: float
     lookback_time_gyr: float
     mass_ratio: float
-    merger_type: str  # "major" (> 0.25) or "minor" (<= 0.25)
+    merger_type: str  # "major" (>= 0.25) or "minor" (< 0.25)
     secondary_galaxy_id: str
+    descendant_subhalo_id: str | int = ""
+    primary_progenitor_subhalo_id: str | int = ""
+    secondary_progenitor_subhalo_id: str | int = ""
+    snapshot_id: str | int = ""
+    primary_mass_msun: float = 0.0
+    secondary_mass_msun: float = 0.0
+    descendant_mass_msun: float = 0.0
+    mass_accounting: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -95,13 +133,21 @@ class MergerEvent:
             mass_ratio=float(data["mass_ratio"]),
             merger_type=str(data.get("merger_type", "minor")),
             secondary_galaxy_id=str(data.get("secondary_galaxy_id", "")),
+            descendant_subhalo_id=data.get("descendant_subhalo_id", ""),
+            primary_progenitor_subhalo_id=data.get("primary_progenitor_subhalo_id", ""),
+            secondary_progenitor_subhalo_id=data.get("secondary_progenitor_subhalo_id", ""),
+            snapshot_id=data.get("snapshot_id", ""),
+            primary_mass_msun=float(data.get("primary_mass_msun", 0.0)),
+            secondary_mass_msun=float(data.get("secondary_mass_msun", 0.0)),
+            descendant_mass_msun=float(data.get("descendant_mass_msun", 0.0)),
+            mass_accounting=dict(data.get("mass_accounting", {})),
         )
 
 
 @dataclass
 class EvolutionaryTrackContract:
     """
-    Versioned contract (v1.0.0) representing a galaxy's complete evolutionary history
+    Versioned contract (v1.1.0) representing a galaxy's complete evolutionary history
     across cosmic epochs, including its main progenitor branch, merger ancestry,
     and 3D lightcone trajectory.
     """
@@ -110,9 +156,13 @@ class EvolutionaryTrackContract:
     mergers: list[MergerEvent] = field(default_factory=list)
     spline_trajectory: list[dict[str, float]] = field(default_factory=list)
     provenance: dict[str, Any] = field(default_factory=dict)
+    data_mode: str = "simulation_derived"  # "simulation_derived" | "illustrative_demo"
+    tree_type: str = "SubLink"  # "SubLink" | "LHaloTree" | "analytical_mock"
     version: str = "1.0.0"
 
     def __post_init__(self):
+        if self.data_mode not in ("simulation_derived", "illustrative_demo"):
+            raise ValueError(f"Invalid data_mode '{self.data_mode}'. Must be 'simulation_derived' or 'illustrative_demo'.")
         self.validate()
 
     def validate(self) -> None:
@@ -140,10 +190,58 @@ class EvolutionaryTrackContract:
                     f"Node {i} (t_L={lookbacks[i]}) > Node {i+1} (t_L={lookbacks[i+1]})"
                 )
 
+    def validate_tree_connectivity(self) -> bool:
+        """
+        Validate progenitor-to-descendant linkage along the main branch.
+        Verifies that nodes referencing a descendant_subhalo_id match the previous node in the branch.
+        """
+        if len(self.main_branch) < 2:
+            return True
+
+        for i in range(1, len(self.main_branch)):
+            child = self.main_branch[i]
+            expected_parent = self.main_branch[i - 1]
+            desc_id = str(child.descendant_subhalo_id).strip()
+            if desc_id and str(expected_parent.subhalo_id).strip():
+                # Normalize string comparison
+                if desc_id != str(expected_parent.subhalo_id).strip():
+                    raise ValueError(
+                        f"Tree connectivity broken between node {i} (descendant '{desc_id}') "
+                        f"and expected parent node {i-1} (subhalo '{expected_parent.subhalo_id}')"
+                    )
+        return True
+
+    def validate_mass_accounting(self, tolerance_fraction: float = 0.35) -> list[dict[str, Any]]:
+        """
+        Verify that all merger events comply with physical mass accounting budgets.
+        Residual fraction must satisfy |Delta M / M_desc| <= tolerance_fraction.
+        """
+        results = []
+        for merger in self.mergers:
+            acct = merger.mass_accounting
+            if acct:
+                res_frac = abs(float(acct.get("residual_fraction", 0.0)))
+                status = "PASS" if res_frac <= tolerance_fraction else "FAIL"
+                results.append({
+                    "snapshot_id": merger.snapshot_id,
+                    "mass_ratio": merger.mass_ratio,
+                    "residual_fraction": res_frac,
+                    "tolerance": tolerance_fraction,
+                    "status": status,
+                })
+                if status == "FAIL":
+                    raise ValueError(
+                        f"Merger at snapshot {merger.snapshot_id} violates mass balance budget: "
+                        f"residual fraction {res_frac:.3f} > allowed tolerance {tolerance_fraction:.3f}"
+                    )
+        return results
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "galaxy_id": self.galaxy_id,
+            "data_mode": self.data_mode,
+            "tree_type": self.tree_type,
             "main_branch": [node.to_dict() for node in self.main_branch],
             "mergers": [m.to_dict() for m in self.mergers],
             "spline_trajectory": self.spline_trajectory,
@@ -156,7 +254,7 @@ class EvolutionaryTrackContract:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EvolutionaryTrackContract:
         version = data.get("version", "1.0.0")
-        if version != "1.0.0":
+        if version not in ("1.0.0", "1.1.0"):
             raise ValueError(f"Unsupported contract version: {version}")
 
         main_branch = [ProgenitorNode.from_dict(n) for n in data.get("main_branch", [])]
@@ -167,6 +265,8 @@ class EvolutionaryTrackContract:
             mergers=mergers,
             spline_trajectory=data.get("spline_trajectory", []),
             provenance=data.get("provenance", {}),
+            data_mode=data.get("data_mode", "simulation_derived"),
+            tree_type=data.get("tree_type", "SubLink"),
             version=version,
         )
 

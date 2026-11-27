@@ -27,16 +27,17 @@ export const SimulationEvolutionCard: React.FC<SimulationEvolutionCardProps> = (
   activeTrackId: controlledTrackId,
   onChangeTrackId,
 }) => {
-  const [internalTrackId, setInternalTrackId] = useState<string>('TNG-DISC-01');
+  const [internalTrackId, setInternalTrackId] = useState<string>('TNG-SUBLINK-424601');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
   const activeTrackId = controlledTrackId || internalTrackId;
   const setTrackId = onChangeTrackId || setInternalTrackId;
 
   const tracks = (evolutionTracksData as any)?.tracks || {};
-  const currentTrack = tracks[activeTrackId] || tracks['TNG-DISC-01'];
+  const currentTrack = tracks[activeTrackId] || tracks['TNG-SUBLINK-424601'] || tracks['TNG-DISC-01'];
   const mainBranch: any[] = currentTrack?.main_branch || [];
   const mergers: any[] = currentTrack?.mergers || [];
+  const isSimDerived = currentTrack?.data_mode === 'simulation_derived';
 
   // Find the closest snapshot to currentRedshift
   const activeSnapshot = useMemo(() => {
@@ -66,13 +67,23 @@ export const SimulationEvolutionCard: React.FC<SimulationEvolutionCardProps> = (
           </span>
         </div>
         <div className="flex items-center space-x-1 flex-shrink-0">
+          <span
+            className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+              isSimDerived
+                ? 'bg-emerald-950/80 border border-emerald-600/70 text-emerald-400'
+                : 'bg-amber-950/80 border border-amber-600/70 text-amber-400'
+            }`}
+          >
+            {isSimDerived ? 'SIMULATION' : 'DEMO'}
+          </span>
           <select
             value={activeTrackId}
             onChange={(e) => setTrackId(e.target.value)}
             className="bg-slate-950 border border-slate-700 text-[10px] text-slate-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-cyan-400 cursor-pointer"
           >
-            <option value="TNG-DISC-01">TNG Disk Track</option>
-            <option value="TNG-ANOM-01">TNG Monster Track</option>
+            <option value="TNG-SUBLINK-424601">🌿 TNG-100 SubLink</option>
+            <option value="TNG-DISC-01">📐 TNG Disk (Demo)</option>
+            <option value="TNG-ANOM-01">📐 TNG Monster (Demo)</option>
           </select>
           <button
             onClick={() => setIsCollapsed((prev) => !prev)}
@@ -157,27 +168,27 @@ export const SimulationEvolutionCard: React.FC<SimulationEvolutionCardProps> = (
               <div className="grid grid-cols-3 gap-1 font-mono text-[10px]">
                 <div className="bg-slate-900 px-1.5 py-0.5 rounded border border-cyan-900/60 flex justify-between items-center">
                   <span className="text-cyan-400 font-sans text-[9px]">F090W:</span>
-                  <span className="text-slate-200">{activeSnapshot.photometry.jwst_f090w_mag?.toFixed(1) ?? '—'}</span>
+                  <span className="text-slate-200">{(activeSnapshot.photometry.jwst_f090w_mag ?? activeSnapshot.photometry.jwst_f090w)?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div className="bg-slate-900 px-1.5 py-0.5 rounded border border-sky-900/60 flex justify-between items-center">
                   <span className="text-sky-300 font-sans text-[9px]">F150W:</span>
-                  <span className="text-slate-200">{activeSnapshot.photometry.jwst_f150w_mag?.toFixed(1) ?? '—'}</span>
+                  <span className="text-slate-200">{(activeSnapshot.photometry.jwst_f150w_mag ?? activeSnapshot.photometry.jwst_f150w)?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div className="bg-slate-900 px-1.5 py-0.5 rounded border border-amber-900/60 flex justify-between items-center">
                   <span className="text-amber-300 font-sans text-[9px]">F200W:</span>
-                  <span className="text-slate-200">{activeSnapshot.photometry.jwst_f200w_mag?.toFixed(1) ?? '—'}</span>
+                  <span className="text-slate-200">{(activeSnapshot.photometry.jwst_f200w_mag ?? activeSnapshot.photometry.jwst_f200w)?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div className="bg-slate-900 px-1.5 py-0.5 rounded border border-orange-900/60 flex justify-between items-center">
                   <span className="text-orange-300 font-sans text-[9px]">F277W:</span>
-                  <span className="text-slate-200">{activeSnapshot.photometry.jwst_f277w_mag?.toFixed(1) ?? '—'}</span>
+                  <span className="text-slate-200">{(activeSnapshot.photometry.jwst_f277w_mag ?? activeSnapshot.photometry.jwst_f277w)?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div className="bg-slate-900 px-1.5 py-0.5 rounded border border-rose-900/60 flex justify-between items-center">
                   <span className="text-rose-300 font-sans text-[9px]">F356W:</span>
-                  <span className="text-slate-200">{activeSnapshot.photometry.jwst_f356w_mag?.toFixed(1) ?? '—'}</span>
+                  <span className="text-slate-200">{(activeSnapshot.photometry.jwst_f356w_mag ?? activeSnapshot.photometry.jwst_f356w)?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div className="bg-slate-900 px-1.5 py-0.5 rounded border border-purple-900/60 flex justify-between items-center">
                   <span className="text-purple-300 font-sans text-[9px]">F444W:</span>
-                  <span className="text-slate-200">{activeSnapshot.photometry.jwst_f444w_mag?.toFixed(1) ?? '—'}</span>
+                  <span className="text-slate-200">{(activeSnapshot.photometry.jwst_f444w_mag ?? activeSnapshot.photometry.jwst_f444w)?.toFixed(1) ?? '—'}</span>
                 </div>
               </div>
             </div>

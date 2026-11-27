@@ -223,6 +223,11 @@ CANONICAL_MCP_TOOLS: dict[str, MCPToolContract] = {
                     "description": "Target simulation or mock dataset.",
                     "default": "tng_100",
                 },
+                "data_mode": {
+                    "type": "string",
+                    "description": "Target data mode: 'simulation_derived' (default for simulations) or 'illustrative_demo'.",
+                    "enum": ["simulation_derived", "illustrative_demo"],
+                },
             },
             "required": ["galaxy_id"],
         },

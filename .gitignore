@@ -35,6 +35,9 @@ sample_models/*
 !sample_models/3d/tng100_subhalo_real_web.json
 !sample_models/3d/tng100_subhalo_real.hdf5
 !sample_models/3d/MyGalaxy_web.json
+!sample_models/evolution/
+!sample_models/evolution/tng100_subhalo_424601_sublink_tree.json
+!sample_models/evolution/tng100_subhalo_424601_sublink_manifest.json
 tmp/
 
 # Testing & coverage

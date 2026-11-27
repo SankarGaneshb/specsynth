@@ -290,10 +290,17 @@ def export_genuine_tng_artifacts(
 
 
 def verify_tng_provenance(h5_path: Path = DEFAULT_H5_PATH, manifest_path: Path = DEFAULT_MANIFEST_PATH) -> bool:
-    """Verify integrity, cosmological units, and provenance of the TNG cutout."""
+    """
+    Verify integrity, cosmological units, and provenance of the TNG cutout.
+    Fails closed on any mismatch in checksum, subhalo identity, snapshot, or particle counts.
+    """
     print(f"\n[VERIFY] Validating genuine simulation cutout at {h5_path}...")
     if not h5_path.exists():
         print(f"  [ERROR] Snapshot file does not exist: {h5_path}")
+        return False
+
+    if not manifest_path.exists():
+        print(f"  [ERROR] Linked manifest file does not exist: {manifest_path}")
         return False
 
     try:
@@ -302,6 +309,32 @@ def verify_tng_provenance(h5_path: Path = DEFAULT_H5_PATH, manifest_path: Path =
         print("  [ERROR] h5py not installed.")
         return False
 
+    with open(manifest_path, "r", encoding="utf-8") as mf:
+        mdata = json.load(mf)
+
+    # 1. Cryptographic Checksum Verification (FAIL CLOSED)
+    actual_h5_sha = compute_sha256(h5_path)
+    expected_h5_sha = mdata.get("checksums", {}).get("hdf5_sha256")
+    if actual_h5_sha != expected_h5_sha:
+        print(f"  [ERROR] HDF5 SHA-256 checksum mismatch!")
+        print(f"          Actual:   {actual_h5_sha}")
+        print(f"          Expected: {expected_h5_sha}")
+        return False
+    print(f"  - HDF5 SHA-256 Checksum Verified: {actual_h5_sha}")
+
+    # Check WebGL JSON checksum if web file exists
+    web_file = h5_path.parent / mdata.get("linked_files", {}).get("webgl_json", "").replace("\\", "/").split("/")[-1]
+    if web_file.exists():
+        actual_web_sha = compute_sha256(web_file)
+        expected_web_sha = mdata.get("checksums", {}).get("webgl_json_sha256")
+        if actual_web_sha != expected_web_sha:
+            print(f"  [ERROR] WebGL JSON SHA-256 checksum mismatch!")
+            print(f"          Actual:   {actual_web_sha}")
+            print(f"          Expected: {expected_web_sha}")
+            return False
+        print(f"  - WebGL JSON SHA-256 Checksum Verified: {actual_web_sha}")
+
+    # 2. HDF5 Header and Cosmological Parameters Validation
     with h5py.File(h5_path, "r") as f:
         header = f.get("Header")
         if header is None:
@@ -313,8 +346,13 @@ def verify_tng_provenance(h5_path: Path = DEFAULT_H5_PATH, manifest_path: Path =
         z = attrs.get("Redshift")
         time = attrs.get("Time")
         box = attrs.get("BoxSize")
+        sim = attrs.get("Simulation")
+        sub_id = attrs.get("SubhaloID")
+        snap = attrs.get("Snapshot")
 
-        print(f"  - Header Attributes: Redshift={z}, HubbleParam={h}, Time={time}, BoxSize={box}")
+        print(f"  - Header Attributes: Simulation={sim}, Snapshot={snap}, SubhaloID={sub_id}")
+        print(f"                       Redshift={z}, HubbleParam={h}, Time={time}, BoxSize={box}")
+
         if h is None or h <= 0:
             print("  [ERROR] Invalid or missing HubbleParam.")
             return False
@@ -322,7 +360,26 @@ def verify_tng_provenance(h5_path: Path = DEFAULT_H5_PATH, manifest_path: Path =
             print("  [ERROR] Invalid or missing Redshift.")
             return False
 
-        for p_type in ("PartType0", "PartType1", "PartType4"):
+        # Validate against manifest metadata
+        expected_sim = mdata.get("simulation", {}).get("name")
+        expected_snap = mdata.get("simulation", {}).get("snapshot")
+        expected_sub = mdata.get("simulation", {}).get("subhalo_id")
+
+        if sim and expected_sim and str(sim).strip() != str(expected_sim).strip():
+            print(f"  [ERROR] Simulation name mismatch! Header: {sim}, Manifest: {expected_sim}")
+            return False
+        if snap is not None and expected_snap is not None and int(snap) != int(expected_snap):
+            print(f"  [ERROR] Snapshot number mismatch! Header: {snap}, Manifest: {expected_snap}")
+            return False
+        if sub_id is not None and expected_sub is not None and int(sub_id) != int(expected_sub):
+            print(f"  [ERROR] Subhalo ID mismatch! Header: {sub_id}, Manifest: {expected_sub}")
+            return False
+
+        # 3. Particle Components and Counts Validation
+        manifest_counts = mdata.get("particle_counts", {})
+        comp_map = {"PartType0": "gas", "PartType1": "dark_matter", "PartType4": "star"}
+
+        for p_type, comp_name in comp_map.items():
             if p_type not in f:
                 print(f"  [ERROR] Missing {p_type} in cutout.")
                 return False
@@ -333,27 +390,23 @@ def verify_tng_provenance(h5_path: Path = DEFAULT_H5_PATH, manifest_path: Path =
             if "ParticleIDs" not in grp:
                 print(f"  [ERROR] Missing ParticleIDs in {p_type}.")
                 return False
+
             n_part = len(grp["Coordinates"])
             n_pids = len(grp["ParticleIDs"])
-            print(f"  - {p_type}: {n_part:,} particles, {n_pids:,} ParticleIDs verified.")
+            print(f"  - {p_type} ({comp_name}): {n_part:,} particles, {n_pids:,} ParticleIDs verified.")
             if n_part != n_pids:
                 print(f"  [ERROR] ParticleIDs length mismatch in {p_type}.")
                 return False
 
-    sha256 = compute_sha256(h5_path)
-    print(f"  - SHA-256: {sha256}")
+            if comp_name in manifest_counts and n_part != manifest_counts[comp_name]:
+                print(f"  [ERROR] Particle count mismatch for {comp_name}! File: {n_part}, Manifest: {manifest_counts[comp_name]}")
+                return False
 
-    if manifest_path.exists():
-        with open(manifest_path, "r", encoding="utf-8") as mf:
-            mdata = json.load(mf)
-        print(f"  - Linked Manifest: {manifest_path.name}")
-        print(f"    Geometry Source: {mdata.get('geometry_source')}")
-        print(f"    Source URL: {mdata.get('simulation', {}).get('source_url')}")
-        if mdata.get("geometry_source") != GeometrySource.SIMULATION_DERIVED.value:
-            print("  [ERROR] Manifest geometry_source is not simulation_derived!")
-            return False
+    if mdata.get("geometry_source") != GeometrySource.SIMULATION_DERIVED.value:
+        print(f"  [ERROR] Manifest geometry_source is '{mdata.get('geometry_source')}', expected 'simulation_derived'!")
+        return False
 
-    print("  [SUCCESS] Snapshot provenance verified cleanly.")
+    print("  [SUCCESS] All provenance criteria verified fail-closed.")
     return True
 
 
@@ -363,33 +416,41 @@ def download_tng_cutout(
     api_key: Optional[str] = None,
     output_path: Path = DEFAULT_H5_PATH,
 ) -> bool:
-    """Download cutout from official IllustrisTNG API using an API key."""
+    """
+    Download authentic cutout from official IllustrisTNG API.
+    Fails closed if API key is not provided; does NOT silently generate mock data.
+    """
     key = api_key or os.environ.get("TNG_API_KEY")
     url = f"https://www.tng-project.org/api/TNG100-1/snapshots/{snapshot}/subhalos/{subhalo_id}/cutout.hdf5"
     print(f"\n[DOWNLOAD] Requesting cutout from: {url}")
 
     if not key:
-        print("  [NOTICE] TNG_API_KEY not found in environment and --api-key not provided.")
-        print("  To download live from the TNG server, obtain a free API key at:")
-        print("    https://www.tng-project.org/data/")
-        print("  Then re-run with: --api-key <key> or set $env:TNG_API_KEY='<key>'")
-        print("  Falling back to initializing the verified genuine TNG fixture locally...")
-        generate_genuine_tng_fixture(output_path, subhalo_id=subhalo_id, snapshot=snapshot)
-        return True
+        err_msg = (
+            "Authentic TNG cutout download failed: TNG_API_KEY is not set.\n"
+            "An IllustrisTNG API key is required to download authentic simulation data from tng-project.org.\n"
+            "To obtain a free API key:\n"
+            "  1. Register for free at https://www.tng-project.org/data/\n"
+            "  2. Find your API key in your profile settings\n"
+            "  3. Set $env:TNG_API_KEY='<your-api-key>' or pass --api-key <your-api-key>\n"
+            "In accordance with scientific provenance requirements, Specsynth will NOT silently\n"
+            "substitute procedural mock data for genuine simulation data."
+        )
+        print(f"  [ERROR] {err_msg}")
+        raise RuntimeError(err_msg)
 
     req = urllib.request.Request(url, headers={"api-key": key, "User-Agent": "specsynth-fetch/1.0"})
     try:
         with urllib.request.urlopen(req) as resp, open(output_path, "wb") as out_f:
             while chunk := resp.read(65536):
                 out_f.write(chunk)
-        print(f"  [SUCCESS] Downloaded cutout to {output_path}")
+        print(f"  [SUCCESS] Downloaded authentic cutout to {output_path}")
         return True
     except urllib.error.HTTPError as err:
         print(f"  [ERROR] HTTP Error {err.code}: {err.reason}")
-        return False
+        raise RuntimeError(f"HTTP Error {err.code} while downloading cutout from {url}: {err.reason}") from err
     except Exception as exc:
         print(f"  [ERROR] Download failed: {exc}")
-        return False
+        raise RuntimeError(f"Failed to download cutout from {url}: {exc}") from exc
 
 
 def main() -> None:

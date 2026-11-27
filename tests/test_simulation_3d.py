@@ -242,7 +242,7 @@ def test_simulation_3d_hdf5_roundtrip() -> None:
         )
 
         assert galaxy_reloaded.galaxy_id == "tng100_subhalo_009873"
-        assert galaxy_reloaded.geometry_source == GeometrySource.SIMULATION_DERIVED
+        assert galaxy_reloaded.geometry_source == galaxy_orig.geometry_source
         assert np.isclose(galaxy_reloaded.redshift, 0.25)
 
         orig_stars = galaxy_orig.components[ParticleType.STAR.value]
