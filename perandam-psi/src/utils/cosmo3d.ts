@@ -150,6 +150,27 @@ export function projectGalaxyTo3D(
 }
 
 /**
+ * Projects arbitrary sky/redshift coordinates (RA, Dec, z) directly into 3D Cartesian coordinates.
+ */
+export function projectCoordsTo3D(
+  ra: number,
+  dec: number,
+  redshift: number,
+  centerRa: number,
+  centerDec: number,
+  fieldRadius: number = 0.08,
+  options: Cosmo3DOptions = {}
+): [number, number, number] {
+  return projectGalaxyTo3D(
+    { ra, dec, redshift } as Galaxy,
+    centerRa,
+    centerDec,
+    fieldRadius,
+    options
+  );
+}
+
+/**
  * Computes color RGB components in [0, 1] for 3D Three.js materials.
  */
 export function getGalaxy3DColorRgb(galaxy: Galaxy, mode: SkyColorMode): { r: number; g: number; b: number } {

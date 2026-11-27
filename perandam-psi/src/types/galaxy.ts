@@ -61,6 +61,47 @@ export interface ParticleData3D {
   metallicities_z?: number[]; // [N]
 }
 
+export interface ProgenitorNode {
+  redshift: number;
+  cosmic_time_gyr: number;
+  lookback_time_gyr: number;
+  comoving_coords_mpc: [number, number, number];
+  physical_coords_kpc: [number, number, number];
+  stellar_mass_msun: number;
+  sfr_msun_per_yr: number;
+  metallicity_z: number;
+  half_mass_radius_kpc: number;
+  photometry: Record<string, number>;
+  sed?: SedPoint[];
+  snapshot_id?: string | number;
+  subhalo_id?: string | number;
+}
+
+export interface MergerEvent {
+  redshift: number;
+  lookback_time_gyr: number;
+  mass_ratio: number;
+  merger_type: 'major' | 'minor';
+  secondary_galaxy_id: string;
+}
+
+export interface SplinePoint3D {
+  x: number;
+  y: number;
+  z_coord: number;
+  redshift: number;
+  lookback_gyr: number;
+}
+
+export interface EvolutionaryTrack {
+  version: string;
+  galaxy_id: string;
+  main_branch: ProgenitorNode[];
+  mergers: MergerEvent[];
+  spline_trajectory: SplinePoint3D[];
+  provenance?: Record<string, any>;
+}
+
 export interface Galaxy3DModel {
   version: string;
   galaxy_id: string;
@@ -100,6 +141,7 @@ export interface Galaxy {
   is_synthetic_scenario?: boolean;
   provenance_type?: string;
   galaxy3d?: Galaxy3DModel;
+  evolution_track?: EvolutionaryTrack;
   sentry_status: 'PRISTINE' | 'ANOMALY';
   qc_failure_code?: string;
   qc_failure_title?: string;

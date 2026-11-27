@@ -19,7 +19,9 @@ import {
   ScatterChart,
   Info,
   Sparkles,
+  GitBranch,
 } from 'lucide-react';
+import { SimulationEvolutionCard } from './SimulationEvolutionCard';
 
 interface GalaxyInspectorProps {
   galaxy: Galaxy | null;
@@ -28,6 +30,8 @@ interface GalaxyInspectorProps {
   onClose: () => void;
   onUpdateGalaxy?: (updated: Galaxy) => void;
   onOpenGalaxyTwin?: () => void;
+  externalZ?: number | null;
+  onExternalZChange?: (z: number) => void;
 }
 
 export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
@@ -37,8 +41,10 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   onClose,
   onUpdateGalaxy,
   onOpenGalaxyTwin,
+  externalZ,
+  onExternalZChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'sed' | 'color-color' | 'discovery' | 'phot' | 'code'>('sed');
+  const [activeTab, setActiveTab] = useState<'sed' | 'color-color' | 'discovery' | 'phot' | 'code' | 'evolution'>('sed');
   const [baseGalaxy, setBaseGalaxy] = useState<Galaxy | null>(null);
   const [sliderZ, setSliderZ] = useState<number | null>(null);
   const [sliderAv, setSliderAv] = useState<number | null>(null);
@@ -56,6 +62,13 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       setActiveTab('sed');
     }
   }, [galaxy?.id]);
+
+  // Synchronize external redshift (e.g. from Cosmic Time Scrubber)
+  useEffect(() => {
+    if (externalZ !== undefined && externalZ !== null) {
+      setSliderZ(externalZ);
+    }
+  }, [externalZ]);
 
   if (!galaxy) return null;
 
@@ -90,6 +103,9 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const handleResetSliders = () => {
     setSliderZ(null);
     setSliderAv(null);
+    if (onExternalZChange && originGalaxy) {
+      onExternalZChange(originGalaxy.redshift);
+    }
     if (onUpdateGalaxy && originGalaxy) {
       onUpdateGalaxy(originGalaxy);
     }
@@ -98,7 +114,12 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const handleSliderChange = (newZ: number | null, newAv: number | null) => {
     const zVal = newZ !== null ? newZ : currentZ;
     const avVal = newAv !== null ? newAv : currentAv;
-    if (newZ !== null) setSliderZ(newZ);
+    if (newZ !== null) {
+      setSliderZ(newZ);
+      if (onExternalZChange) {
+        onExternalZChange(newZ);
+      }
+    }
     if (newAv !== null) setSliderAv(newAv);
 
     if (onUpdateGalaxy && originGalaxy) {
@@ -340,6 +361,19 @@ print("[OK] In-browser and Python numerical parity verified.")
         </button>
 
         <button
+          onClick={() => setActiveTab('evolution')}
+          className={`flex items-center space-x-1.5 px-2.5 py-2 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === 'evolution'
+              ? 'border-emerald-400 text-emerald-300'
+              : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+          title="Cosmic Progenitor Lineage & Simulation Track"
+        >
+          <GitBranch className="w-4 h-4 text-emerald-400" />
+          <span>Evolution</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('code')}
           className={`flex items-center space-x-1.5 px-2.5 py-2 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
             activeTab === 'code'
@@ -460,6 +494,15 @@ print("[OK] In-browser and Python numerical parity verified.")
             snr={activeForwardModel.snr}
             filters={filters}
           />
+        )}
+
+        {activeTab === 'evolution' && (
+          <div className="space-y-2.5">
+            <SimulationEvolutionCard
+              currentRedshift={currentZ}
+              onSelectRedshift={(z) => handleSliderChange(z, null)}
+            />
+          </div>
         )}
 
         {activeTab === 'code' && (

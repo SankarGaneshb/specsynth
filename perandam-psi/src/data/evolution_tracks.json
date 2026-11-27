@@ -1,0 +1,2398 @@
+{
+  "version": "1.0.0",
+  "tracks": {
+    "TNG-DISC-01": {
+      "version": "1.0.0",
+      "galaxy_id": "TNG-DISC-01",
+      "main_branch": [
+        {
+          "redshift": 0.0,
+          "cosmic_time_gyr": 13.803,
+          "lookback_time_gyr": 0.0,
+          "comoving_coords_mpc": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "physical_coords_kpc": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "stellar_mass_msun": 18400000000.0,
+          "sfr_msun_per_yr": 1.65,
+          "metallicity_z": 0.022,
+          "half_mass_radius_kpc": 2.11,
+          "photometry": {
+            "jwst_f090w_mag": 18.188,
+            "jwst_f150w_mag": 17.988,
+            "jwst_f200w_mag": 17.838,
+            "jwst_f277w_mag": 17.658,
+            "jwst_f356w_mag": 17.518,
+            "jwst_f444w_mag": 17.388
+          },
+          "sed": [],
+          "snapshot_id": "snap_099",
+          "subhalo_id": "tng100_snap_099_sub01"
+        },
+        {
+          "redshift": 0.2,
+          "cosmic_time_gyr": 11.293,
+          "lookback_time_gyr": 2.51,
+          "comoving_coords_mpc": [
+            0.12,
+            -0.08,
+            842.865059406856
+          ],
+          "physical_coords_kpc": [
+            100.0,
+            -66.66666666666667,
+            0.0
+          ],
+          "stellar_mass_msun": 17000000000.0,
+          "sfr_msun_per_yr": 2.4,
+          "metallicity_z": 0.021,
+          "half_mass_radius_kpc": 2.05,
+          "photometry": {
+            "jwst_f090w_mag": 18.281,
+            "jwst_f150w_mag": 18.074,
+            "jwst_f200w_mag": 17.924,
+            "jwst_f277w_mag": 17.744,
+            "jwst_f356w_mag": 17.604,
+            "jwst_f444w_mag": 17.474
+          },
+          "sed": [],
+          "snapshot_id": "snap_084",
+          "subhalo_id": "tng100_snap_084_sub01"
+        },
+        {
+          "redshift": 0.5,
+          "cosmic_time_gyr": 8.609,
+          "lookback_time_gyr": 5.194,
+          "comoving_coords_mpc": [
+            0.28,
+            -0.18,
+            1945.6515917117204
+          ],
+          "physical_coords_kpc": [
+            186.66666666666669,
+            -120.0,
+            0.0
+          ],
+          "stellar_mass_msun": 14000000000.0,
+          "sfr_msun_per_yr": 3.1,
+          "metallicity_z": 0.02,
+          "half_mass_radius_kpc": 1.95,
+          "photometry": {
+            "jwst_f090w_mag": 19.948,
+            "jwst_f150w_mag": 19.73,
+            "jwst_f200w_mag": 19.58,
+            "jwst_f277w_mag": 19.4,
+            "jwst_f356w_mag": 19.26,
+            "jwst_f444w_mag": 19.13
+          },
+          "sed": [],
+          "snapshot_id": "snap_067",
+          "subhalo_id": "tng100_snap_067_sub01"
+        },
+        {
+          "redshift": 1.0,
+          "cosmic_time_gyr": 5.867,
+          "lookback_time_gyr": 7.936,
+          "comoving_coords_mpc": [
+            0.65,
+            -0.42,
+            3396.2109708406856
+          ],
+          "physical_coords_kpc": [
+            325.0,
+            -210.0,
+            0.0
+          ],
+          "stellar_mass_msun": 9200000000.0,
+          "sfr_msun_per_yr": 4.5,
+          "metallicity_z": 0.019,
+          "half_mass_radius_kpc": 1.72,
+          "photometry": {
+            "jwst_f090w_mag": 21.631,
+            "jwst_f150w_mag": 21.396,
+            "jwst_f200w_mag": 21.246,
+            "jwst_f277w_mag": 21.066,
+            "jwst_f356w_mag": 20.926,
+            "jwst_f444w_mag": 20.796
+          },
+          "sed": [],
+          "snapshot_id": "snap_050",
+          "subhalo_id": "tng100_snap_050_sub01"
+        },
+        {
+          "redshift": 1.5,
+          "cosmic_time_gyr": 4.282,
+          "lookback_time_gyr": 9.521,
+          "comoving_coords_mpc": [
+            1.1,
+            -0.75,
+            4479.61355470163
+          ],
+          "physical_coords_kpc": [
+            440.00000000000006,
+            -300.00000000000006,
+            0.0
+          ],
+          "stellar_mass_msun": 5900000000.0,
+          "sfr_msun_per_yr": 5.4,
+          "metallicity_z": 0.017,
+          "half_mass_radius_kpc": 1.48,
+          "photometry": {
+            "jwst_f090w_mag": 22.732,
+            "jwst_f150w_mag": 22.479,
+            "jwst_f200w_mag": 22.329,
+            "jwst_f277w_mag": 22.149,
+            "jwst_f356w_mag": 22.009,
+            "jwst_f444w_mag": 21.879
+          },
+          "sed": [],
+          "snapshot_id": "snap_040",
+          "subhalo_id": "tng100_snap_040_sub01"
+        },
+        {
+          "redshift": 2.0,
+          "cosmic_time_gyr": 3.288,
+          "lookback_time_gyr": 10.515,
+          "comoving_coords_mpc": [
+            1.65,
+            -1.15,
+            5312.378251382238
+          ],
+          "physical_coords_kpc": [
+            549.9999999999999,
+            -383.3333333333333,
+            0.0
+          ],
+          "stellar_mass_msun": 3800000000.0,
+          "sfr_msun_per_yr": 6.1,
+          "metallicity_z": 0.015,
+          "half_mass_radius_kpc": 1.25,
+          "photometry": {
+            "jwst_f090w_mag": 23.597,
+            "jwst_f150w_mag": 23.327,
+            "jwst_f200w_mag": 23.177,
+            "jwst_f277w_mag": 22.997,
+            "jwst_f356w_mag": 22.857,
+            "jwst_f444w_mag": 22.727
+          },
+          "sed": [],
+          "snapshot_id": "snap_033",
+          "subhalo_id": "tng100_snap_033_sub01"
+        },
+        {
+          "redshift": 3.0,
+          "cosmic_time_gyr": 2.152,
+          "lookback_time_gyr": 11.651,
+          "comoving_coords_mpc": [
+            2.85,
+            -1.9,
+            6511.156066472048
+          ],
+          "physical_coords_kpc": [
+            712.5,
+            -475.0,
+            0.0
+          ],
+          "stellar_mass_msun": 1600000000.0,
+          "sfr_msun_per_yr": 4.8,
+          "metallicity_z": 0.012,
+          "half_mass_radius_kpc": 0.95,
+          "photometry": {
+            "jwst_f090w_mag": 25.013,
+            "jwst_f150w_mag": 24.708,
+            "jwst_f200w_mag": 24.558,
+            "jwst_f277w_mag": 24.378,
+            "jwst_f356w_mag": 24.238,
+            "jwst_f444w_mag": 24.108
+          },
+          "sed": [],
+          "snapshot_id": "snap_025",
+          "subhalo_id": "tng100_snap_025_sub01"
+        },
+        {
+          "redshift": 4.0,
+          "cosmic_time_gyr": 1.544,
+          "lookback_time_gyr": 12.259,
+          "comoving_coords_mpc": [
+            4.2,
+            -2.8,
+            7341.24512272728
+          ],
+          "physical_coords_kpc": [
+            840.0000000000001,
+            -559.9999999999999,
+            0.0
+          ],
+          "stellar_mass_msun": 710000000.0,
+          "sfr_msun_per_yr": 3.6,
+          "metallicity_z": 0.01,
+          "half_mass_radius_kpc": 0.75,
+          "photometry": {
+            "jwst_f090w_mag": 26.191,
+            "jwst_f150w_mag": 25.851,
+            "jwst_f200w_mag": 25.701,
+            "jwst_f277w_mag": 25.521,
+            "jwst_f356w_mag": 25.381,
+            "jwst_f444w_mag": 25.251
+          },
+          "sed": [],
+          "snapshot_id": "snap_017",
+          "subhalo_id": "tng100_snap_017_sub01"
+        },
+        {
+          "redshift": 6.0,
+          "cosmic_time_gyr": 0.934,
+          "lookback_time_gyr": 12.869,
+          "comoving_coords_mpc": [
+            6.9,
+            -4.5,
+            8437.837747890633
+          ],
+          "physical_coords_kpc": [
+            985.7142857142858,
+            -642.8571428571428,
+            0.0
+          ],
+          "stellar_mass_msun": 240000000.0,
+          "sfr_msun_per_yr": 2.2,
+          "metallicity_z": 0.007,
+          "half_mass_radius_kpc": 0.52,
+          "photometry": {
+            "jwst_f090w_mag": 27.741,
+            "jwst_f150w_mag": 27.331,
+            "jwst_f200w_mag": 27.181,
+            "jwst_f277w_mag": 27.001,
+            "jwst_f356w_mag": 26.861,
+            "jwst_f444w_mag": 26.731
+          },
+          "sed": [],
+          "snapshot_id": "snap_011",
+          "subhalo_id": "tng100_snap_011_sub01"
+        },
+        {
+          "redshift": 8.0,
+          "cosmic_time_gyr": 0.641,
+          "lookback_time_gyr": 13.162,
+          "comoving_coords_mpc": [
+            9.8,
+            -6.4,
+            9146.981821786152
+          ],
+          "physical_coords_kpc": [
+            1088.888888888889,
+            -711.1111111111111,
+            0.0
+          ],
+          "stellar_mass_msun": 85000000.0,
+          "sfr_msun_per_yr": 1.1,
+          "metallicity_z": 0.004,
+          "half_mass_radius_kpc": 0.35,
+          "photometry": {
+            "jwst_f090w_mag": 29.113,
+            "jwst_f150w_mag": 28.633,
+            "jwst_f200w_mag": 28.483,
+            "jwst_f277w_mag": 28.303,
+            "jwst_f356w_mag": 28.163,
+            "jwst_f444w_mag": 28.033
+          },
+          "sed": [],
+          "snapshot_id": "snap_006",
+          "subhalo_id": "tng100_snap_006_sub01"
+        }
+      ],
+      "mergers": [
+        {
+          "redshift": 1.8,
+          "lookback_time_gyr": 9.95,
+          "mass_ratio": 0.18,
+          "merger_type": "minor",
+          "secondary_galaxy_id": "TNG-MERGER-01"
+        },
+        {
+          "redshift": 3.2,
+          "lookback_time_gyr": 11.75,
+          "mass_ratio": 0.12,
+          "merger_type": "minor",
+          "secondary_galaxy_id": "TNG-MERGER-02"
+        }
+      ],
+      "spline_trajectory": [
+        {
+          "x": 0.0,
+          "y": 0.0,
+          "z_coord": 0.0,
+          "redshift": 0.0,
+          "lookback_gyr": 0.0
+        },
+        {
+          "x": 0.007,
+          "y": -0.005,
+          "z_coord": 50.466,
+          "redshift": 0.0119,
+          "lookback_gyr": 0.151
+        },
+        {
+          "x": 0.014,
+          "y": -0.01,
+          "z_coord": 100.155,
+          "redshift": 0.0235,
+          "lookback_gyr": 0.302
+        },
+        {
+          "x": 0.021,
+          "y": -0.014,
+          "z_coord": 149.24,
+          "redshift": 0.0349,
+          "lookback_gyr": 0.452
+        },
+        {
+          "x": 0.028,
+          "y": -0.019,
+          "z_coord": 197.892,
+          "redshift": 0.0461,
+          "lookback_gyr": 0.603
+        },
+        {
+          "x": 0.035,
+          "y": -0.024,
+          "z_coord": 246.283,
+          "redshift": 0.0572,
+          "lookback_gyr": 0.753
+        },
+        {
+          "x": 0.042,
+          "y": -0.028,
+          "z_coord": 294.584,
+          "redshift": 0.0683,
+          "lookback_gyr": 0.902
+        },
+        {
+          "x": 0.049,
+          "y": -0.033,
+          "z_coord": 342.969,
+          "redshift": 0.0794,
+          "lookback_gyr": 1.052
+        },
+        {
+          "x": 0.056,
+          "y": -0.037,
+          "z_coord": 391.608,
+          "redshift": 0.0906,
+          "lookback_gyr": 1.202
+        },
+        {
+          "x": 0.063,
+          "y": -0.042,
+          "z_coord": 440.674,
+          "redshift": 0.102,
+          "lookback_gyr": 1.353
+        },
+        {
+          "x": 0.07,
+          "y": -0.047,
+          "z_coord": 490.338,
+          "redshift": 0.1136,
+          "lookback_gyr": 1.504
+        },
+        {
+          "x": 0.077,
+          "y": -0.052,
+          "z_coord": 540.772,
+          "redshift": 0.1255,
+          "lookback_gyr": 1.655
+        },
+        {
+          "x": 0.084,
+          "y": -0.057,
+          "z_coord": 592.148,
+          "redshift": 0.1377,
+          "lookback_gyr": 1.807
+        },
+        {
+          "x": 0.092,
+          "y": -0.061,
+          "z_coord": 644.637,
+          "redshift": 0.1504,
+          "lookback_gyr": 1.959
+        },
+        {
+          "x": 0.099,
+          "y": -0.067,
+          "z_coord": 698.413,
+          "redshift": 0.1636,
+          "lookback_gyr": 2.113
+        },
+        {
+          "x": 0.107,
+          "y": -0.072,
+          "z_coord": 753.646,
+          "redshift": 0.1774,
+          "lookback_gyr": 2.267
+        },
+        {
+          "x": 0.115,
+          "y": -0.077,
+          "z_coord": 810.508,
+          "redshift": 0.1917,
+          "lookback_gyr": 2.423
+        },
+        {
+          "x": 0.124,
+          "y": -0.082,
+          "z_coord": 869.044,
+          "redshift": 0.2067,
+          "lookback_gyr": 2.58
+        },
+        {
+          "x": 0.132,
+          "y": -0.088,
+          "z_coord": 928.427,
+          "redshift": 0.2218,
+          "lookback_gyr": 2.738
+        },
+        {
+          "x": 0.14,
+          "y": -0.092,
+          "z_coord": 988.521,
+          "redshift": 0.2371,
+          "lookback_gyr": 2.896
+        },
+        {
+          "x": 0.147,
+          "y": -0.097,
+          "z_coord": 1049.385,
+          "redshift": 0.2525,
+          "lookback_gyr": 3.056
+        },
+        {
+          "x": 0.155,
+          "y": -0.102,
+          "z_coord": 1111.077,
+          "redshift": 0.2681,
+          "lookback_gyr": 3.217
+        },
+        {
+          "x": 0.162,
+          "y": -0.106,
+          "z_coord": 1173.654,
+          "redshift": 0.284,
+          "lookback_gyr": 3.378
+        },
+        {
+          "x": 0.17,
+          "y": -0.111,
+          "z_coord": 1237.176,
+          "redshift": 0.3003,
+          "lookback_gyr": 3.539
+        },
+        {
+          "x": 0.178,
+          "y": -0.116,
+          "z_coord": 1301.7,
+          "redshift": 0.317,
+          "lookback_gyr": 3.702
+        },
+        {
+          "x": 0.186,
+          "y": -0.121,
+          "z_coord": 1367.284,
+          "redshift": 0.3342,
+          "lookback_gyr": 3.865
+        },
+        {
+          "x": 0.194,
+          "y": -0.126,
+          "z_coord": 1433.987,
+          "redshift": 0.3519,
+          "lookback_gyr": 4.028
+        },
+        {
+          "x": 0.204,
+          "y": -0.132,
+          "z_coord": 1501.865,
+          "redshift": 0.3703,
+          "lookback_gyr": 4.192
+        },
+        {
+          "x": 0.214,
+          "y": -0.138,
+          "z_coord": 1570.978,
+          "redshift": 0.3893,
+          "lookback_gyr": 4.355
+        },
+        {
+          "x": 0.225,
+          "y": -0.145,
+          "z_coord": 1641.384,
+          "redshift": 0.4092,
+          "lookback_gyr": 4.519
+        },
+        {
+          "x": 0.236,
+          "y": -0.152,
+          "z_coord": 1713.14,
+          "redshift": 0.4298,
+          "lookback_gyr": 4.684
+        },
+        {
+          "x": 0.249,
+          "y": -0.16,
+          "z_coord": 1786.305,
+          "redshift": 0.4513,
+          "lookback_gyr": 4.848
+        },
+        {
+          "x": 0.263,
+          "y": -0.169,
+          "z_coord": 1860.937,
+          "redshift": 0.4738,
+          "lookback_gyr": 5.012
+        },
+        {
+          "x": 0.278,
+          "y": -0.179,
+          "z_coord": 1937.093,
+          "redshift": 0.4973,
+          "lookback_gyr": 5.176
+        },
+        {
+          "x": 0.295,
+          "y": -0.189,
+          "z_coord": 2015.674,
+          "redshift": 0.522,
+          "lookback_gyr": 5.341
+        },
+        {
+          "x": 0.312,
+          "y": -0.201,
+          "z_coord": 2097.698,
+          "redshift": 0.5481,
+          "lookback_gyr": 5.511
+        },
+        {
+          "x": 0.331,
+          "y": -0.212,
+          "z_coord": 2182.707,
+          "redshift": 0.5754,
+          "lookback_gyr": 5.684
+        },
+        {
+          "x": 0.351,
+          "y": -0.225,
+          "z_coord": 2270.227,
+          "redshift": 0.6037,
+          "lookback_gyr": 5.859
+        },
+        {
+          "x": 0.371,
+          "y": -0.238,
+          "z_coord": 2359.786,
+          "redshift": 0.633,
+          "lookback_gyr": 6.035
+        },
+        {
+          "x": 0.393,
+          "y": -0.251,
+          "z_coord": 2450.912,
+          "redshift": 0.6631,
+          "lookback_gyr": 6.212
+        },
+        {
+          "x": 0.415,
+          "y": -0.265,
+          "z_coord": 2543.131,
+          "redshift": 0.6939,
+          "lookback_gyr": 6.389
+        },
+        {
+          "x": 0.438,
+          "y": -0.28,
+          "z_coord": 2635.972,
+          "redshift": 0.7252,
+          "lookback_gyr": 6.566
+        },
+        {
+          "x": 0.461,
+          "y": -0.295,
+          "z_coord": 2728.961,
+          "redshift": 0.7569,
+          "lookback_gyr": 6.74
+        },
+        {
+          "x": 0.485,
+          "y": -0.31,
+          "z_coord": 2821.626,
+          "redshift": 0.789,
+          "lookback_gyr": 6.912
+        },
+        {
+          "x": 0.509,
+          "y": -0.326,
+          "z_coord": 2913.494,
+          "redshift": 0.8212,
+          "lookback_gyr": 7.081
+        },
+        {
+          "x": 0.534,
+          "y": -0.342,
+          "z_coord": 3004.092,
+          "redshift": 0.8534,
+          "lookback_gyr": 7.246
+        },
+        {
+          "x": 0.559,
+          "y": -0.358,
+          "z_coord": 3092.949,
+          "redshift": 0.8854,
+          "lookback_gyr": 7.405
+        },
+        {
+          "x": 0.584,
+          "y": -0.375,
+          "z_coord": 3179.59,
+          "redshift": 0.9173,
+          "lookback_gyr": 7.559
+        },
+        {
+          "x": 0.609,
+          "y": -0.392,
+          "z_coord": 3263.544,
+          "redshift": 0.9488,
+          "lookback_gyr": 7.707
+        },
+        {
+          "x": 0.633,
+          "y": -0.409,
+          "z_coord": 3344.338,
+          "redshift": 0.9797,
+          "lookback_gyr": 7.847
+        },
+        {
+          "x": 0.658,
+          "y": -0.426,
+          "z_coord": 3421.623,
+          "redshift": 1.0101,
+          "lookback_gyr": 7.979
+        },
+        {
+          "x": 0.683,
+          "y": -0.443,
+          "z_coord": 3496.712,
+          "redshift": 1.0403,
+          "lookback_gyr": 8.105
+        },
+        {
+          "x": 0.708,
+          "y": -0.461,
+          "z_coord": 3570.138,
+          "redshift": 1.0705,
+          "lookback_gyr": 8.225
+        },
+        {
+          "x": 0.734,
+          "y": -0.48,
+          "z_coord": 3641.98,
+          "redshift": 1.1007,
+          "lookback_gyr": 8.339
+        },
+        {
+          "x": 0.76,
+          "y": -0.498,
+          "z_coord": 3712.313,
+          "redshift": 1.1309,
+          "lookback_gyr": 8.448
+        },
+        {
+          "x": 0.786,
+          "y": -0.517,
+          "z_coord": 3781.216,
+          "redshift": 1.1611,
+          "lookback_gyr": 8.553
+        },
+        {
+          "x": 0.812,
+          "y": -0.537,
+          "z_coord": 3848.765,
+          "redshift": 1.1913,
+          "lookback_gyr": 8.653
+        },
+        {
+          "x": 0.838,
+          "y": -0.556,
+          "z_coord": 3915.037,
+          "redshift": 1.2215,
+          "lookback_gyr": 8.75
+        },
+        {
+          "x": 0.865,
+          "y": -0.576,
+          "z_coord": 3980.109,
+          "redshift": 1.2517,
+          "lookback_gyr": 8.843
+        },
+        {
+          "x": 0.892,
+          "y": -0.596,
+          "z_coord": 4044.059,
+          "redshift": 1.2819,
+          "lookback_gyr": 8.933
+        },
+        {
+          "x": 0.92,
+          "y": -0.617,
+          "z_coord": 4106.963,
+          "redshift": 1.3121,
+          "lookback_gyr": 9.02
+        },
+        {
+          "x": 0.948,
+          "y": -0.638,
+          "z_coord": 4168.898,
+          "redshift": 1.3423,
+          "lookback_gyr": 9.104
+        },
+        {
+          "x": 0.976,
+          "y": -0.659,
+          "z_coord": 4229.942,
+          "redshift": 1.3725,
+          "lookback_gyr": 9.187
+        },
+        {
+          "x": 1.005,
+          "y": -0.68,
+          "z_coord": 4290.171,
+          "redshift": 1.4027,
+          "lookback_gyr": 9.267
+        },
+        {
+          "x": 1.034,
+          "y": -0.701,
+          "z_coord": 4349.663,
+          "redshift": 1.4329,
+          "lookback_gyr": 9.347
+        },
+        {
+          "x": 1.063,
+          "y": -0.723,
+          "z_coord": 4408.494,
+          "redshift": 1.4631,
+          "lookback_gyr": 9.426
+        },
+        {
+          "x": 1.093,
+          "y": -0.745,
+          "z_coord": 4466.741,
+          "redshift": 1.4933,
+          "lookback_gyr": 9.504
+        },
+        {
+          "x": 1.123,
+          "y": -0.767,
+          "z_coord": 4523.699,
+          "redshift": 1.523,
+          "lookback_gyr": 9.58
+        },
+        {
+          "x": 1.151,
+          "y": -0.788,
+          "z_coord": 4577.876,
+          "redshift": 1.5511,
+          "lookback_gyr": 9.652
+        },
+        {
+          "x": 1.179,
+          "y": -0.809,
+          "z_coord": 4629.614,
+          "redshift": 1.578,
+          "lookback_gyr": 9.72
+        },
+        {
+          "x": 1.206,
+          "y": -0.829,
+          "z_coord": 4679.32,
+          "redshift": 1.604,
+          "lookback_gyr": 9.785
+        },
+        {
+          "x": 1.232,
+          "y": -0.85,
+          "z_coord": 4727.402,
+          "redshift": 1.6295,
+          "lookback_gyr": 9.847
+        },
+        {
+          "x": 1.259,
+          "y": -0.871,
+          "z_coord": 4774.268,
+          "redshift": 1.6547,
+          "lookback_gyr": 9.906
+        },
+        {
+          "x": 1.286,
+          "y": -0.891,
+          "z_coord": 4820.324,
+          "redshift": 1.68,
+          "lookback_gyr": 9.963
+        },
+        {
+          "x": 1.314,
+          "y": -0.913,
+          "z_coord": 4865.98,
+          "redshift": 1.7056,
+          "lookback_gyr": 10.019
+        },
+        {
+          "x": 1.343,
+          "y": -0.935,
+          "z_coord": 4911.642,
+          "redshift": 1.7321,
+          "lookback_gyr": 10.073
+        },
+        {
+          "x": 1.373,
+          "y": -0.958,
+          "z_coord": 4957.719,
+          "redshift": 1.7596,
+          "lookback_gyr": 10.127
+        },
+        {
+          "x": 1.406,
+          "y": -0.982,
+          "z_coord": 5004.618,
+          "redshift": 1.7885,
+          "lookback_gyr": 10.181
+        },
+        {
+          "x": 1.441,
+          "y": -1.007,
+          "z_coord": 5052.746,
+          "redshift": 1.8192,
+          "lookback_gyr": 10.235
+        },
+        {
+          "x": 1.478,
+          "y": -1.034,
+          "z_coord": 5102.512,
+          "redshift": 1.8519,
+          "lookback_gyr": 10.29
+        },
+        {
+          "x": 1.519,
+          "y": -1.062,
+          "z_coord": 5154.322,
+          "redshift": 1.8871,
+          "lookback_gyr": 10.347
+        },
+        {
+          "x": 1.563,
+          "y": -1.092,
+          "z_coord": 5208.586,
+          "redshift": 1.9249,
+          "lookback_gyr": 10.405
+        },
+        {
+          "x": 1.61,
+          "y": -1.124,
+          "z_coord": 5265.71,
+          "redshift": 1.9658,
+          "lookback_gyr": 10.466
+        },
+        {
+          "x": 1.662,
+          "y": -1.158,
+          "z_coord": 5326.111,
+          "redshift": 2.0102,
+          "lookback_gyr": 10.529
+        },
+        {
+          "x": 1.718,
+          "y": -1.194,
+          "z_coord": 5390.22,
+          "redshift": 2.058,
+          "lookback_gyr": 10.596
+        },
+        {
+          "x": 1.777,
+          "y": -1.232,
+          "z_coord": 5457.751,
+          "redshift": 2.1091,
+          "lookback_gyr": 10.664
+        },
+        {
+          "x": 1.84,
+          "y": -1.272,
+          "z_coord": 5528.218,
+          "redshift": 2.1631,
+          "lookback_gyr": 10.735
+        },
+        {
+          "x": 1.906,
+          "y": -1.313,
+          "z_coord": 5601.137,
+          "redshift": 2.2196,
+          "lookback_gyr": 10.807
+        },
+        {
+          "x": 1.975,
+          "y": -1.356,
+          "z_coord": 5676.02,
+          "redshift": 2.2785,
+          "lookback_gyr": 10.881
+        },
+        {
+          "x": 2.047,
+          "y": -1.4,
+          "z_coord": 5752.383,
+          "redshift": 2.3392,
+          "lookback_gyr": 10.955
+        },
+        {
+          "x": 2.12,
+          "y": -1.445,
+          "z_coord": 5829.739,
+          "redshift": 2.4016,
+          "lookback_gyr": 11.029
+        },
+        {
+          "x": 2.196,
+          "y": -1.491,
+          "z_coord": 5907.603,
+          "redshift": 2.4652,
+          "lookback_gyr": 11.103
+        },
+        {
+          "x": 2.273,
+          "y": -1.538,
+          "z_coord": 5985.49,
+          "redshift": 2.5297,
+          "lookback_gyr": 11.176
+        },
+        {
+          "x": 2.351,
+          "y": -1.586,
+          "z_coord": 6062.912,
+          "redshift": 2.5949,
+          "lookback_gyr": 11.249
+        },
+        {
+          "x": 2.429,
+          "y": -1.635,
+          "z_coord": 6139.386,
+          "redshift": 2.6603,
+          "lookback_gyr": 11.319
+        },
+        {
+          "x": 2.509,
+          "y": -1.684,
+          "z_coord": 6214.424,
+          "redshift": 2.7256,
+          "lookback_gyr": 11.388
+        },
+        {
+          "x": 2.588,
+          "y": -1.734,
+          "z_coord": 6287.541,
+          "redshift": 2.7906,
+          "lookback_gyr": 11.454
+        },
+        {
+          "x": 2.668,
+          "y": -1.784,
+          "z_coord": 6358.252,
+          "redshift": 2.8548,
+          "lookback_gyr": 11.517
+        },
+        {
+          "x": 2.746,
+          "y": -1.833,
+          "z_coord": 6426.07,
+          "redshift": 2.918,
+          "lookback_gyr": 11.577
+        },
+        {
+          "x": 2.824,
+          "y": -1.883,
+          "z_coord": 6490.511,
+          "redshift": 2.9798,
+          "lookback_gyr": 11.633
+        },
+        {
+          "x": 2.901,
+          "y": -1.933,
+          "z_coord": 6551.213,
+          "redshift": 3.0395,
+          "lookback_gyr": 11.685
+        },
+        {
+          "x": 2.974,
+          "y": -1.981,
+          "z_coord": 6608.517,
+          "redshift": 3.0961,
+          "lookback_gyr": 11.734
+        },
+        {
+          "x": 3.044,
+          "y": -2.028,
+          "z_coord": 6662.859,
+          "redshift": 3.1502,
+          "lookback_gyr": 11.779
+        },
+        {
+          "x": 3.113,
+          "y": -2.074,
+          "z_coord": 6714.658,
+          "redshift": 3.2024,
+          "lookback_gyr": 11.821
+        },
+        {
+          "x": 3.181,
+          "y": -2.12,
+          "z_coord": 6764.335,
+          "redshift": 3.2533,
+          "lookback_gyr": 11.861
+        },
+        {
+          "x": 3.249,
+          "y": -2.166,
+          "z_coord": 6812.308,
+          "redshift": 3.3038,
+          "lookback_gyr": 11.898
+        },
+        {
+          "x": 3.317,
+          "y": -2.213,
+          "z_coord": 6858.999,
+          "redshift": 3.3543,
+          "lookback_gyr": 11.934
+        },
+        {
+          "x": 3.387,
+          "y": -2.261,
+          "z_coord": 6904.826,
+          "redshift": 3.4055,
+          "lookback_gyr": 11.968
+        },
+        {
+          "x": 3.46,
+          "y": -2.31,
+          "z_coord": 6950.211,
+          "redshift": 3.4582,
+          "lookback_gyr": 12.001
+        },
+        {
+          "x": 3.535,
+          "y": -2.361,
+          "z_coord": 6995.572,
+          "redshift": 3.513,
+          "lookback_gyr": 12.033
+        },
+        {
+          "x": 3.614,
+          "y": -2.415,
+          "z_coord": 7041.33,
+          "redshift": 3.5705,
+          "lookback_gyr": 12.064
+        },
+        {
+          "x": 3.698,
+          "y": -2.471,
+          "z_coord": 7087.906,
+          "redshift": 3.6314,
+          "lookback_gyr": 12.096
+        },
+        {
+          "x": 3.787,
+          "y": -2.53,
+          "z_coord": 7135.717,
+          "redshift": 3.6963,
+          "lookback_gyr": 12.127
+        },
+        {
+          "x": 3.882,
+          "y": -2.594,
+          "z_coord": 7185.186,
+          "redshift": 3.766,
+          "lookback_gyr": 12.159
+        },
+        {
+          "x": 3.985,
+          "y": -2.661,
+          "z_coord": 7236.731,
+          "redshift": 3.8411,
+          "lookback_gyr": 12.193
+        },
+        {
+          "x": 4.095,
+          "y": -2.732,
+          "z_coord": 7290.773,
+          "redshift": 3.9223,
+          "lookback_gyr": 12.227
+        },
+        {
+          "x": 4.214,
+          "y": -2.809,
+          "z_coord": 7347.731,
+          "redshift": 4.0101,
+          "lookback_gyr": 12.263
+        },
+        {
+          "x": 4.341,
+          "y": -2.89,
+          "z_coord": 7407.873,
+          "redshift": 4.105,
+          "lookback_gyr": 12.301
+        },
+        {
+          "x": 4.477,
+          "y": -2.977,
+          "z_coord": 7470.893,
+          "redshift": 4.2065,
+          "lookback_gyr": 12.339
+        },
+        {
+          "x": 4.621,
+          "y": -3.067,
+          "z_coord": 7536.358,
+          "redshift": 4.3139,
+          "lookback_gyr": 12.378
+        },
+        {
+          "x": 4.771,
+          "y": -3.161,
+          "z_coord": 7603.837,
+          "redshift": 4.4265,
+          "lookback_gyr": 12.418
+        },
+        {
+          "x": 4.927,
+          "y": -3.259,
+          "z_coord": 7672.896,
+          "redshift": 4.5437,
+          "lookback_gyr": 12.458
+        },
+        {
+          "x": 5.089,
+          "y": -3.36,
+          "z_coord": 7743.104,
+          "redshift": 4.6648,
+          "lookback_gyr": 12.498
+        },
+        {
+          "x": 5.255,
+          "y": -3.464,
+          "z_coord": 7814.028,
+          "redshift": 4.7892,
+          "lookback_gyr": 12.538
+        },
+        {
+          "x": 5.425,
+          "y": -3.57,
+          "z_coord": 7885.235,
+          "redshift": 4.9161,
+          "lookback_gyr": 12.577
+        },
+        {
+          "x": 5.597,
+          "y": -3.677,
+          "z_coord": 7956.294,
+          "redshift": 5.045,
+          "lookback_gyr": 12.616
+        },
+        {
+          "x": 5.772,
+          "y": -3.787,
+          "z_coord": 8026.773,
+          "redshift": 5.1752,
+          "lookback_gyr": 12.654
+        },
+        {
+          "x": 5.948,
+          "y": -3.897,
+          "z_coord": 8096.238,
+          "redshift": 5.306,
+          "lookback_gyr": 12.692
+        },
+        {
+          "x": 6.125,
+          "y": -4.008,
+          "z_coord": 8164.257,
+          "redshift": 5.4367,
+          "lookback_gyr": 12.728
+        },
+        {
+          "x": 6.302,
+          "y": -4.12,
+          "z_coord": 8230.398,
+          "redshift": 5.5668,
+          "lookback_gyr": 12.763
+        },
+        {
+          "x": 6.478,
+          "y": -4.231,
+          "z_coord": 8294.229,
+          "redshift": 5.6954,
+          "lookback_gyr": 12.796
+        },
+        {
+          "x": 6.652,
+          "y": -4.342,
+          "z_coord": 8355.317,
+          "redshift": 5.822,
+          "lookback_gyr": 12.827
+        },
+        {
+          "x": 6.825,
+          "y": -4.452,
+          "z_coord": 8413.231,
+          "redshift": 5.946,
+          "lookback_gyr": 12.857
+        },
+        {
+          "x": 6.994,
+          "y": -4.561,
+          "z_coord": 8467.706,
+          "redshift": 6.0671,
+          "lookback_gyr": 12.884
+        },
+        {
+          "x": 7.165,
+          "y": -4.671,
+          "z_coord": 8519.411,
+          "redshift": 6.1879,
+          "lookback_gyr": 12.909
+        },
+        {
+          "x": 7.337,
+          "y": -4.782,
+          "z_coord": 8568.687,
+          "redshift": 6.3087,
+          "lookback_gyr": 12.932
+        },
+        {
+          "x": 7.51,
+          "y": -4.895,
+          "z_coord": 8615.791,
+          "redshift": 6.4295,
+          "lookback_gyr": 12.953
+        },
+        {
+          "x": 7.684,
+          "y": -5.008,
+          "z_coord": 8660.978,
+          "redshift": 6.5503,
+          "lookback_gyr": 12.973
+        },
+        {
+          "x": 7.858,
+          "y": -5.123,
+          "z_coord": 8704.504,
+          "redshift": 6.6711,
+          "lookback_gyr": 12.991
+        },
+        {
+          "x": 8.034,
+          "y": -5.238,
+          "z_coord": 8746.627,
+          "redshift": 6.7919,
+          "lookback_gyr": 13.008
+        },
+        {
+          "x": 8.21,
+          "y": -5.354,
+          "z_coord": 8787.602,
+          "redshift": 6.9128,
+          "lookback_gyr": 13.024
+        },
+        {
+          "x": 8.387,
+          "y": -5.47,
+          "z_coord": 8827.685,
+          "redshift": 7.0336,
+          "lookback_gyr": 13.04
+        },
+        {
+          "x": 8.564,
+          "y": -5.586,
+          "z_coord": 8867.132,
+          "redshift": 7.1544,
+          "lookback_gyr": 13.054
+        },
+        {
+          "x": 8.741,
+          "y": -5.703,
+          "z_coord": 8906.2,
+          "redshift": 7.2752,
+          "lookback_gyr": 13.069
+        },
+        {
+          "x": 8.918,
+          "y": -5.82,
+          "z_coord": 8945.144,
+          "redshift": 7.396,
+          "lookback_gyr": 13.084
+        },
+        {
+          "x": 9.095,
+          "y": -5.937,
+          "z_coord": 8984.221,
+          "redshift": 7.5168,
+          "lookback_gyr": 13.098
+        },
+        {
+          "x": 9.272,
+          "y": -6.053,
+          "z_coord": 9023.688,
+          "redshift": 7.6376,
+          "lookback_gyr": 13.113
+        },
+        {
+          "x": 9.448,
+          "y": -6.169,
+          "z_coord": 9063.799,
+          "redshift": 7.7584,
+          "lookback_gyr": 13.129
+        },
+        {
+          "x": 9.624,
+          "y": -6.285,
+          "z_coord": 9104.812,
+          "redshift": 7.8792,
+          "lookback_gyr": 13.145
+        },
+        {
+          "x": 9.8,
+          "y": -6.4,
+          "z_coord": 9146.982,
+          "redshift": 8.0,
+          "lookback_gyr": 13.162
+        }
+      ],
+      "provenance": {
+        "simulation": "IllustrisTNG-100",
+        "cosmology": "Planck 2015 (FlatLambdaCDM)",
+        "pipeline": "Specsynth Evolutionary Lineage Synthesizer (P3/Milestone 4)",
+        "contract_version": "1.0.0"
+      }
+    },
+    "TNG-ANOM-01": {
+      "version": "1.0.0",
+      "galaxy_id": "TNG-ANOM-01",
+      "main_branch": [
+        {
+          "redshift": 3.5,
+          "cosmic_time_gyr": 1.806,
+          "lookback_time_gyr": 11.996,
+          "comoving_coords_mpc": [
+            -1.8,
+            1.2,
+            6959.98633349519
+          ],
+          "physical_coords_kpc": [
+            -399.99999999999994,
+            266.6666666666667,
+            0.0
+          ],
+          "stellar_mass_msun": 32000000000.0,
+          "sfr_msun_per_yr": 8.5,
+          "metallicity_z": 0.024,
+          "half_mass_radius_kpc": 0.85,
+          "photometry": {
+            "jwst_f090w_mag": 26.2,
+            "jwst_f150w_mag": 27.224,
+            "jwst_f200w_mag": 26.624,
+            "jwst_f277w_mag": 26.024,
+            "jwst_f356w_mag": 25.624,
+            "jwst_f444w_mag": 25.424
+          },
+          "sed": [],
+          "snapshot_id": "snap_022",
+          "subhalo_id": "tng100_snap_022_monster"
+        },
+        {
+          "redshift": 4.5,
+          "cosmic_time_gyr": 1.339,
+          "lookback_time_gyr": 12.463,
+          "comoving_coords_mpc": [
+            -3.2,
+            2.1,
+            7670.139145806437
+          ],
+          "physical_coords_kpc": [
+            -581.8181818181819,
+            381.8181818181818,
+            0.0
+          ],
+          "stellar_mass_msun": 25000000000.0,
+          "sfr_msun_per_yr": 45.0,
+          "metallicity_z": 0.02,
+          "half_mass_radius_kpc": 0.72,
+          "photometry": {
+            "jwst_f090w_mag": 26.2,
+            "jwst_f150w_mag": 25.414,
+            "jwst_f200w_mag": 24.814,
+            "jwst_f277w_mag": 24.214,
+            "jwst_f356w_mag": 23.814,
+            "jwst_f444w_mag": 23.614
+          },
+          "sed": [],
+          "snapshot_id": "snap_015",
+          "subhalo_id": "tng100_snap_015_monster"
+        },
+        {
+          "redshift": 5.5,
+          "cosmic_time_gyr": 1.043,
+          "lookback_time_gyr": 12.759,
+          "comoving_coords_mpc": [
+            -5.1,
+            3.4,
+            8211.440045242241
+          ],
+          "physical_coords_kpc": [
+            -784.6153846153846,
+            523.0769230769231,
+            0.0
+          ],
+          "stellar_mass_msun": 16000000000.0,
+          "sfr_msun_per_yr": 120.0,
+          "metallicity_z": 0.016,
+          "half_mass_radius_kpc": 0.6,
+          "photometry": {
+            "jwst_f090w_mag": 26.2,
+            "jwst_f150w_mag": 24.349,
+            "jwst_f200w_mag": 23.749,
+            "jwst_f277w_mag": 23.149,
+            "jwst_f356w_mag": 22.749,
+            "jwst_f444w_mag": 22.549
+          },
+          "sed": [],
+          "snapshot_id": "snap_012",
+          "subhalo_id": "tng100_snap_012_monster"
+        },
+        {
+          "redshift": 7.0,
+          "cosmic_time_gyr": 0.765,
+          "lookback_time_gyr": 13.038,
+          "comoving_coords_mpc": [
+            -7.8,
+            5.1,
+            8825.556788386431
+          ],
+          "physical_coords_kpc": [
+            -975.0,
+            637.5,
+            0.0
+          ],
+          "stellar_mass_msun": 6500000000.0,
+          "sfr_msun_per_yr": 85.0,
+          "metallicity_z": 0.012,
+          "half_mass_radius_kpc": 0.45,
+          "photometry": {
+            "jwst_f090w_mag": 28.5,
+            "jwst_f150w_mag": 24.724,
+            "jwst_f200w_mag": 24.124,
+            "jwst_f277w_mag": 23.524,
+            "jwst_f356w_mag": 23.124,
+            "jwst_f444w_mag": 22.924
+          },
+          "sed": [],
+          "snapshot_id": "snap_008",
+          "subhalo_id": "tng100_snap_008_monster"
+        },
+        {
+          "redshift": 9.5,
+          "cosmic_time_gyr": 0.509,
+          "lookback_time_gyr": 13.294,
+          "comoving_coords_mpc": [
+            -11.5,
+            7.5,
+            9540.28464732319
+          ],
+          "physical_coords_kpc": [
+            -1095.2380952380952,
+            714.2857142857142,
+            0.0
+          ],
+          "stellar_mass_msun": 1200000000.0,
+          "sfr_msun_per_yr": 32.0,
+          "metallicity_z": 0.006,
+          "half_mass_radius_kpc": 0.28,
+          "photometry": {
+            "jwst_f090w_mag": 28.5,
+            "jwst_f150w_mag": 25.785,
+            "jwst_f200w_mag": 25.185,
+            "jwst_f277w_mag": 24.585,
+            "jwst_f356w_mag": 24.185,
+            "jwst_f444w_mag": 23.985
+          },
+          "sed": [],
+          "snapshot_id": "snap_004",
+          "subhalo_id": "tng100_snap_004_monster"
+        }
+      ],
+      "mergers": [
+        {
+          "redshift": 5.8,
+          "lookback_time_gyr": 12.7,
+          "mass_ratio": 0.65,
+          "merger_type": "major",
+          "secondary_galaxy_id": "TNG-STARBURST-B"
+        }
+      ],
+      "spline_trajectory": [
+        {
+          "x": -1.8,
+          "y": 1.2,
+          "z_coord": 6959.986,
+          "redshift": 3.5,
+          "lookback_gyr": 11.996
+        },
+        {
+          "x": -1.847,
+          "y": 1.23,
+          "z_coord": 6983.949,
+          "redshift": 3.5336,
+          "lookback_gyr": 12.012
+        },
+        {
+          "x": -1.893,
+          "y": 1.26,
+          "z_coord": 7008.084,
+          "redshift": 3.5672,
+          "lookback_gyr": 12.028
+        },
+        {
+          "x": -1.939,
+          "y": 1.289,
+          "z_coord": 7032.37,
+          "redshift": 3.6008,
+          "lookback_gyr": 12.044
+        },
+        {
+          "x": -1.984,
+          "y": 1.318,
+          "z_coord": 7056.79,
+          "redshift": 3.6345,
+          "lookback_gyr": 12.06
+        },
+        {
+          "x": -2.029,
+          "y": 1.347,
+          "z_coord": 7081.324,
+          "redshift": 3.6681,
+          "lookback_gyr": 12.076
+        },
+        {
+          "x": -2.074,
+          "y": 1.375,
+          "z_coord": 7105.952,
+          "redshift": 3.7017,
+          "lookback_gyr": 12.093
+        },
+        {
+          "x": -2.119,
+          "y": 1.403,
+          "z_coord": 7130.655,
+          "redshift": 3.7353,
+          "lookback_gyr": 12.11
+        },
+        {
+          "x": -2.163,
+          "y": 1.431,
+          "z_coord": 7155.415,
+          "redshift": 3.7689,
+          "lookback_gyr": 12.126
+        },
+        {
+          "x": -2.208,
+          "y": 1.46,
+          "z_coord": 7180.212,
+          "redshift": 3.8025,
+          "lookback_gyr": 12.143
+        },
+        {
+          "x": -2.252,
+          "y": 1.488,
+          "z_coord": 7205.026,
+          "redshift": 3.8361,
+          "lookback_gyr": 12.159
+        },
+        {
+          "x": -2.296,
+          "y": 1.516,
+          "z_coord": 7229.838,
+          "redshift": 3.8697,
+          "lookback_gyr": 12.176
+        },
+        {
+          "x": -2.34,
+          "y": 1.544,
+          "z_coord": 7254.63,
+          "redshift": 3.9034,
+          "lookback_gyr": 12.193
+        },
+        {
+          "x": -2.385,
+          "y": 1.572,
+          "z_coord": 7279.382,
+          "redshift": 3.937,
+          "lookback_gyr": 12.209
+        },
+        {
+          "x": -2.43,
+          "y": 1.6,
+          "z_coord": 7304.074,
+          "redshift": 3.9706,
+          "lookback_gyr": 12.226
+        },
+        {
+          "x": -2.474,
+          "y": 1.629,
+          "z_coord": 7328.688,
+          "redshift": 4.0042,
+          "lookback_gyr": 12.242
+        },
+        {
+          "x": -2.52,
+          "y": 1.657,
+          "z_coord": 7353.204,
+          "redshift": 4.0378,
+          "lookback_gyr": 12.259
+        },
+        {
+          "x": -2.565,
+          "y": 1.686,
+          "z_coord": 7377.603,
+          "redshift": 4.0714,
+          "lookback_gyr": 12.275
+        },
+        {
+          "x": -2.611,
+          "y": 1.716,
+          "z_coord": 7401.865,
+          "redshift": 4.105,
+          "lookback_gyr": 12.291
+        },
+        {
+          "x": -2.657,
+          "y": 1.745,
+          "z_coord": 7425.972,
+          "redshift": 4.1387,
+          "lookback_gyr": 12.307
+        },
+        {
+          "x": -2.704,
+          "y": 1.775,
+          "z_coord": 7449.905,
+          "redshift": 4.1723,
+          "lookback_gyr": 12.323
+        },
+        {
+          "x": -2.752,
+          "y": 1.806,
+          "z_coord": 7473.643,
+          "redshift": 4.2059,
+          "lookback_gyr": 12.338
+        },
+        {
+          "x": -2.8,
+          "y": 1.837,
+          "z_coord": 7497.168,
+          "redshift": 4.2395,
+          "lookback_gyr": 12.354
+        },
+        {
+          "x": -2.848,
+          "y": 1.869,
+          "z_coord": 7520.461,
+          "redshift": 4.2731,
+          "lookback_gyr": 12.369
+        },
+        {
+          "x": -2.898,
+          "y": 1.901,
+          "z_coord": 7543.502,
+          "redshift": 4.3067,
+          "lookback_gyr": 12.383
+        },
+        {
+          "x": -2.948,
+          "y": 1.934,
+          "z_coord": 7566.272,
+          "redshift": 4.3403,
+          "lookback_gyr": 12.398
+        },
+        {
+          "x": -2.999,
+          "y": 1.967,
+          "z_coord": 7588.752,
+          "redshift": 4.3739,
+          "lookback_gyr": 12.412
+        },
+        {
+          "x": -3.052,
+          "y": 2.002,
+          "z_coord": 7610.923,
+          "redshift": 4.4076,
+          "lookback_gyr": 12.426
+        },
+        {
+          "x": -3.105,
+          "y": 2.037,
+          "z_coord": 7632.765,
+          "redshift": 4.4412,
+          "lookback_gyr": 12.44
+        },
+        {
+          "x": -3.159,
+          "y": 2.073,
+          "z_coord": 7654.259,
+          "redshift": 4.4748,
+          "lookback_gyr": 12.453
+        },
+        {
+          "x": -3.214,
+          "y": 2.109,
+          "z_coord": 7675.383,
+          "redshift": 4.5084,
+          "lookback_gyr": 12.466
+        },
+        {
+          "x": -3.27,
+          "y": 2.147,
+          "z_coord": 7696.077,
+          "redshift": 4.5416,
+          "lookback_gyr": 12.479
+        },
+        {
+          "x": -3.325,
+          "y": 2.184,
+          "z_coord": 7716.341,
+          "redshift": 4.5743,
+          "lookback_gyr": 12.491
+        },
+        {
+          "x": -3.382,
+          "y": 2.223,
+          "z_coord": 7736.204,
+          "redshift": 4.6066,
+          "lookback_gyr": 12.503
+        },
+        {
+          "x": -3.438,
+          "y": 2.261,
+          "z_coord": 7755.692,
+          "redshift": 4.6385,
+          "lookback_gyr": 12.514
+        },
+        {
+          "x": -3.495,
+          "y": 2.3,
+          "z_coord": 7774.833,
+          "redshift": 4.6701,
+          "lookback_gyr": 12.526
+        },
+        {
+          "x": -3.552,
+          "y": 2.34,
+          "z_coord": 7793.656,
+          "redshift": 4.7014,
+          "lookback_gyr": 12.537
+        },
+        {
+          "x": -3.61,
+          "y": 2.38,
+          "z_coord": 7812.186,
+          "redshift": 4.7325,
+          "lookback_gyr": 12.547
+        },
+        {
+          "x": -3.668,
+          "y": 2.42,
+          "z_coord": 7830.452,
+          "redshift": 4.7634,
+          "lookback_gyr": 12.558
+        },
+        {
+          "x": -3.727,
+          "y": 2.461,
+          "z_coord": 7848.482,
+          "redshift": 4.7943,
+          "lookback_gyr": 12.568
+        },
+        {
+          "x": -3.786,
+          "y": 2.503,
+          "z_coord": 7866.302,
+          "redshift": 4.8251,
+          "lookback_gyr": 12.578
+        },
+        {
+          "x": -3.846,
+          "y": 2.545,
+          "z_coord": 7883.941,
+          "redshift": 4.8559,
+          "lookback_gyr": 12.588
+        },
+        {
+          "x": -3.907,
+          "y": 2.587,
+          "z_coord": 7901.426,
+          "redshift": 4.8868,
+          "lookback_gyr": 12.598
+        },
+        {
+          "x": -3.968,
+          "y": 2.63,
+          "z_coord": 7918.784,
+          "redshift": 4.9179,
+          "lookback_gyr": 12.607
+        },
+        {
+          "x": -4.03,
+          "y": 2.673,
+          "z_coord": 7936.043,
+          "redshift": 4.9491,
+          "lookback_gyr": 12.617
+        },
+        {
+          "x": -4.092,
+          "y": 2.716,
+          "z_coord": 7953.231,
+          "redshift": 4.9806,
+          "lookback_gyr": 12.626
+        },
+        {
+          "x": -4.156,
+          "y": 2.761,
+          "z_coord": 7970.374,
+          "redshift": 5.0124,
+          "lookback_gyr": 12.635
+        },
+        {
+          "x": -4.22,
+          "y": 2.805,
+          "z_coord": 7987.502,
+          "redshift": 5.0445,
+          "lookback_gyr": 12.645
+        },
+        {
+          "x": -4.284,
+          "y": 2.85,
+          "z_coord": 8004.64,
+          "redshift": 5.0771,
+          "lookback_gyr": 12.654
+        },
+        {
+          "x": -4.35,
+          "y": 2.896,
+          "z_coord": 8021.818,
+          "redshift": 5.1101,
+          "lookback_gyr": 12.663
+        },
+        {
+          "x": -4.417,
+          "y": 2.941,
+          "z_coord": 8039.061,
+          "redshift": 5.1437,
+          "lookback_gyr": 12.672
+        },
+        {
+          "x": -4.484,
+          "y": 2.988,
+          "z_coord": 8056.398,
+          "redshift": 5.1778,
+          "lookback_gyr": 12.681
+        },
+        {
+          "x": -4.553,
+          "y": 3.035,
+          "z_coord": 8073.857,
+          "redshift": 5.2126,
+          "lookback_gyr": 12.69
+        },
+        {
+          "x": -4.622,
+          "y": 3.082,
+          "z_coord": 8091.464,
+          "redshift": 5.2482,
+          "lookback_gyr": 12.699
+        },
+        {
+          "x": -4.693,
+          "y": 3.13,
+          "z_coord": 8109.247,
+          "redshift": 5.2844,
+          "lookback_gyr": 12.708
+        },
+        {
+          "x": -4.764,
+          "y": 3.178,
+          "z_coord": 8127.235,
+          "redshift": 5.3215,
+          "lookback_gyr": 12.717
+        },
+        {
+          "x": -4.837,
+          "y": 3.226,
+          "z_coord": 8145.454,
+          "redshift": 5.3595,
+          "lookback_gyr": 12.726
+        },
+        {
+          "x": -4.911,
+          "y": 3.275,
+          "z_coord": 8163.932,
+          "redshift": 5.3983,
+          "lookback_gyr": 12.735
+        },
+        {
+          "x": -4.985,
+          "y": 3.325,
+          "z_coord": 8182.696,
+          "redshift": 5.4382,
+          "lookback_gyr": 12.745
+        },
+        {
+          "x": -5.061,
+          "y": 3.375,
+          "z_coord": 8201.774,
+          "redshift": 5.4791,
+          "lookback_gyr": 12.754
+        },
+        {
+          "x": -5.139,
+          "y": 3.425,
+          "z_coord": 8221.156,
+          "redshift": 5.521,
+          "lookback_gyr": 12.764
+        },
+        {
+          "x": -5.217,
+          "y": 3.476,
+          "z_coord": 8240.627,
+          "redshift": 5.5631,
+          "lookback_gyr": 12.773
+        },
+        {
+          "x": -5.295,
+          "y": 3.526,
+          "z_coord": 8260.154,
+          "redshift": 5.6052,
+          "lookback_gyr": 12.783
+        },
+        {
+          "x": -5.375,
+          "y": 3.577,
+          "z_coord": 8279.74,
+          "redshift": 5.6475,
+          "lookback_gyr": 12.793
+        },
+        {
+          "x": -5.455,
+          "y": 3.629,
+          "z_coord": 8299.388,
+          "redshift": 5.6899,
+          "lookback_gyr": 12.802
+        },
+        {
+          "x": -5.536,
+          "y": 3.68,
+          "z_coord": 8319.101,
+          "redshift": 5.7327,
+          "lookback_gyr": 12.812
+        },
+        {
+          "x": -5.618,
+          "y": 3.732,
+          "z_coord": 8338.882,
+          "redshift": 5.7757,
+          "lookback_gyr": 12.822
+        },
+        {
+          "x": -5.701,
+          "y": 3.784,
+          "z_coord": 8358.734,
+          "redshift": 5.8191,
+          "lookback_gyr": 12.831
+        },
+        {
+          "x": -5.784,
+          "y": 3.836,
+          "z_coord": 8378.661,
+          "redshift": 5.863,
+          "lookback_gyr": 12.841
+        },
+        {
+          "x": -5.868,
+          "y": 3.889,
+          "z_coord": 8398.666,
+          "redshift": 5.9073,
+          "lookback_gyr": 12.85
+        },
+        {
+          "x": -5.954,
+          "y": 3.942,
+          "z_coord": 8418.752,
+          "redshift": 5.9522,
+          "lookback_gyr": 12.86
+        },
+        {
+          "x": -6.04,
+          "y": 3.996,
+          "z_coord": 8438.922,
+          "redshift": 5.9976,
+          "lookback_gyr": 12.869
+        },
+        {
+          "x": -6.127,
+          "y": 4.05,
+          "z_coord": 8459.18,
+          "redshift": 6.0438,
+          "lookback_gyr": 12.879
+        },
+        {
+          "x": -6.215,
+          "y": 4.105,
+          "z_coord": 8479.528,
+          "redshift": 6.0906,
+          "lookback_gyr": 12.888
+        },
+        {
+          "x": -6.304,
+          "y": 4.16,
+          "z_coord": 8499.969,
+          "redshift": 6.1382,
+          "lookback_gyr": 12.897
+        },
+        {
+          "x": -6.394,
+          "y": 4.216,
+          "z_coord": 8520.507,
+          "redshift": 6.1866,
+          "lookback_gyr": 12.907
+        },
+        {
+          "x": -6.485,
+          "y": 4.273,
+          "z_coord": 8541.145,
+          "redshift": 6.2359,
+          "lookback_gyr": 12.916
+        },
+        {
+          "x": -6.577,
+          "y": 4.33,
+          "z_coord": 8561.887,
+          "redshift": 6.2862,
+          "lookback_gyr": 12.926
+        },
+        {
+          "x": -6.67,
+          "y": 4.388,
+          "z_coord": 8582.734,
+          "redshift": 6.3374,
+          "lookback_gyr": 12.935
+        },
+        {
+          "x": -6.765,
+          "y": 4.447,
+          "z_coord": 8603.691,
+          "redshift": 6.3897,
+          "lookback_gyr": 12.944
+        },
+        {
+          "x": -6.86,
+          "y": 4.506,
+          "z_coord": 8624.761,
+          "redshift": 6.4431,
+          "lookback_gyr": 12.954
+        },
+        {
+          "x": -6.957,
+          "y": 4.567,
+          "z_coord": 8645.946,
+          "redshift": 6.4977,
+          "lookback_gyr": 12.963
+        },
+        {
+          "x": -7.054,
+          "y": 4.628,
+          "z_coord": 8667.251,
+          "redshift": 6.5535,
+          "lookback_gyr": 12.972
+        },
+        {
+          "x": -7.153,
+          "y": 4.69,
+          "z_coord": 8688.677,
+          "redshift": 6.6106,
+          "lookback_gyr": 12.981
+        },
+        {
+          "x": -7.253,
+          "y": 4.753,
+          "z_coord": 8710.229,
+          "redshift": 6.669,
+          "lookback_gyr": 12.99
+        },
+        {
+          "x": -7.355,
+          "y": 4.817,
+          "z_coord": 8731.909,
+          "redshift": 6.7289,
+          "lookback_gyr": 12.999
+        },
+        {
+          "x": -7.457,
+          "y": 4.882,
+          "z_coord": 8753.721,
+          "redshift": 6.7901,
+          "lookback_gyr": 13.009
+        },
+        {
+          "x": -7.561,
+          "y": 4.948,
+          "z_coord": 8775.668,
+          "redshift": 6.8529,
+          "lookback_gyr": 13.018
+        },
+        {
+          "x": -7.667,
+          "y": 5.015,
+          "z_coord": 8797.752,
+          "redshift": 6.9173,
+          "lookback_gyr": 13.027
+        },
+        {
+          "x": -7.773,
+          "y": 5.083,
+          "z_coord": 8819.978,
+          "redshift": 6.9832,
+          "lookback_gyr": 13.036
+        },
+        {
+          "x": -7.881,
+          "y": 5.152,
+          "z_coord": 8842.37,
+          "redshift": 7.051,
+          "lookback_gyr": 13.045
+        },
+        {
+          "x": -7.992,
+          "y": 5.223,
+          "z_coord": 8864.978,
+          "redshift": 7.121,
+          "lookback_gyr": 13.054
+        },
+        {
+          "x": -8.104,
+          "y": 5.295,
+          "z_coord": 8887.794,
+          "redshift": 7.193,
+          "lookback_gyr": 13.063
+        },
+        {
+          "x": -8.218,
+          "y": 5.369,
+          "z_coord": 8910.805,
+          "redshift": 7.267,
+          "lookback_gyr": 13.071
+        },
+        {
+          "x": -8.334,
+          "y": 5.444,
+          "z_coord": 8934.001,
+          "redshift": 7.3428,
+          "lookback_gyr": 13.08
+        },
+        {
+          "x": -8.452,
+          "y": 5.52,
+          "z_coord": 8957.37,
+          "redshift": 7.4203,
+          "lookback_gyr": 13.089
+        },
+        {
+          "x": -8.572,
+          "y": 5.597,
+          "z_coord": 8980.9,
+          "redshift": 7.4994,
+          "lookback_gyr": 13.098
+        },
+        {
+          "x": -8.693,
+          "y": 5.675,
+          "z_coord": 9004.58,
+          "redshift": 7.58,
+          "lookback_gyr": 13.106
+        },
+        {
+          "x": -8.815,
+          "y": 5.755,
+          "z_coord": 9028.399,
+          "redshift": 7.662,
+          "lookback_gyr": 13.115
+        },
+        {
+          "x": -8.939,
+          "y": 5.835,
+          "z_coord": 9052.344,
+          "redshift": 7.7453,
+          "lookback_gyr": 13.124
+        },
+        {
+          "x": -9.063,
+          "y": 5.916,
+          "z_coord": 9076.405,
+          "redshift": 7.8297,
+          "lookback_gyr": 13.132
+        },
+        {
+          "x": -9.189,
+          "y": 5.997,
+          "z_coord": 9100.571,
+          "redshift": 7.9151,
+          "lookback_gyr": 13.141
+        },
+        {
+          "x": -9.316,
+          "y": 6.08,
+          "z_coord": 9124.829,
+          "redshift": 8.0015,
+          "lookback_gyr": 13.149
+        },
+        {
+          "x": -9.443,
+          "y": 6.162,
+          "z_coord": 9149.168,
+          "redshift": 8.0886,
+          "lookback_gyr": 13.158
+        },
+        {
+          "x": -9.571,
+          "y": 6.246,
+          "z_coord": 9173.577,
+          "redshift": 8.1765,
+          "lookback_gyr": 13.166
+        },
+        {
+          "x": -9.7,
+          "y": 6.33,
+          "z_coord": 9198.044,
+          "redshift": 8.2649,
+          "lookback_gyr": 13.175
+        },
+        {
+          "x": -9.829,
+          "y": 6.414,
+          "z_coord": 9222.558,
+          "redshift": 8.3538,
+          "lookback_gyr": 13.183
+        },
+        {
+          "x": -9.959,
+          "y": 6.498,
+          "z_coord": 9247.108,
+          "redshift": 8.4431,
+          "lookback_gyr": 13.192
+        },
+        {
+          "x": -10.089,
+          "y": 6.582,
+          "z_coord": 9271.681,
+          "redshift": 8.5325,
+          "lookback_gyr": 13.2
+        },
+        {
+          "x": -10.219,
+          "y": 6.667,
+          "z_coord": 9296.267,
+          "redshift": 8.6222,
+          "lookback_gyr": 13.209
+        },
+        {
+          "x": -10.349,
+          "y": 6.752,
+          "z_coord": 9320.853,
+          "redshift": 8.7118,
+          "lookback_gyr": 13.217
+        },
+        {
+          "x": -10.479,
+          "y": 6.836,
+          "z_coord": 9345.429,
+          "redshift": 8.8013,
+          "lookback_gyr": 13.226
+        },
+        {
+          "x": -10.608,
+          "y": 6.92,
+          "z_coord": 9369.984,
+          "redshift": 8.8906,
+          "lookback_gyr": 13.234
+        },
+        {
+          "x": -10.738,
+          "y": 7.005,
+          "z_coord": 9394.504,
+          "redshift": 8.9796,
+          "lookback_gyr": 13.243
+        },
+        {
+          "x": -10.866,
+          "y": 7.088,
+          "z_coord": 9418.98,
+          "redshift": 9.0681,
+          "lookback_gyr": 13.251
+        },
+        {
+          "x": -10.995,
+          "y": 7.172,
+          "z_coord": 9443.4,
+          "redshift": 9.156,
+          "lookback_gyr": 13.26
+        },
+        {
+          "x": -11.122,
+          "y": 7.255,
+          "z_coord": 9467.751,
+          "redshift": 9.2433,
+          "lookback_gyr": 13.268
+        },
+        {
+          "x": -11.249,
+          "y": 7.337,
+          "z_coord": 9492.024,
+          "redshift": 9.3298,
+          "lookback_gyr": 13.277
+        },
+        {
+          "x": -11.375,
+          "y": 7.419,
+          "z_coord": 9516.205,
+          "redshift": 9.4154,
+          "lookback_gyr": 13.285
+        },
+        {
+          "x": -11.5,
+          "y": 7.5,
+          "z_coord": 9540.285,
+          "redshift": 9.5,
+          "lookback_gyr": 13.294
+        }
+      ],
+      "provenance": {
+        "simulation": "IllustrisTNG-100",
+        "cosmology": "Planck 2015",
+        "phenomenon": "Extreme Starburst / Little Red Dot Lineage",
+        "contract_version": "1.0.0"
+      }
+    }
+  }
+}

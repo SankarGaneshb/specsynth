@@ -12,6 +12,7 @@ interface SkyCanvasProps {
   colorMode?: SkyColorMode;
   discoveryMode?: boolean;
   rarityThreshold?: number;
+  isActive?: boolean;
 }
 
 export const SkyCanvas: React.FC<SkyCanvasProps> = ({
@@ -25,6 +26,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
   colorMode = 'rgb',
   discoveryMode = false,
   rarityThreshold = 3.5,
+  isActive = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -356,11 +358,12 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     rarityThreshold,
   ]);
 
-  // Window Resize Listener & Dimensions Sync
+  // Window Resize Listener & Dimensions Sync with ResizeObserver
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
       const w = canvas.parentElement?.clientWidth || window.innerWidth;
       const h = canvas.parentElement?.clientHeight || window.innerHeight;
       if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
@@ -369,10 +372,32 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         setCanvasSize({ width: w, height: h });
       }
     };
+
     handleResize();
+    const observer = canvas.parentElement ? new ResizeObserver(handleResize) : null;
+    if (canvas.parentElement && observer) {
+      observer.observe(canvas.parentElement);
+    }
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
+
+  // When 2D Sky becomes active, immediately sync canvas dimensions
+  useEffect(() => {
+    if (isActive && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const w = canvas.parentElement?.clientWidth || window.innerWidth;
+      const h = canvas.parentElement?.clientHeight || window.innerHeight;
+      if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
+        canvas.width = w;
+        canvas.height = h;
+        setCanvasSize({ width: w, height: h });
+      }
+    }
+  }, [isActive]);
 
   // Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -438,9 +463,27 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     setZoom(newZoom);
   };
 
-  const handleClick = () => {
-    if (hoveredGalaxy) {
-      onSelectGalaxy(hoveredGalaxy);
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    let found: Galaxy | null = hoveredGalaxy;
+    let closestDist = 25;
+
+    for (const g of galaxies) {
+      const { x, y } = projectCoordinates(g.ra, g.dec, canvas.width, canvas.height, zoom, offset);
+      const dist = Math.hypot(clickX - x, clickY - y);
+      if (dist < closestDist) {
+        closestDist = dist;
+        found = g;
+      }
+    }
+
+    if (found) {
+      onSelectGalaxy(found);
     }
   };
 

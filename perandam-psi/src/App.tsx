@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar';
 import { SkyCanvas } from './components/SkyCanvas';
 import { MilkyWayComparator3D } from './components/MilkyWayComparator3D';
 import { LightconeCanvas3D } from './components/LightconeCanvas3D';
+import { CosmicTimeScrubber } from './components/CosmicTimeScrubber';
 import { GalaxyInspector } from './components/GalaxyInspector';
 import { GuideModal } from './components/GuideModal';
 import { Galaxy, CatalogManifest, SkyColorMode, ViewportMode } from './types/galaxy';
@@ -33,7 +34,18 @@ export const App: React.FC = () => {
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [colorMode, setColorMode] = useState<SkyColorMode>('rgb');
   const [viewportMode, setViewportMode] = useState<ViewportMode>('2d');
+  const [previousViewportMode, setPreviousViewportMode] = useState<ViewportMode>('3d');
   const [discoveryMode, setDiscoveryMode] = useState<boolean>(false);
+  const [scrubberZ, setScrubberZ] = useState<number>(0.0);
+
+  const handleViewportChange = (newMode: ViewportMode) => {
+    if (newMode !== viewportMode) {
+      if (viewportMode !== 'twin') {
+        setPreviousViewportMode(viewportMode);
+      }
+      setViewportMode(newMode);
+    }
+  };
 
   // Switch active dataset
   const handleSwitchDataset = (newId: DatasetId) => {
@@ -77,10 +89,41 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const handleSelectGalaxy = (galaxy: Galaxy | null) => {
+    setSelectedGalaxy(galaxy);
+    if (galaxy && typeof galaxy.redshift === 'number') {
+      setScrubberZ(galaxy.redshift);
+    }
+  };
+
+  const handleScrubberChange = (newZ: number) => {
+    setScrubberZ(newZ);
+    if (selectedGalaxy) {
+      handleUpdateGalaxy({
+        ...selectedGalaxy,
+        redshift: newZ,
+      });
+    } else if (galaxies.length > 0) {
+      // Find closest galaxy to this redshift so the right side is visible and active
+      let closest = galaxies[0];
+      let minDiff = Math.abs((galaxies[0].redshift ?? 0) - newZ);
+      for (let i = 1; i < galaxies.length; i++) {
+        const diff = Math.abs((galaxies[i].redshift ?? 0) - newZ);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = galaxies[i];
+        }
+      }
+      if (closest && minDiff < 1.2) {
+        setSelectedGalaxy(closest);
+      }
+    }
+  };
+
   const handleSelectById = (id: string) => {
     const found = galaxies.find((g) => g.id === id);
     if (found) {
-      setSelectedGalaxy(found);
+      handleSelectGalaxy(found);
     }
   };
 
@@ -99,7 +142,8 @@ export const App: React.FC = () => {
         colorMode={colorMode}
         onChangeColorMode={setColorMode}
         viewportMode={viewportMode}
-        onToggleViewportMode={() => setViewportMode((prev) => (prev === 'twin' ? '2d' : 'twin'))}
+        onToggleViewportMode={() => handleViewportChange(viewportMode === 'twin' ? '2d' : 'twin')}
+        onChangeViewportMode={handleViewportChange}
         onResetView={() => setResetTrigger((prev) => prev + 1)}
         onSelectGalaxy={handleSelectById}
         onOpenGuide={() => setIsGuideOpen(true)}
@@ -113,44 +157,73 @@ export const App: React.FC = () => {
       {/* Beginner & Student Guide Modal */}
       <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
 
-      {/* Main Sky & Inspector Area */}
+      {/* Main Sky & Inspector Area: Persistent Viewports (Zero WebGL Context Churn) */}
       <div className="flex-1 relative flex overflow-hidden">
-        {viewportMode === 'twin' ? (
+        {/* 3D Galaxy Stage (Milky Way Comparator) */}
+        <div className={`flex-1 h-full relative ${viewportMode === 'twin' ? 'block' : 'hidden'}`}>
           <MilkyWayComparator3D
             galaxy={selectedGalaxy || galaxies[0]}
             allGalaxies={galaxies}
-            onSelectGalaxy={(g) => setSelectedGalaxy(g)}
-            onClose={() => setViewportMode('2d')}
+            onSelectGalaxy={(g) => handleSelectGalaxy(g)}
+            onClose={() => handleViewportChange(previousViewportMode)}
+            onCloseLabel={previousViewportMode === '3d' ? 'Back to 3D Lightcone' : 'Back to 2D Sky'}
+            isActive={viewportMode === 'twin'}
           />
-        ) : (
-          <div className="flex-1 h-full relative">
-            <SkyCanvas
-              galaxies={galaxies}
-              selectedGalaxy={selectedGalaxy}
-              onSelectGalaxy={setSelectedGalaxy}
-              centerRa={manifest.field_center.ra}
-              centerDec={manifest.field_center.dec}
-              fieldRadius={manifest.field_center.radius_deg}
-              resetTrigger={resetTrigger}
-              colorMode={colorMode}
-              discoveryMode={discoveryMode}
-            />
+        </div>
 
-            {/* Floating Field Summary Badge (Bottom Left) */}
-            <div className="absolute bottom-4 left-4 z-10 flex items-center space-x-2 bg-cosmos-900/90 border border-cosmos-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs shadow-lg pointer-events-none font-mono">
-              <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="text-slate-300 font-semibold font-sans">
-                {datasetId === 'goods_s_mock' ? 'GOODS-S Deep Mock' : 'TNG-100 Calibration'}
-              </span>
-              <span className="text-slate-500">•</span>
-              <span className="text-slate-400">
-                RA {manifest.field_center.ra.toFixed(2)}°, Dec {manifest.field_center.dec.toFixed(2)}°
-              </span>
-              <span className="text-slate-500">•</span>
-              <span className="text-amber-400 font-bold">{galaxies.length} galaxies</span>
-            </div>
+        {/* 3D Cosmological Lightcone Canvas & Progenitor Trajectories */}
+        <div className={`flex-1 h-full relative ${viewportMode === '3d' ? 'block' : 'hidden'}`}>
+          <LightconeCanvas3D
+            galaxies={galaxies}
+            selectedGalaxy={selectedGalaxy}
+            onSelectGalaxy={handleSelectGalaxy}
+            centerRa={manifest.field_center.ra}
+            centerDec={manifest.field_center.dec}
+            fieldRadius={manifest.field_center.radius_deg}
+            resetTrigger={resetTrigger}
+            colorMode={colorMode}
+            discoveryMode={discoveryMode}
+            scrubberZ={scrubberZ}
+            onScrubberChange={handleScrubberChange}
+            isActive={viewportMode === '3d'}
+          />
+          <CosmicTimeScrubber
+            currentRedshift={scrubberZ}
+            onRedshiftChange={handleScrubberChange}
+            minZ={0.0}
+            maxZ={8.5}
+          />
+        </div>
+
+        {/* 2D Projected Sky Canvas */}
+        <div className={`flex-1 h-full relative ${viewportMode === '2d' ? 'block' : 'hidden'}`}>
+          <SkyCanvas
+            galaxies={galaxies}
+            selectedGalaxy={selectedGalaxy}
+            onSelectGalaxy={handleSelectGalaxy}
+            centerRa={manifest.field_center.ra}
+            centerDec={manifest.field_center.dec}
+            fieldRadius={manifest.field_center.radius_deg}
+            resetTrigger={resetTrigger}
+            colorMode={colorMode}
+            discoveryMode={discoveryMode}
+            isActive={viewportMode === '2d'}
+          />
+
+          {/* Floating Field Summary Badge (Bottom Left) */}
+          <div className="absolute bottom-4 left-4 z-10 flex items-center space-x-2 bg-cosmos-900/90 border border-cosmos-800 backdrop-blur px-3 py-1.5 rounded-lg text-xs shadow-lg pointer-events-none font-mono">
+            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-slate-300 font-semibold font-sans">
+              {datasetId === 'goods_s_mock' ? 'GOODS-S Deep Mock' : 'TNG-100 Calibration'}
+            </span>
+            <span className="text-slate-500">•</span>
+            <span className="text-slate-400">
+              RA {manifest.field_center.ra.toFixed(2)}°, Dec {manifest.field_center.dec.toFixed(2)}°
+            </span>
+            <span className="text-slate-500">•</span>
+            <span className="text-amber-400 font-bold">{galaxies.length} galaxies</span>
           </div>
-        )}
+        </div>
 
         {/* Slide-over Galaxy Inspector */}
         {selectedGalaxy && viewportMode !== 'twin' && (
@@ -160,7 +233,9 @@ export const App: React.FC = () => {
             filters={manifest.filters}
             onClose={() => setSelectedGalaxy(null)}
             onUpdateGalaxy={handleUpdateGalaxy}
-            onOpenGalaxyTwin={() => setViewportMode('twin')}
+            onOpenGalaxyTwin={() => handleViewportChange('twin')}
+            externalZ={scrubberZ}
+            onExternalZChange={handleScrubberChange}
           />
         )}
       </div>

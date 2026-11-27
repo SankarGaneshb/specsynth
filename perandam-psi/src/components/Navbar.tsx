@@ -22,6 +22,7 @@ interface NavbarProps {
   onChangeColorMode: (mode: SkyColorMode) => void;
   viewportMode: ViewportMode;
   onToggleViewportMode: () => void;
+  onChangeViewportMode?: (mode: ViewportMode) => void;
   onResetView: () => void;
   onSelectGalaxy: (id: string) => void;
   onOpenGuide: () => void;
@@ -40,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onChangeColorMode,
   viewportMode,
   onToggleViewportMode,
+  onChangeViewportMode,
   onResetView,
   onSelectGalaxy,
   onOpenGuide,
@@ -115,22 +117,44 @@ export const Navbar: React.FC<NavbarProps> = ({
           </select>
         </div>
 
-        {/* 🌌 Galaxy Stage 3D Multi-Galaxy & Milky Way Benchmark */}
-        <button
-          onClick={onToggleViewportMode}
-          title="Perandam Ψ 3D Galaxy Stage — Multi-Galaxy Comparison & Milky Way Benchmark: Where simulations meet the real universe"
-          className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs border rounded-lg font-semibold transition-all cursor-pointer ${
-            viewportMode === 'twin'
-              ? 'bg-gradient-to-r from-indigo-950 to-cyan-950 border-cyan-400 text-cyan-200 shadow-lg shadow-cyan-950/50 ring-1 ring-cyan-400/50'
-              : 'bg-cosmos-950/80 hover:bg-cosmos-800 border-cosmos-700 text-slate-300'
-          }`}
-        >
-          <Sparkles className={`w-3.5 h-3.5 ${viewportMode === 'twin' ? 'text-amber-300 animate-pulse' : 'text-indigo-400'}`} />
-          <span>3D Galaxy Stage</span>
-          <span className="text-[10px] px-1 py-0.2 rounded bg-indigo-900/80 text-cyan-300 font-mono">
-            {viewportMode === 'twin' ? 'ACTIVE' : '3D'}
-          </span>
-        </button>
+        {/* Viewport Mode Segmented Selector (2D Sky / 3D Lightcone / 3D Stage) */}
+        <div className="flex items-center bg-cosmos-950/80 border border-cosmos-700 rounded-lg p-0.5 text-xs">
+          <button
+            onClick={() => onChangeViewportMode ? onChangeViewportMode('2d') : onToggleViewportMode()}
+            className={`px-2 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+              viewportMode === '2d'
+                ? 'bg-cosmos-800 text-cyan-300 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="2D Projected Sky Canvas"
+          >
+            2D Sky
+          </button>
+          <button
+            onClick={() => onChangeViewportMode ? onChangeViewportMode('3d') : onToggleViewportMode()}
+            className={`flex items-center space-x-1 px-2 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+              viewportMode === '3d'
+                ? 'bg-indigo-950 border border-indigo-500/60 text-indigo-200 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="3D Cosmological Lightcone & Progenitor Trajectories"
+          >
+            <Compass className="w-3.5 h-3.5 text-indigo-400" />
+            <span>3D Lightcone</span>
+          </button>
+          <button
+            onClick={() => onChangeViewportMode ? onChangeViewportMode('twin') : onToggleViewportMode()}
+            className={`flex items-center space-x-1 px-2 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+              viewportMode === 'twin'
+                ? 'bg-gradient-to-r from-indigo-950 to-cyan-950 border border-cyan-400 text-cyan-200 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="3D Multi-Galaxy Stage & Milky Way Benchmark"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>3D Stage</span>
+          </button>
+        </div>
 
         {/* 🔭 Discovery Mode Toggle */}
         <button

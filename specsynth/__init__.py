@@ -50,6 +50,13 @@ try:
         run_sentry_audit,
     )
     from specsynth.agent import AgentInvestigationResult, RootCauseCluster, SentryAgent
+    from specsynth.evolution import (
+        generate_highz_starburst_evolution_track,
+        generate_reference_tng_evolution_track,
+        generate_spline_trajectory,
+        synthesize_evolutionary_photometry,
+        verify_mass_assembly,
+    )
     from specsynth.tools import (
         tool_clean_catalog,
         tool_get_anomaly_details,
@@ -114,4 +121,9 @@ __all__ = [
     "SentryAgent",
     "AgentInvestigationResult",
     "RootCauseCluster",
+    "generate_spline_trajectory",
+    "verify_mass_assembly",
+    "synthesize_evolutionary_photometry",
+    "generate_reference_tng_evolution_track",
+    "generate_highz_starburst_evolution_track",
 ]

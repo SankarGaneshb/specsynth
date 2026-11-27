@@ -9,6 +9,7 @@ import {
   estimatePhysicalRadiusKpc,
 } from '../utils/milkyway.ts';
 import { lookbackTimeGyr } from '../utils/cosmo3d.ts';
+import evolutionTracksData from '../data/evolution_tracks.json';
 import {
   Sparkles,
   Orbit,
@@ -25,6 +26,7 @@ import {
   Sliders,
   ChevronDown,
   ChevronUp,
+  GitBranch,
 } from 'lucide-react';
 
 export interface SlotTheme {
@@ -54,6 +56,8 @@ interface MilkyWayComparator3DProps {
   allGalaxies: Galaxy[];
   onSelectGalaxy: (galaxy: Galaxy) => void;
   onClose?: () => void;
+  onCloseLabel?: string;
+  isActive?: boolean;
 }
 
 // Generate realistic star particle texture
@@ -574,6 +578,8 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
   allGalaxies,
   onSelectGalaxy,
   onClose,
+  onCloseLabel,
+  isActive = true,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -721,7 +727,9 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
         child.rotation.y += delta * (0.10 + (idx % 3) * 0.04);
       });
 
-      state.renderer.render(state.scene, state.camera);
+      if (containerRef.current && containerRef.current.clientWidth > 10 && containerRef.current.clientHeight > 10) {
+        state.renderer.render(state.scene, state.camera);
+      }
       state.animFrameId = requestAnimationFrame(animate);
     };
 
@@ -731,14 +739,22 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
       if (!containerRef.current || !threeRef.current) return;
       const w = containerRef.current.clientWidth;
       const h = containerRef.current.clientHeight;
+      if (!w || !h || w <= 10 || h <= 10) return;
       threeRef.current.camera.aspect = w / h;
       threeRef.current.camera.updateProjectionMatrix();
       threeRef.current.renderer.setSize(w, h);
     };
 
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(container);
     window.addEventListener('resize', handleResize);
+    const timer1 = setTimeout(handleResize, 50);
+    const timer2 = setTimeout(handleResize, 180);
 
     return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       if (threeRef.current?.animFrameId) {
         cancelAnimationFrame(threeRef.current.animFrameId);
@@ -748,6 +764,20 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
       threeRef.current = null;
     };
   }, []);
+
+  // When tab becomes active, sync dimensions and trigger immediate render
+  useEffect(() => {
+    if (isActive && threeRef.current && containerRef.current) {
+      const w = containerRef.current.clientWidth;
+      const h = containerRef.current.clientHeight;
+      if (w > 10 && h > 10) {
+        threeRef.current.camera.aspect = w / h;
+        threeRef.current.camera.updateProjectionMatrix();
+        threeRef.current.renderer.setSize(w, h);
+        threeRef.current.renderer.render(threeRef.current.scene, threeRef.current.camera);
+      }
+    }
+  }, [isActive]);
 
   // Rebuild 3D Stage whenever slots, scaleMode, or showOrbits changes
   useEffect(() => {
@@ -989,7 +1019,7 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
               onClick={onClose}
               className="px-2.5 py-1 text-xs bg-cosmos-800 hover:bg-cosmos-700 border border-cosmos-700 text-slate-300 rounded-lg transition-colors cursor-pointer"
             >
-              Back to 2D Sky
+              {onCloseLabel || 'Back'}
             </button>
           )}
         </div>
@@ -1101,14 +1131,14 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
           <span className="text-slate-300 font-mono">{slots.length} Galaxies on Stage</span>
         </div>
 
-        {/* Floating Expand Pill when bottom drawer is pushed down */}
+        {/* Unified Show Comparison Matrix Pill when collapsed */}
         {isSheetCollapsed && (
           <button
             onClick={() => setIsSheetCollapsed(false)}
-            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-cosmos-900/90 hover:bg-cosmos-800 border border-cyan-500/70 text-cyan-300 text-xs font-semibold shadow-2xl backdrop-blur transition-all cursor-pointer z-20 group hover:border-cyan-400 hover:scale-105"
-            title="Push up galaxy comparison details"
+            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 px-4 py-2 rounded-full bg-cosmos-900/95 hover:bg-cosmos-800 border border-cyan-500/70 text-cyan-300 text-xs font-semibold shadow-2xl backdrop-blur transition-all cursor-pointer z-20 group hover:border-cyan-400 hover:scale-105"
+            title="Show comparison matrix"
           >
-            <ChevronUp className="w-3.5 h-3.5 text-cyan-400 group-hover:-translate-y-0.5 transition-transform" />
+            <ChevronUp className="w-4 h-4 text-cyan-400 group-hover:-translate-y-0.5 transition-transform" />
             <span>Show Comparison Matrix ({slots.length} Galaxies)</span>
           </button>
         )}
@@ -1116,11 +1146,13 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
 
       {/* Bottom Comparative Analysis Sheet */}
       <div
-        className={`transition-all duration-300 ease-in-out bg-cosmos-900/95 border-t border-cosmos-800 px-3 pt-2.5 pb-2 flex flex-col z-20 backdrop-blur overflow-hidden ${
-          isSheetCollapsed ? 'h-11 min-h-[44px]' : 'h-64 min-h-[256px]'
+        className={`transition-all duration-300 ease-in-out bg-cosmos-900/95 flex flex-col z-20 backdrop-blur overflow-hidden ${
+          isSheetCollapsed
+            ? 'h-0 min-h-0 border-t-0 p-0 pointer-events-none opacity-0'
+            : 'h-64 min-h-[256px] border-t border-cosmos-800 px-3 pt-2.5 pb-2 opacity-100'
         }`}
       >
-        {/* Tab Header & Pushdown/Pushup Toggle */}
+        {/* Tab Header with Unified Hide Comparison Matrix Button */}
         <div className="flex items-center justify-between pb-2 border-b border-cosmos-800 text-xs flex-shrink-0">
           <div className="flex items-center space-x-4">
             <button
@@ -1163,23 +1195,14 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
               Baseline Reference: <strong className="text-slate-300">Slot #1 ({baseline.id})</strong>
             </div>
 
-            {/* Pushdown / Pushup Toggle Button */}
+            {/* Unified Hide Comparison Matrix Button (Replaces separate PushDown button) */}
             <button
-              onClick={() => setIsSheetCollapsed((prev) => !prev)}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cosmos-800 hover:bg-cosmos-700 text-cyan-300 hover:text-cyan-100 text-xs font-semibold transition-all border border-cosmos-700/80 shadow-sm cursor-pointer"
-              title={isSheetCollapsed ? "Push up to view galaxy comparison details" : "Push down to expand full 3D space view"}
+              onClick={() => setIsSheetCollapsed(true)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cosmos-800/90 hover:bg-cosmos-700 text-cyan-300 hover:text-cyan-100 text-xs font-semibold transition-all border border-cyan-500/50 hover:border-cyan-400 shadow-sm cursor-pointer group"
+              title="Hide comparison matrix"
             >
-              {isSheetCollapsed ? (
-                <>
-                  <ChevronUp className="w-3.5 h-3.5 text-cyan-400 animate-bounce" />
-                  <span>Push Up Details</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Push Down</span>
-                </>
-              )}
+              <ChevronDown className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-y-0.5 transition-transform" />
+              <span>Hide Comparison Matrix ({slots.length} Galaxies)</span>
             </button>
           </div>
         </div>
@@ -1310,37 +1333,94 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
           </div>
         )}
 
-        {/* Tab 2: Cosmic Timeline */}
-        {!isSheetCollapsed && activeTab === 'timeline' && (
-          <div className="flex-1 overflow-x-auto flex items-center px-2">
-            <div className="flex items-center space-x-3 min-w-full">
-              {[...slots].sort((a, b) => a.redshift - b.redshift).map((s, idx) => {
-                const lookback = lookbackTimeGyr(s.redshift);
-                return (
-                  <React.Fragment key={`timeline-${s.id}`}>
-                    <div className="bg-cosmos-950/90 border border-cosmos-700/80 rounded-xl p-3 min-w-[200px] shadow-sm">
-                      <div className="text-xs font-bold text-cyan-300">
-                        {s.id === 'MILKY_WAY' ? '🌌 Milky Way' : s.id}
-                      </div>
-                      <div className="text-[11px] font-mono text-amber-300 mt-1">
-                        Redshift z = {s.redshift.toFixed(2)}
-                      </div>
-                      <div className="text-[11px] font-mono text-slate-400">
-                        ~{lookback.toFixed(2)} Gyr Lookback
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-1 truncate">
-                        {s.discovery_profile?.class_title ?? 'Local Universe Spiral'}
-                      </div>
-                    </div>
-                    {idx < slots.length - 1 && (
-                      <ArrowLeftRight className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                    )}
-                  </React.Fragment>
-                );
-              })}
+        {/* Tab 2: Cosmic Timeline & Progenitor Lineage */}
+        {!isSheetCollapsed && activeTab === 'timeline' && (() => {
+          const targetGal = slots.find((s) => s.id !== 'MILKY_WAY') || galaxy;
+          const trackData = (evolutionTracksData as any)?.tracks?.[targetGal.id] || (evolutionTracksData as any)?.tracks?.['TNG-DISC-01'];
+          const hasTrack = trackData && trackData.main_branch && trackData.main_branch.length > 0;
+
+          return (
+            <div className="flex-1 overflow-x-auto flex flex-col justify-center px-2 py-1 space-y-1.5">
+              {/* Progenitor Branch Header */}
+              {hasTrack && (
+                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
+                  <span className="flex items-center space-x-1.5 text-cyan-300 font-semibold">
+                    <GitBranch className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Progenitor Lineage: {targetGal.id} (Main Branch: {trackData.main_branch.length} Epochs, z = {trackData.main_branch[0].redshift.toFixed(1)} → {trackData.main_branch[trackData.main_branch.length - 1].redshift.toFixed(1)})</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    Merger Ancestry: {trackData.mergers?.length || 0} Events
+                  </span>
+                </div>
+              )}
+
+              {/* Horizontal Scroll Track */}
+              <div className="flex items-center space-x-2.5 min-w-full pb-1">
+                {hasTrack ? (
+                  trackData.main_branch.map((node: any, idx: number) => {
+                    const isCosmicNoon = Math.abs(node.redshift - 2.0) < 0.2;
+                    return (
+                      <React.Fragment key={`node-${idx}-${node.redshift}`}>
+                        <div className={`bg-cosmos-950/95 border rounded-xl p-2.5 min-w-[170px] shadow-sm text-xs font-mono transition-all ${
+                          isCosmicNoon ? 'border-amber-500/80 bg-amber-950/20' : 'border-cosmos-700/80'
+                        }`}>
+                          <div className="flex items-center justify-between pb-1 border-b border-cosmos-800">
+                            <span className="font-bold text-amber-300">z = {node.redshift.toFixed(1)}</span>
+                            <span className="text-[10px] text-cyan-300">~{node.lookback_time_gyr.toFixed(1)} Gyr</span>
+                          </div>
+                          <div className="mt-1.5 space-y-0.5 text-[10px] text-slate-300">
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">M*:</span>
+                              <span className="font-semibold text-slate-200">{node.stellar_mass_msun.toExponential(1)} M☉</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">SFR:</span>
+                              <span className="text-emerald-400">{node.sfr_msun_per_yr.toFixed(1)} M☉/yr</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">r_1/2:</span>
+                              <span className="text-slate-300">{node.half_mass_radius_kpc.toFixed(2)} kpc</span>
+                            </div>
+                          </div>
+                        </div>
+                        {idx < trackData.main_branch.length - 1 && (
+                          <div className="flex flex-col items-center flex-shrink-0 text-slate-600">
+                            <ArrowLeftRight className="w-3.5 h-3.5" />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
+                  [...slots].sort((a, b) => a.redshift - b.redshift).map((s, idx) => {
+                    const lookback = lookbackTimeGyr(s.redshift);
+                    return (
+                      <React.Fragment key={`timeline-${s.id}`}>
+                        <div className="bg-cosmos-950/90 border border-cosmos-700/80 rounded-xl p-3 min-w-[200px] shadow-sm">
+                          <div className="text-xs font-bold text-cyan-300">
+                            {s.id === 'MILKY_WAY' ? '🌌 Milky Way' : s.id}
+                          </div>
+                          <div className="text-[11px] font-mono text-amber-300 mt-1">
+                            Redshift z = {s.redshift.toFixed(2)}
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-400">
+                            ~{lookback.toFixed(2)} Gyr Lookback
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-1 truncate">
+                            {s.discovery_profile?.class_title ?? 'Local Universe Spiral'}
+                          </div>
+                        </div>
+                        {idx < slots.length - 1 && (
+                          <ArrowLeftRight className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Tab 3: Proposal Table Export */}
         {!isSheetCollapsed && activeTab === 'proposal' && (

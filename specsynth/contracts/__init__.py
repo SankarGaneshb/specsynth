@@ -7,6 +7,11 @@ Enforces P0 Scope and Architecture Freeze (Issue #14).
 
 from __future__ import annotations
 
+from specsynth.contracts.evolution import (
+    EvolutionaryTrackContract,
+    MergerEvent,
+    ProgenitorNode,
+)
 from specsynth.contracts.galaxy3d import (
     CoordinateFrame,
     Galaxy3DContract,
@@ -42,4 +47,7 @@ __all__ = [
     "MCPToolContract",
     "CANONICAL_MCP_TOOLS",
     "get_canonical_tool_schema",
+    "ProgenitorNode",
+    "MergerEvent",
+    "EvolutionaryTrackContract",
 ]
