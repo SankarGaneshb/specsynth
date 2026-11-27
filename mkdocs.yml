@@ -79,9 +79,12 @@ nav:
       - Validation & Benchmarks: guides/validation-and-benchmarks.md
       - Scientific Sentry QA: guides/sentry.md
       - Ingesting External Simulations: guides/ingesting_external_simulations.md
+      - Authoring External Adapters: guides/authoring_external_adapters.md
+      - MCP Agent Integration: guides/mcp_agent_integration.md
   - Architecture & Ecosystem:
       - Scope & Contracts Freeze (ADR-001): architecture/ADR_001_scope_and_contracts_freeze.md
       - Roadmap Mapping & Status: architecture/roadmap_mapping.md
+      - Engine Capabilities Matrix: architecture/engine_capabilities_matrix.md
       - Perandam Space Intelligence (PSI): architecture/perandam_space_intelligence.md
   - TNG → JWST Validation:
       - Overview & Charter: science/tng-jwst-experiment.md

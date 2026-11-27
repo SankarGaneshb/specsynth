@@ -14,6 +14,12 @@ from typing import Any, Type
 from specsynth.adapters.base import BaseAdapter, SSPData
 from specsynth.adapters.bc03 import BC03Adapter
 from specsynth.adapters.bpass import BPASSAdapter
+from specsynth.adapters.conformance import (
+    AdapterCompatibilityPolicy,
+    AdapterConformanceError,
+    AdapterConformanceResult,
+    assert_adapter_conforms,
+)
 from specsynth.adapters.emiles import EMILESAdapter
 from specsynth.adapters.fits_grid import FITSGridAdapter
 from specsynth.adapters.fsps import FSPSAdapter
@@ -38,6 +44,10 @@ __all__ = [
     "list_adapters",
     "discover_entry_point_adapters",
     "validate_adapter",
+    "AdapterCompatibilityPolicy",
+    "AdapterConformanceError",
+    "AdapterConformanceResult",
+    "assert_adapter_conforms",
 ]
 
 # Primary registry mapping canonical adapter names to adapter classes
