@@ -1,6 +1,6 @@
 {
   "baseline_sha": "8e36648d7bad3959cdd8ed32c0232f0370fec461",
-  "tested_commit_sha": "56acfedb25ff1c195026ba17996e324191ea3e83",
+  "tested_commit_sha": "878484e87e8ddde20868f0455af36909584a4071",
   "tested_branch": "main",
   "is_shallow_clone": false,
   "status": "CONFORMANT",
@@ -133,6 +133,24 @@
       "feature": "Cosmic-time FLRW evolution, Leitner-Kravtsov recycling, and SubLink merger trees"
     },
     {
+      "file_path": "specsynth/governance/__init__.py",
+      "change_type": "A",
+      "lines_added": 28,
+      "lines_deleted": 0,
+      "milestone": "P6",
+      "issue": "#29",
+      "feature": "Governance and frozen baseline verification namespace"
+    },
+    {
+      "file_path": "specsynth/governance/baseline_verifier.py",
+      "change_type": "A",
+      "lines_added": 411,
+      "lines_deleted": 0,
+      "milestone": "P6",
+      "issue": "#29",
+      "feature": "Frozen P0 baseline verification engine and shallow-clone handling"
+    },
+    {
       "file_path": "specsynth/mcp/bridge.py",
       "change_type": "M",
       "lines_added": 82,
@@ -197,11 +215,11 @@
     "examples/external_engine_plugin/run_external_workflow.py",
     "examples/external_engine_plugin/run_genuine_external_workflow.py"
   ],
-  "diagnostic_summary": "P0 Frozen Baseline Verification: CONFORMANT. All 17 modified core files are documented under authorized roadmap milestones. External adapter plugin files (7 files) are strictly isolated.",
+  "diagnostic_summary": "P0 Frozen Baseline Verification: CONFORMANT. All 19 modified core files are documented under authorized roadmap milestones. External adapter plugin files (7 files) are strictly isolated.",
   "environment": {
     "os_platform": "Windows-11-10.0.26300-SP0",
     "python_version": "3.13.1",
     "git_available": true
   },
-  "timestamp_utc": "2026-11-27T20:07:24Z"
+  "timestamp_utc": "2026-11-27T20:11:33Z"
 }
