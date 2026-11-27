@@ -54,7 +54,7 @@
   },
   "checksums": {
     "hdf5_sha256": "8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31",
-    "webgl_json_sha256": "2778607199eda992f16c5ba0d330f66648038528d7654f9b9d3c0289e6587dd0"
+    "webgl_json_sha256": "d0533f806139e9e1eafe6ec1f2ddafe72e3e62de3c3259ef09185ee754bbd479"
   },
   "linked_files": {
     "hdf5_snapshot": "sample_models/3d/tng100_subhalo_real.hdf5",

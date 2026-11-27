@@ -68,12 +68,16 @@ DEFAULT_MANIFEST_PATH = repo_root / "sample_models" / "3d" / "tng100_subhalo_rea
 
 
 def compute_sha256(filepath: Path) -> str:
-    """Compute SHA-256 checksum of a file."""
-    h = hashlib.sha256()
+    """
+    Compute cross-platform canonical SHA-256 checksum of a file.
+    Normalizes CRLF to LF for text/JSON files governed by LF in .gitattributes
+    so checksums are identical across Windows and Linux.
+    """
     with open(filepath, "rb") as f:
-        while chunk := f.read(65536):
-            h.update(chunk)
-    return h.hexdigest()
+        content = f.read()
+    if filepath.suffix.lower() in (".json", ".txt", ".csv", ".md"):
+        content = content.replace(b"\r\n", b"\n")
+    return hashlib.sha256(content).hexdigest()
 
 
 def generate_genuine_tng_fixture(
@@ -279,7 +283,7 @@ def export_genuine_tng_artifacts(
         },
     }
 
-    with open(manifest_path, "w", encoding="utf-8") as f:
+    with open(manifest_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(manifest, f, indent=2)
 
     return web_path, manifest_path

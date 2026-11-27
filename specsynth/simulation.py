@@ -621,7 +621,7 @@ def export_galaxy3d_web_json(
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     data = galaxy.to_web_json(max_particles_per_component=max_particles_per_component, seed=seed)
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(out_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(data, f, indent=2)
 
     return out_path
