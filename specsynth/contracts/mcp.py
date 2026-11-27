@@ -208,16 +208,216 @@ CANONICAL_MCP_TOOLS: dict[str, MCPToolContract] = {
             "openWorldHint": False,
         },
     ),
+    "specsynth_get_evolution_track": MCPToolContract(
+        name="specsynth_get_evolution_track",
+        description="Retrieve full multi-epoch progenitor evolutionary track, merger milestones, and stellar mass assembly across cosmic time for a galaxy.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "galaxy_id": {
+                    "type": "string",
+                    "description": "Unique galaxy identifier (e.g. 'TNG-DISC-01', 'TNG-ANOM-01', or subhalo ID).",
+                },
+                "dataset": {
+                    "type": "string",
+                    "description": "Target simulation or mock dataset.",
+                    "default": "tng_100",
+                },
+            },
+            "required": ["galaxy_id"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "galaxy_id": {"type": "string"},
+                "version": {"type": "string"},
+                "main_branch": {"type": "array"},
+                "mergers": {"type": "array"},
+                "mass_assembly": {"type": "object"},
+                "status": {"type": "string"},
+            },
+            "required": ["galaxy_id", "main_branch"],
+        },
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    ),
+    "specsynth_remediate_catalog": MCPToolContract(
+        name="specsynth_remediate_catalog",
+        description="Trigger the autonomous SentryAgent to isolate anomaly root causes, purge corruptions, and produce a pristine clean catalog.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "base": {
+                    "type": "string",
+                    "description": "Base storage directory.",
+                    "default": "./run",
+                },
+                "output_csv": {
+                    "type": "string",
+                    "description": "Output path for the clean catalog CSV.",
+                    "default": "clean_catalog.csv",
+                },
+                "confirm_destructive": {
+                    "type": "boolean",
+                    "description": "Explicit confirmation flag required to execute destructive remediation.",
+                    "default": False,
+                },
+            },
+            "required": ["confirm_destructive"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "status": {"type": "string"},
+                "clean_catalog_path": {"type": "string"},
+                "anomalies_purged": {"type": "integer"},
+                "galaxies_retained": {"type": "integer"},
+            },
+            "required": ["status"],
+        },
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": False,
+        },
+    ),
+    "specsynth_query_hypotheses": MCPToolContract(
+        name="specsynth_query_hypotheses",
+        description="Retrieve rare frontier discovery profiles, anomaly hypotheses, and academic literature citations from deep mock catalogs.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "min_sigma": {
+                    "type": "number",
+                    "description": "Minimum statistical rarity sigma.",
+                    "default": 2.0,
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum candidate profiles to return.",
+                    "default": 5,
+                },
+                "dataset": {
+                    "type": "string",
+                    "description": "Target mock catalog dataset (e.g. 'goods_s_mock').",
+                    "default": "goods_s_mock",
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "total_discovered": {"type": "integer"},
+                "candidates": {"type": "array"},
+            },
+            "required": ["total_discovered", "candidates"],
+        },
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    ),
+    "specsynth_check_bridge_status": MCPToolContract(
+        name="specsynth_check_bridge_status",
+        description="Verify connectivity to the local SpecSynth HTTP computation bridge (localhost:8000).",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string",
+                    "description": "HTTP bridge host URL (restricted to local loopback).",
+                    "default": "http://127.0.0.1:8000",
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "status": {"type": "string"},
+                "details": {"type": "object"},
+            },
+            "required": ["status"],
+        },
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    ),
+    "specsynth_get_system_info": MCPToolContract(
+        name="specsynth_get_system_info",
+        description="Get current host hardware info, CPU threads, RAM, and GPU/BLAS acceleration capabilities.",
+        input_schema={
+            "type": "object",
+            "properties": {},
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "cpu_threads": {"type": "integer"},
+                "ram_total_gb": {"type": "number"},
+                "acceleration": {"type": "string"},
+            },
+        },
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    ),
+}
+
+# Legacy Namespace Aliasing (sps_* and psi_* -> specsynth_*)
+LEGACY_TOOL_ALIASES: dict[str, str] = {
+    # Python legacy aliases
+    "sps_list_filters": "specsynth_list_filters",
+    "sps_inspect_galaxy": "specsynth_inspect_galaxy",
+    "sps_run_sentry_audit": "specsynth_run_sentry_audit",
+    "sps_remediate_catalog": "specsynth_remediate_catalog",
+    "sps_load_tng_demo": "specsynth_query_hypotheses",
+    "sps_get_system_info": "specsynth_get_system_info",
+    "sps_calculate_cosmology": "specsynth_calculate_cosmology",
+    "sps_get_3d_galaxy": "specsynth_get_3d_galaxy",
+    "sps_get_evolution_track": "specsynth_get_evolution_track",
+    # Node.js legacy aliases
+    "psi_get_catalog_info": "specsynth_list_filters",
+    "psi_inspect_galaxy": "specsynth_inspect_galaxy",
+    "psi_calculate_cosmology": "specsynth_calculate_cosmology",
+    "psi_query_hypotheses": "specsynth_query_hypotheses",
+    "psi_check_bridge_status": "specsynth_check_bridge_status",
+    "psi_get_3d_galaxy": "specsynth_get_3d_galaxy",
+    "psi_get_evolution_track": "specsynth_get_evolution_track",
 }
 
 
+def resolve_tool_name(tool_name: str) -> str:
+    """Resolve a tool name to its canonical specsynth_* form."""
+    return LEGACY_TOOL_ALIASES.get(tool_name, tool_name)
+
+
+def get_all_canonical_tools() -> list[str]:
+    """Return all canonical MCP tool names."""
+    return list(CANONICAL_MCP_TOOLS.keys())
+
+
 def get_canonical_tool_schema(tool_name: str) -> dict[str, Any]:
-    """Retrieve the JSON Schema definition for a canonical MCP tool."""
-    tool = CANONICAL_MCP_TOOLS.get(tool_name)
+    """Retrieve the JSON Schema definition for a canonical MCP tool (or alias)."""
+    canonical_name = resolve_tool_name(tool_name)
+    tool = CANONICAL_MCP_TOOLS.get(canonical_name)
     if not tool:
-        raise KeyError(f"Unknown canonical MCP tool: '{tool_name}'")
+        raise KeyError(f"Unknown canonical MCP tool: '{tool_name}' (canonical: '{canonical_name}')")
     return {
-        "name": tool.name,
+        "name": tool_name,  # Keep the requested name for compatibility
+        "canonical_name": tool.name,
         "description": tool.description,
         "inputSchema": tool.input_schema,
         "outputSchema": tool.output_schema,

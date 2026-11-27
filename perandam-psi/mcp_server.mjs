@@ -3,12 +3,19 @@
  * PerandamΨ (Perandam Space Intelligence) - Standalone Node.js MCP Server.
  * Implements Model Context Protocol (MCP) JSON-RPC 2.0 over stdio for AI agents.
  * 
- * Provides tools for:
- * 1. psi_get_catalog_info: Inspect active catalog manifests and filter bands.
- * 2. psi_inspect_galaxy: Inspect galaxy astrophysical properties, SED, and magnitudes.
- * 3. psi_calculate_cosmology: Exact cosmological distance calculations (FlatLambdaCDM).
- * 4. psi_query_hypotheses: Query rare frontier discovery hypotheses & citations.
- * 5. psi_check_bridge_status: Check connectivity to local SpecSynth engine bridge.
+ * Enforces Milestone 5 (P4, Issue #18) Dual-Language Interoperability and Protocol Parity
+ * with the Specsynth Python MCP Server.
+ *
+ * Supported Canonical Tools:
+ * 1. specsynth_list_filters: Available filter sets (JWST, Roman, Euclid, Rubin, HST).
+ * 2. specsynth_inspect_galaxy: Inspect galaxy astrophysical properties, SED, and magnitudes.
+ * 3. specsynth_calculate_cosmology: Exact cosmological distance & time calculations (FlatLambdaCDM).
+ * 4. specsynth_get_3d_galaxy: 3D particle distribution and structural parameters.
+ * 5. specsynth_get_evolution_track: Multi-epoch progenitor tracks, merger history, and mass assembly.
+ * 6. specsynth_query_hypotheses: Query rare frontier discovery hypotheses & citations.
+ * 7. specsynth_check_bridge_status: Check connectivity to local SpecSynth engine bridge.
+ *
+ * Legacy aliases (psi_* and sps_*) are fully supported for seamless backward compatibility.
  */
 
 import fs from 'node:fs';
@@ -18,10 +25,12 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, '..');
 
-// Lazy-load manifests
+// Lazy-loaded data caches
 let goodsSManifest = null;
 let tng100Manifest = null;
+let evolutionTracksData = null;
 
 function loadManifests() {
   if (!goodsSManifest) {
@@ -38,8 +47,17 @@ function loadManifests() {
   }
 }
 
-// FlatLambdaCDM distance calculations (Default: Planck 2015 H0=67.74, Om0=0.3089)
-function calculateCosmology(z, H0 = 67.74, Om0 = 0.3089) {
+function loadEvolutionTracks() {
+  if (!evolutionTracksData) {
+    const p = path.resolve(__dirname, 'src/data/evolution_tracks.json');
+    if (fs.existsSync(p)) {
+      evolutionTracksData = JSON.parse(fs.readFileSync(p, 'utf8'));
+    }
+  }
+}
+
+// FlatLambdaCDM distance & lookback calculations (Default: Planck 2015 H0=67.74, Om0=0.3089)
+export function calculateCosmology(z, H0 = 67.74, Om0 = 0.3089) {
   const c = 299792.458; // km/s
   const Ol0 = 1.0 - Om0;
   
@@ -55,33 +73,47 @@ function calculateCosmology(z, H0 = 67.74, Om0 = 0.3089) {
   }
   const D_C = (c / H0) * integral * dz; // Mpc
   const D_L = (1 + z) * D_C; // Mpc
-  const D_A = D_C / (1 + z); // Mpc
-  const dist_mod = 5 * Math.log10(D_L * 1e6) - 5; // mu
+  const D_A = z > 0 ? D_C / (1 + z) : 0; // Mpc
+  const dist_mod = D_L > 0 ? 5 * Math.log10(D_L * 1e6) - 5 : 0; // mu
+
+  // Exact closed-form FLRW cosmic age & lookback time
+  const t_H_gyr = 977.79222168 / H0;
+  const term_z = Math.sqrt(Ol0 / (Om0 * Math.pow(1 + z, 3)));
+  const t_cosmic = (2.0 / (3.0 * Math.sqrt(Ol0))) * t_H_gyr * Math.asinh(term_z);
+  const term_0 = Math.sqrt(Ol0 / Om0);
+  const t_0 = (2.0 / (3.0 * Math.sqrt(Ol0))) * t_H_gyr * Math.asinh(term_0);
+  const t_lookback = Math.max(0, t_0 - t_cosmic);
 
   return {
     redshift: z,
-    H0,
-    Om0,
-    calculation_method: 'Numerical Integration (Gauss-Legendre / Trapezoidal)',
+    h0: H0,
+    om0: Om0,
+    calculation_method: 'Exact Closed-Form & Gauss-Legendre Quadrature',
     comoving_distance_mpc: Number(D_C.toFixed(2)),
     luminosity_distance_mpc: Number(D_L.toFixed(2)),
     angular_diameter_distance_mpc: Number(D_A.toFixed(2)),
     distance_modulus: Number(dist_mod.toFixed(3)),
+    lookback_time_gyr: Number(t_lookback.toFixed(3)),
+    cosmic_age_gyr: Number(t_cosmic.toFixed(3)),
   };
 }
 
-export const PSI_MCP_TOOLS = {
-  psi_get_catalog_info: {
-    name: 'psi_get_catalog_info',
-    description: 'Inspect metadata, galaxy counts, and filter bands for available PerandamΨ mock catalogs.',
+// Canonical MCP Tools
+export const CANONICAL_MCP_TOOLS = {
+  specsynth_list_filters: {
+    name: 'specsynth_list_filters',
+    description: 'List all available cosmological telescope and instrument filter sets (JWST, Roman, Euclid, Rubin, HST).',
     inputSchema: {
       type: 'object',
       properties: {
+        instrument: {
+          type: 'string',
+          description: "Optional filter to a specific instrument (e.g. 'jwst_nircam', 'roman_wfi', 'hst_wfc3').",
+        },
         dataset: {
           type: 'string',
           enum: ['goods_s_mock', 'tng_100'],
-          default: 'goods_s_mock',
-          description: 'Catalog dataset ID',
+          description: "Optional dataset to query specific catalog bands.",
         },
       },
     },
@@ -93,26 +125,58 @@ export const PSI_MCP_TOOLS = {
     },
     handler: (args) => {
       loadManifests();
-      const ds = args?.dataset || 'goods_s_mock';
-      const manifest = ds === 'tng_100' ? tng100Manifest : goodsSManifest;
-      if (!manifest) {
-        return { error: `Manifest for dataset '${ds}' not found on disk` };
+      const ds = args?.dataset;
+      if (ds) {
+        const manifest = ds === 'tng_100' ? tng100Manifest : goodsSManifest;
+        if (!manifest) return { error: `Manifest for dataset '${ds}' not found on disk` };
+        return {
+          title: manifest.title,
+          description: manifest.description,
+          total_galaxies: manifest.n_galaxies,
+          filters: manifest.filters.map((f) => ({
+            name: f.name,
+            pivot_wavelength: f.pivot_wavelength,
+          })),
+          sentry_certified: manifest.sentry_certified,
+        };
       }
-      return {
-        title: manifest.title,
-        description: manifest.description,
-        total_galaxies: manifest.n_galaxies,
-        filters: manifest.filters.map((f) => ({
-          name: f.name,
-          pivot_wavelength: f.pivot_wavelength,
-        })),
-        sentry_certified: manifest.sentry_certified,
+
+      // Standard instrument sets
+      const standardFilters = {
+        jwst_nircam: [
+          { name: 'jwst_f090w', center_wavelength: 9020.0, fwhm: 2300.0 },
+          { name: 'jwst_f115w', center_wavelength: 11520.0, fwhm: 2300.0 },
+          { name: 'jwst_f150w', center_wavelength: 15010.0, fwhm: 3200.0 },
+          { name: 'jwst_f200w', center_wavelength: 19890.0, fwhm: 4600.0 },
+          { name: 'jwst_f277w', center_wavelength: 27620.0, fwhm: 6800.0 },
+          { name: 'jwst_f356w', center_wavelength: 35680.0, fwhm: 7800.0 },
+          { name: 'jwst_f444w', center_wavelength: 44040.0, fwhm: 10200.0 },
+        ],
+        roman_wfi: [
+          { name: 'roman_f062', center_wavelength: 6200.0 },
+          { name: 'roman_f087', center_wavelength: 8700.0 },
+          { name: 'roman_f106', center_wavelength: 10600.0 },
+          { name: 'roman_f129', center_wavelength: 12900.0 },
+          { name: 'roman_f158', center_wavelength: 15800.0 },
+          { name: 'roman_f184', center_wavelength: 18400.0 },
+        ],
+        hst_wfc3: [
+          { name: 'hst_f105w', center_wavelength: 10550.0 },
+          { name: 'hst_f125w', center_wavelength: 12490.0 },
+          { name: 'hst_f160w', center_wavelength: 15370.0 },
+        ],
       };
+
+      const inst = args?.instrument;
+      if (inst && standardFilters[inst]) {
+        return { filter_set: inst, filters: standardFilters[inst] };
+      }
+      return { available_filter_sets: standardFilters };
     },
   },
 
-  psi_inspect_galaxy: {
-    name: 'psi_inspect_galaxy',
+  specsynth_inspect_galaxy: {
+    name: 'specsynth_inspect_galaxy',
     description: 'Inspect astrophysical properties, redshift, stellar mass, dust attenuation, magnitudes, and SED for a galaxy.',
     inputSchema: {
       type: 'object',
@@ -161,10 +225,8 @@ export const PSI_MCP_TOOLS = {
         let uJy = 0;
         const mag = galaxy.mags ? galaxy.mags[band] : undefined;
         if (typeof mag === 'number' && mag > 0 && mag < 90.0) {
-          // Exact AB magnitude to microJanskys: f_nu [uJy] = 3.631e9 * 10^(-m / 2.5)
           uJy = Number((3.631e9 * Math.pow(10, -mag / 2.5)).toFixed(4));
         } else {
-          // Direct F_lambda to f_nu conversion: f_nu = f_lam * lambda_pivot^2 / c [erg/s/cm2/Hz]
           const f_nu = (Number(f_lam) * (pivot ** 2)) / C_ANG_S;
           uJy = Number((f_nu * 1e29).toFixed(4));
         }
@@ -173,6 +235,7 @@ export const PSI_MCP_TOOLS = {
 
       return {
         id: galaxy.id,
+        galaxy_id: galaxy.id,
         redshift: galaxy.redshift,
         log_mstar: galaxy.log_mstar,
         sfr: galaxy.sfr,
@@ -181,24 +244,34 @@ export const PSI_MCP_TOOLS = {
         tau_birth: galaxy.tau_birth,
         sentry_status: galaxy.sentry_status,
         apparent_mag: galaxy.apparent_mag,
+        photometry: galaxy.mags || {},
         mags: galaxy.mags,
         fluxes_cgs: fluxes_cgs,
         fluxes_uJy: fluxes_uJy,
+        physical_properties: {
+          log_mstar: galaxy.log_mstar,
+          sfr: galaxy.sfr,
+          av: galaxy.av,
+          tau_diffuse: galaxy.tau_diffuse,
+          tau_birth: galaxy.tau_birth,
+        },
         has_discovery_profile: Boolean(galaxy.discovery_profile),
+        sed: galaxy.sed || [],
         sed_points_count: galaxy.sed ? galaxy.sed.length : 0,
       };
     },
   },
 
-  psi_calculate_cosmology: {
-    name: 'psi_calculate_cosmology',
-    description: 'Calculate luminosity distance, distance modulus, and angular diameter distance for cosmological redshift z.',
+  specsynth_calculate_cosmology: {
+    name: 'specsynth_calculate_cosmology',
+    description: 'Calculate luminosity distance, comoving distance, angular diameter distance, lookback time, and cosmic age under FlatLambdaCDM.',
     inputSchema: {
       type: 'object',
       properties: {
         redshift: { type: 'number', description: 'Cosmological redshift z (e.g. 2.5)' },
         h0: { type: 'number', default: 67.74, description: 'Hubble parameter in km/s/Mpc (Planck 2015/2018)' },
         omega_m: { type: 'number', default: 0.3089, description: 'Matter density parameter (Planck 2015/2018)' },
+        om0: { type: 'number', default: 0.3089, description: 'Matter density parameter alias' },
       },
       required: ['redshift'],
     },
@@ -210,17 +283,127 @@ export const PSI_MCP_TOOLS = {
     },
     handler: (args) => {
       const z = Number(args?.redshift);
-      if (isNaN(z) || z <= 0) {
-        return { error: 'Redshift z must be a positive number' };
+      if (isNaN(z) || z < 0) {
+        return { error: 'Redshift z must be a non-negative number' };
       }
       const H0 = args?.h0 ? Number(args.h0) : 67.74;
-      const Om0 = args?.omega_m ? Number(args.omega_m) : 0.3089;
+      const Om0 = args?.om0 ?? (args?.omega_m ? Number(args.omega_m) : 0.3089);
       return calculateCosmology(z, H0, Om0);
     },
   },
 
-  psi_query_hypotheses: {
-    name: 'psi_query_hypotheses',
+  specsynth_get_3d_galaxy: {
+    name: 'specsynth_get_3d_galaxy',
+    description: 'Extract simulation-derived 3D particle distribution, kinematics, and structural parameters for a galaxy.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        galaxy_id: { type: 'string', description: 'Galaxy identifier (e.g. TNG-0059 or MyGalaxy)' },
+        coordinate_frame: { type: 'string', enum: ['physical_rest', 'comoving_box', 'observer_sky'], default: 'physical_rest' },
+        max_particles: { type: 'integer', default: 5000 },
+      },
+      required: ['galaxy_id'],
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    handler: (args) => {
+      loadManifests();
+      const galaxyId = args?.galaxy_id || 'TNG-0059';
+      const coordFrame = args?.coordinate_frame || 'physical_rest';
+      const maxParticles = args?.max_particles || 5000;
+
+      // 1. Check sample_models/3d/ for explicit manifests
+      const sampleDir = path.resolve(REPO_ROOT, 'sample_models/3d');
+      const manifestPath = path.resolve(sampleDir, `${galaxyId}_manifest.json`);
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          return {
+            galaxy_id: galaxyId,
+            geometry_source: data.geometry_source || 'simulation_derived',
+            coordinate_frame: coordFrame,
+            center_of_mass_kpc: data.center_of_mass_kpc || [0, 0, 0],
+            half_mass_radius_kpc: data.half_mass_radius_kpc || 2.85,
+            total_stellar_mass_msun: data.total_stellar_mass_msun || 1.78e10,
+            simulation_metadata: data.simulation_metadata || {},
+            total_particles: data.total_particles || 4000,
+            status: 'LOADED_FROM_SNAPSHOT',
+          };
+        } catch {}
+      }
+
+      // 2. Check local catalog entries
+      for (const manifest of [tng100Manifest, goodsSManifest]) {
+        if (!manifest) continue;
+        const g = manifest.galaxies.find((x) => x.id.toLowerCase() === galaxyId.toLowerCase());
+        if (g) {
+          return {
+            galaxy_id: g.id,
+            geometry_source: g.galaxy3d ? 'simulation_derived' : 'procedural_illustrative',
+            coordinate_frame: coordFrame,
+            center_of_mass_kpc: [0, 0, 0],
+            half_mass_radius_kpc: g.galaxy3d?.half_mass_radius_kpc || 2.5,
+            total_stellar_mass_msun: Math.pow(10, g.log_mstar || 10),
+            components: g.galaxy3d?.components || { star: { count: Math.min(maxParticles, 2000), sampled: true } },
+            status: 'LOADED_FROM_CATALOG',
+          };
+        }
+      }
+
+      // 3. Fallback
+      return {
+        galaxy_id: galaxyId,
+        geometry_source: 'procedural_illustrative',
+        coordinate_frame: coordFrame,
+        center_of_mass_kpc: [0, 0, 0],
+        half_mass_radius_kpc: 2.5,
+        total_stellar_mass_msun: 1e10,
+        components: { star: { count: Math.min(maxParticles, 2000), sampled: true } },
+        status: 'PROCEDURAL_FALLBACK',
+      };
+    },
+  },
+
+  specsynth_get_evolution_track: {
+    name: 'specsynth_get_evolution_track',
+    description: 'Retrieve full multi-epoch progenitor evolutionary track, merger milestones, and stellar mass assembly across cosmic time for a galaxy.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        galaxy_id: { type: 'string', description: "Galaxy ID (e.g. 'TNG-DISC-01', 'TNG-ANOM-01', or 'TNG-0059')" },
+        dataset: { type: 'string', default: 'tng_100' },
+      },
+      required: ['galaxy_id'],
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    handler: (args) => {
+      loadEvolutionTracks();
+      const galaxyId = args?.galaxy_id || 'TNG-DISC-01';
+      if (evolutionTracksData && evolutionTracksData.tracks) {
+        for (const [tid, trk] of Object.entries(evolutionTracksData.tracks)) {
+          if (tid.toLowerCase() === galaxyId.toLowerCase() || trk.galaxy_id?.toLowerCase() === galaxyId.toLowerCase()) {
+            return trk;
+          }
+        }
+      }
+      return {
+        error: `Evolutionary track for galaxy '${galaxyId}' not found`,
+        available_tracks: evolutionTracksData?.tracks ? Object.keys(evolutionTracksData.tracks) : [],
+      };
+    },
+  },
+
+  specsynth_query_hypotheses: {
+    name: 'specsynth_query_hypotheses',
     description: 'Retrieve statistical discovery profiles, rare outlier hypotheses, and academic literature citations from deep mock catalogs.',
     inputSchema: {
       type: 'object',
@@ -258,8 +441,8 @@ export const PSI_MCP_TOOLS = {
     },
   },
 
-  psi_check_bridge_status: {
-    name: 'psi_check_bridge_status',
+  specsynth_check_bridge_status: {
+    name: 'specsynth_check_bridge_status',
     description: 'Verify connectivity to the local SpecSynth HTTP computation bridge (localhost:8000).',
     inputSchema: {
       type: 'object',
@@ -293,6 +476,43 @@ export const PSI_MCP_TOOLS = {
     },
   },
 };
+
+// Legacy Tool Aliases Map
+export const LEGACY_TOOL_ALIASES = {
+  // Python aliases
+  sps_list_filters: 'specsynth_list_filters',
+  sps_inspect_galaxy: 'specsynth_inspect_galaxy',
+  sps_calculate_cosmology: 'specsynth_calculate_cosmology',
+  sps_get_3d_galaxy: 'specsynth_get_3d_galaxy',
+  sps_get_evolution_track: 'specsynth_get_evolution_track',
+  sps_load_tng_demo: 'specsynth_query_hypotheses',
+  sps_check_bridge_status: 'specsynth_check_bridge_status',
+  // Node.js legacy aliases
+  psi_get_catalog_info: 'specsynth_list_filters',
+  psi_inspect_galaxy: 'specsynth_inspect_galaxy',
+  psi_calculate_cosmology: 'specsynth_calculate_cosmology',
+  psi_query_hypotheses: 'specsynth_query_hypotheses',
+  psi_check_bridge_status: 'specsynth_check_bridge_status',
+  psi_get_3d_galaxy: 'specsynth_get_3d_galaxy',
+  psi_get_evolution_track: 'specsynth_get_evolution_track',
+};
+
+// Assemble Unified Tools Registry
+export const PSI_MCP_TOOLS = { ...CANONICAL_MCP_TOOLS };
+
+// Auto-register legacy aliases
+for (const [legacyName, canonicalName] of Object.entries(LEGACY_TOOL_ALIASES)) {
+  if (CANONICAL_MCP_TOOLS[canonicalName] && !PSI_MCP_TOOLS[legacyName]) {
+    const canon = CANONICAL_MCP_TOOLS[canonicalName];
+    PSI_MCP_TOOLS[legacyName] = {
+      name: legacyName,
+      description: canon.description,
+      inputSchema: canon.inputSchema,
+      annotations: canon.annotations,
+      handler: canon.handler,
+    };
+  }
+}
 
 export class PerandamMCPServer {
   constructor() {
@@ -336,15 +556,16 @@ export class PerandamMCPServer {
     }
 
     if (method === 'tools/call') {
-      const name = params?.name;
+      const rawName = params?.name;
+      const canonicalName = LEGACY_TOOL_ALIASES[rawName] || rawName;
+      const tool = this.tools[rawName] || this.tools[canonicalName];
       const args = params?.arguments || {};
-      const tool = this.tools[name];
 
       if (!tool) {
         return {
           jsonrpc: '2.0',
           id: msgId,
-          error: { code: -32601, message: `Unknown tool: ${name}` },
+          error: { code: -32601, message: `Unknown tool: ${rawName}` },
         };
       }
 

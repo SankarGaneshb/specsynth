@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (Scope Freeze Ratified)
 - **Date:** 2026-11-26
-- **Context:** Milestone P0 (Issue #14) — [MUST][P0] Scope and Architecture Freeze
+- **Context:** Milestone P0 (Issue #14) — `[MUST][P0]` Scope and Architecture Freeze
 - **Target Goal:** *"An independent astrophysicist should be able to plug their own simulation, galaxy-modelling, or spectral-synthesis engine into the Specsynth ecosystem; generate scientifically reproducible 3D galaxy models and synthetic observations; interactively explore galaxies across cosmic time; and make these capabilities accessible through MCP — without modifying the core framework."*
 
 ---

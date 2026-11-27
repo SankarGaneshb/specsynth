@@ -30,6 +30,7 @@ If the answer is **NO** to all four, it goes directly to this Parking Lot.
 | *PL-002* | *Native Mobile App for Perandam* | Dedicated iOS/Android wrappers or React Native client | Perandam PSI responsive web app satisfies interactive browser exploration | Post-v1.0 release |
 | *PL-003* | *Custom deep learning generative priors for SED fitting* | Training novel VAE/Diffusion models for synthetic galaxy generation | Out-of-scope; Specsynth contracts physical simulations and empirical models | When third-party ML adapters request external integration |
 | *PL-004* | *Multi-morphology 3D subhalo benchmark suite (disks, ellipticals, starbursts)* | Curating an extensive multi-morphology library of bundled simulation cutouts beyond the primary reference subhalo | Expanding catalog diversity deferred; primary single-subhalo 3D pipeline fulfills P2 | Post-P6 programme completion |
+| *PL-005* | *Material for MkDocs EOL & Zensical Migration* | Material for MkDocs reaches EOL on May 5, 2027; Zensical is its official maintained successor. Upstream warning disabled via `NO_MKDOCS_2_WARNING=1`. | Upstream tooling deprecation does not impact core scientific synthesis, 3D pipelines, or MCP interoperability. | Evaluate migration in late 2026/early 2027 or when Zensical releases stable v1.0. |
 
 ---
 *(Add new parked items above as they arise during research or conversation)*

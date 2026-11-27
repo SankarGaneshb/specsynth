@@ -158,6 +158,11 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
                         "inspect_galaxy": "/api/inspect?galaxy_idx=0",
                         "system_hardware": "/api/system",
                         "sentry_audit": "/api/audit",
+                        "cosmology": "/api/cosmology?redshift=2.0",
+                        "galaxy3d": "/api/galaxy3d?galaxy_id=TNG-0059",
+                        "evolution": "/api/evolution?galaxy_id=TNG-DISC-01",
+                        "hypotheses": "/api/hypotheses?min_sigma=2.0",
+                        "tools": "/api/tools",
                     },
                     "instructions": "Build frontend with 'cd perandam-psi; npm run build' to serve from port 8000, or run 'npm run dev'.",
                 }
@@ -218,6 +223,38 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(data).encode("utf-8"))
             print(f"[{now}] [Sentry Audit API] GET /api/audit (base={base}) -> 200 OK")
 
+        elif path == "/api/cosmology":
+            z_val = float(query.get("redshift", query.get("z", [0.0]))[0])
+            h0_val = float(query.get("h0", [67.74])[0])
+            om0_val = float(query.get("om0", query.get("omega_m", [0.3089]))[0])
+            data = mcp._tool_calculate_cosmology({"redshift": z_val, "h0": h0_val, "om0": om0_val})
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Cosmology API] GET /api/cosmology?z={z_val} -> 200 OK")
+
+        elif path == "/api/galaxy3d":
+            gid = query.get("galaxy_id", query.get("id", ["TNG-0059"]))[0]
+            frame = query.get("coordinate_frame", ["physical_rest"])[0]
+            data = mcp._tool_get_3d_galaxy({"galaxy_id": gid, "coordinate_frame": frame})
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Galaxy 3D API] GET /api/galaxy3d?id={gid} -> 200 OK")
+
+        elif path == "/api/evolution":
+            gid = query.get("galaxy_id", query.get("id", ["TNG-DISC-01"]))[0]
+            data = mcp._tool_get_evolution_track({"galaxy_id": gid})
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Evolution API] GET /api/evolution?id={gid} -> 200 OK")
+
+        elif path == "/api/hypotheses":
+            min_sig = float(query.get("min_sigma", [2.0])[0])
+            limit_val = int(query.get("limit", [5])[0])
+            data = mcp._tool_query_hypotheses({"min_sigma": min_sig, "limit": limit_val})
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(data).encode("utf-8"))
+            print(f"[{now}] [Hypotheses API] GET /api/hypotheses -> 200 OK")
+
         elif path in ("/api/tools", "/api/tools/list"):
             resp = mcp.handle_request({
                 "jsonrpc": "2.0",
@@ -275,6 +312,30 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(resp).encode("utf-8"))
             print(f"[{now}] [MCP Tool Dispatch] POST {path} -> {method_name} -> 200 OK")
+
+        elif path == "/api/cosmology":
+            res = mcp._tool_calculate_cosmology(data)
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            print(f"[{now}] [Cosmology API] POST /api/cosmology -> 200 OK")
+
+        elif path == "/api/galaxy3d":
+            res = mcp._tool_get_3d_galaxy(data)
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            print(f"[{now}] [Galaxy 3D API] POST /api/galaxy3d -> 200 OK")
+
+        elif path == "/api/evolution":
+            res = mcp._tool_get_evolution_track(data)
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            print(f"[{now}] [Evolution API] POST /api/evolution -> 200 OK")
+
+        elif path == "/api/hypotheses":
+            res = mcp._tool_query_hypotheses(data)
+            self._set_cors_headers(200)
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            print(f"[{now}] [Hypotheses API] POST /api/hypotheses -> 200 OK")
 
         else:
             self._set_cors_headers(404)

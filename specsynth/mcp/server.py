@@ -15,6 +15,16 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TextIO
 
+import numpy as np
+
+from specsynth.contracts.mcp import (
+    CANONICAL_MCP_TOOLS,
+    LEGACY_TOOL_ALIASES,
+    get_all_canonical_tools,
+    get_canonical_tool_schema,
+    resolve_tool_name,
+)
+from specsynth.cosmology import FlatLambdaCDM
 from specsynth.filters import FILTER_SETS, STANDARD_FILTER_SPECS, get_filter
 from specsynth.tools import (
     tool_clean_catalog,
@@ -29,43 +39,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Standard M8ven Safety Risk Annotations
 MCP_TOOL_ANNOTATIONS: Dict[str, Dict[str, bool]] = {
-    "sps_list_filters": {
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-    "sps_inspect_galaxy": {
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-    "sps_run_sentry_audit": {
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-    "sps_remediate_catalog": {
-        "readOnlyHint": False,
-        "destructiveHint": True,
-        "idempotentHint": False,
-        "openWorldHint": False,
-    },
-    "sps_load_tng_demo": {
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-    "sps_get_system_info": {
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
+    t.name: t.annotations for t in CANONICAL_MCP_TOOLS.values()
 }
+# Maintain legacy annotations map
+for leg, can in LEGACY_TOOL_ALIASES.items():
+    if can in MCP_TOOL_ANNOTATIONS:
+        MCP_TOOL_ANNOTATIONS[leg] = MCP_TOOL_ANNOTATIONS[can]
 
 
 class SpecsynthMCPServer:
@@ -80,84 +59,51 @@ class SpecsynthMCPServer:
         self.tools = self._register_tools()
 
     def _register_tools(self) -> Dict[str, Dict[str, Any]]:
-        return {
-            "sps_list_filters": {
-                "name": "sps_list_filters",
-                "description": "List all available cosmological telescope and instrument filter sets (JWST, Roman, Euclid, Rubin, HST).",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "instrument": {
-                            "type": "string",
-                            "description": "Optional filter to a specific instrument (e.g. 'jwst_nircam', 'roman_wfi', 'hst_wfc3').",
-                        }
-                    },
-                },
-                "annotations": MCP_TOOL_ANNOTATIONS["sps_list_filters"],
-                "handler": self._tool_list_filters,
-            },
-            "sps_inspect_galaxy": {
-                "name": "sps_inspect_galaxy",
-                "description": "Extract full physical parameters, SFH mass fraction, and synthesized flux for a galaxy by index.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "base": {"type": "string", "description": "Base directory containing ssp.zarr and galaxies.zarr", "default": "./run"},
-                        "galaxy_idx": {"type": "integer", "description": "Index of the galaxy to inspect", "default": 0},
-                    },
-                    "required": ["galaxy_idx"],
-                },
-                "annotations": MCP_TOOL_ANNOTATIONS["sps_inspect_galaxy"],
-                "handler": self._tool_inspect_galaxy,
-            },
-            "sps_run_sentry_audit": {
-                "name": "sps_run_sentry_audit",
-                "description": "Execute a 4-tier Scientific Sentry quality audit across synthesized catalogs to verify physical invariants.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "base": {"type": "string", "description": "Base directory containing ssp.zarr, galaxies.zarr, and spectra.zarr", "default": "./run"},
-                        "sample_size": {"type": "integer", "description": "Number of galaxies to audit (default: 10,000)", "default": 10000},
-                    },
-                },
-                "annotations": MCP_TOOL_ANNOTATIONS["sps_run_sentry_audit"],
-                "handler": self._tool_run_sentry_audit,
-            },
-            "sps_remediate_catalog": {
-                "name": "sps_remediate_catalog",
-                "description": "Trigger the autonomous SentryAgent to isolate anomaly root causes, purge corruptions, and produce a pristine clean catalog.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "base": {"type": "string", "description": "Base storage directory", "default": "./run"},
-                        "output_csv": {"type": "string", "description": "Output path for the clean catalog CSV", "default": "clean_catalog.csv"},
-                        "confirm_destructive": {"type": "boolean", "description": "Explicit confirmation flag required to execute destructive remediation", "default": False},
-                    },
-                    "required": ["confirm_destructive"],
-                },
-                "annotations": MCP_TOOL_ANNOTATIONS["sps_remediate_catalog"],
-                "handler": self._tool_remediate_catalog,
-            },
-            "sps_load_tng_demo": {
-                "name": "sps_load_tng_demo",
-                "description": "Retrieve summary and sample galaxies from the validated TNG -> JWST NIRCam scientific demonstration catalog.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "limit": {"type": "integer", "description": "Maximum sample galaxies to return (default: 5)", "default": 5},
-                    },
-                },
-                "annotations": MCP_TOOL_ANNOTATIONS["sps_load_tng_demo"],
-                "handler": self._tool_load_tng_demo,
-            },
-            "sps_get_system_info": {
-                "name": "sps_get_system_info",
-                "description": "Get current host hardware info, CPU threads, RAM, and GPU/BLAS capabilities.",
-                "inputSchema": {"type": "object", "properties": {}},
-                "annotations": MCP_TOOL_ANNOTATIONS["sps_get_system_info"],
-                "handler": self._tool_get_system_info,
-            },
+        # Map canonical tool names to their member handlers
+        handlers = {
+            "specsynth_list_filters": self._tool_list_filters,
+            "specsynth_inspect_galaxy": self._tool_inspect_galaxy,
+            "specsynth_calculate_cosmology": self._tool_calculate_cosmology,
+            "specsynth_get_3d_galaxy": self._tool_get_3d_galaxy,
+            "specsynth_get_evolution_track": self._tool_get_evolution_track,
+            "specsynth_run_sentry_audit": self._tool_run_sentry_audit,
+            "specsynth_remediate_catalog": self._tool_remediate_catalog,
+            "specsynth_query_hypotheses": self._tool_query_hypotheses,
+            "specsynth_check_bridge_status": self._tool_check_bridge_status,
+            "specsynth_get_system_info": self._tool_get_system_info,
         }
+
+        registered: Dict[str, Dict[str, Any]] = {}
+
+        # 1. Register all canonical tools
+        for name, contract in CANONICAL_MCP_TOOLS.items():
+            handler = handlers.get(name)
+            if handler:
+                registered[name] = {
+                    "name": name,
+                    "description": contract.description,
+                    "inputSchema": contract.input_schema,
+                    "outputSchema": contract.output_schema,
+                    "annotations": contract.annotations,
+                    "handler": handler,
+                }
+
+        # 2. Register legacy aliases for backward compatibility (sps_* and psi_*)
+        for legacy_name, canonical_name in LEGACY_TOOL_ALIASES.items():
+            if canonical_name in registered and legacy_name not in registered:
+                canon = registered[canonical_name]
+                # Special handler for sps_load_tng_demo
+                h = self._tool_load_tng_demo if legacy_name == "sps_load_tng_demo" else canon["handler"]
+                registered[legacy_name] = {
+                    "name": legacy_name,
+                    "description": canon["description"],
+                    "inputSchema": canon["inputSchema"],
+                    "outputSchema": canon["outputSchema"],
+                    "annotations": canon["annotations"],
+                    "handler": h,
+                }
+
+        return registered
 
     # Tool Handlers
     def _tool_list_filters(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -194,8 +140,230 @@ class SpecsynthMCPServer:
 
     def _tool_inspect_galaxy(self, args: Dict[str, Any]) -> Dict[str, Any]:
         base = args.get("base") or str(REPO_ROOT / "run")
-        idx = int(args.get("galaxy_idx", 0))
+        galaxy_id = args.get("galaxy_id")
+        galaxy_idx_arg = args.get("galaxy_idx")
+
+        # 1. Try reading from Zarr if store exists
+        if galaxy_idx_arg is not None or (isinstance(galaxy_id, int) or (isinstance(galaxy_id, str) and galaxy_id.isdigit())):
+            idx = int(galaxy_idx_arg if galaxy_idx_arg is not None else galaxy_id)
+            try:
+                res = tool_inspect_galaxy(base=base, galaxy_idx=idx)
+                if "error" not in res and res.get("total_stellar_mass_msun") is not None:
+                    return res
+            except Exception:
+                pass
+
+        # 2. Check JSON mock catalogs (GOODS-S Mock or TNG Calibration)
+        gid_str = str(galaxy_id if galaxy_id is not None else galaxy_idx_arg or "0")
+        for cat_name in ("tng_goods_s_mock_508.json", "tng_100_calibration.json"):
+            cat_path = REPO_ROOT / "perandam-psi" / "src" / "data" / cat_name
+            if cat_path.exists():
+                try:
+                    with open(cat_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    galaxies = data.get("galaxies", [])
+                    found = None
+                    if gid_str.isdigit() and int(gid_str) < len(galaxies):
+                        found = galaxies[int(gid_str)]
+                    if not found:
+                        for g in galaxies:
+                            if g.get("id", "").lower() == gid_str.lower():
+                                found = g
+                                break
+                    if found:
+                        return {
+                            "galaxy_id": found.get("id", gid_str),
+                            "redshift": found.get("redshift", 0.0),
+                            "physical_properties": {
+                                "log_mstar": found.get("log_mstar"),
+                                "sfr": found.get("sfr"),
+                                "av": found.get("av"),
+                                "tau_diffuse": found.get("tau_diffuse"),
+                                "tau_birth": found.get("tau_birth"),
+                            },
+                            "photometry": found.get("mags", {}),
+                            "fluxes_cgs": found.get("fluxes", {}),
+                            "sed": found.get("sed", []),
+                            "provenance": {
+                                "source": cat_name,
+                                "sentry_status": found.get("sentry_status", "PASS"),
+                            },
+                        }
+                except Exception:
+                    pass
+
+        # Fallback to standard tool_inspect_galaxy
+        idx = int(galaxy_idx_arg or 0)
         return tool_inspect_galaxy(base=base, galaxy_idx=idx)
+
+    def _tool_calculate_cosmology(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            z = float(args.get("redshift", 0.0))
+        except (ValueError, TypeError):
+            return {"error": "Invalid redshift: must be a numeric value"}
+        if z < 0.0:
+            return {"error": "Redshift z must be >= 0.0"}
+
+        h0 = float(args.get("h0") or args.get("H0") or 67.74)
+        om0 = float(args.get("om0") or args.get("omega_m") or 0.3089)
+        cosmo = FlatLambdaCDM(H0=h0, Om0=om0)
+
+        dc = float(cosmo.comoving_distance(z))
+        dl = float(cosmo.luminosity_distance(z))
+        da = float(dc / (1.0 + z)) if z > 0.0 else 0.0
+        dist_mod = float(5.0 * np.log10(dl * 1e6) - 5.0) if dl > 0.0 else 0.0
+        t_lookback = float(cosmo.lookback_time_gyr(z))
+        t_cosmic = float(cosmo.cosmic_time_gyr(z))
+
+        return {
+            "redshift": z,
+            "h0": h0,
+            "om0": om0,
+            "luminosity_distance_mpc": round(dl, 2),
+            "comoving_distance_mpc": round(dc, 2),
+            "angular_diameter_distance_mpc": round(da, 2),
+            "distance_modulus": round(dist_mod, 3),
+            "lookback_time_gyr": round(t_lookback, 3),
+            "cosmic_age_gyr": round(t_cosmic, 3),
+        }
+
+    def _tool_get_3d_galaxy(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        galaxy_id = str(args.get("galaxy_id", "TNG-0059"))
+        coord_frame = str(args.get("coordinate_frame", "physical_rest"))
+        max_particles = int(args.get("max_particles", 5000))
+
+        # Check sample models
+        sample_dir = REPO_ROOT / "sample_models" / "3d"
+        manifest_p = sample_dir / f"{galaxy_id}_manifest.json"
+        if not manifest_p.exists() and (sample_dir / "tng100_subhalo_009873_manifest.json").exists():
+            if galaxy_id.lower() in ("tng100", "tng100-1-subhalo-424601", "tng-0059", "tng100_subhalo_009873"):
+                manifest_p = sample_dir / "tng100_subhalo_009873_manifest.json"
+
+        if manifest_p.exists():
+            try:
+                with open(manifest_p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return {
+                    "galaxy_id": galaxy_id,
+                    "geometry_source": data.get("geometry_source", "simulation_derived"),
+                    "coordinate_frame": coord_frame,
+                    "center_of_mass_kpc": data.get("center_of_mass_kpc", [0.0, 0.0, 0.0]),
+                    "half_mass_radius_kpc": data.get("half_mass_radius_kpc", 2.85),
+                    "total_stellar_mass_msun": data.get("total_stellar_mass_msun", 1.78e10),
+                    "simulation_metadata": data.get("simulation_metadata", {}),
+                    "total_particles": data.get("total_particles", 4000),
+                    "status": "LOADED_FROM_SNAPSHOT",
+                }
+            except Exception:
+                pass
+
+        # Check Perandam data catalogs
+        for cat_name in ("tng_100_calibration.json", "tng_goods_s_mock_508.json"):
+            cat_path = REPO_ROOT / "perandam-psi" / "src" / "data" / cat_name
+            if cat_path.exists():
+                try:
+                    with open(cat_path, "r", encoding="utf-8") as f:
+                        cat_data = json.load(f)
+                    for g in cat_data.get("galaxies", []):
+                        if g.get("id", "").lower() == galaxy_id.lower():
+                            return {
+                                "galaxy_id": g["id"],
+                                "geometry_source": "simulation_derived" if g.get("galaxy3d") else "procedural_illustrative",
+                                "coordinate_frame": coord_frame,
+                                "center_of_mass_kpc": [0.0, 0.0, 0.0],
+                                "half_mass_radius_kpc": g.get("galaxy3d", {}).get("half_mass_radius_kpc", 2.5),
+                                "total_stellar_mass_msun": 10 ** g.get("log_mstar", 10.0),
+                                "components": g.get("galaxy3d", {}).get("components", {}),
+                                "status": "LOADED_FROM_CATALOG",
+                            }
+                except Exception:
+                    pass
+
+        # Standard clean fallback conforming to Galaxy3DContract
+        return {
+            "galaxy_id": galaxy_id,
+            "geometry_source": "procedural_illustrative",
+            "coordinate_frame": coord_frame,
+            "center_of_mass_kpc": [0.0, 0.0, 0.0],
+            "half_mass_radius_kpc": 2.5,
+            "total_stellar_mass_msun": 1e10,
+            "components": {
+                "star": {"count": min(max_particles, 2000), "sampled": True},
+            },
+            "status": "PROCEDURAL_FALLBACK",
+        }
+
+    def _tool_get_evolution_track(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        galaxy_id = str(args.get("galaxy_id", "TNG-DISC-01"))
+
+        # 1. Check bundled tracks in perandam-psi
+        tracks_file = REPO_ROOT / "perandam-psi" / "src" / "data" / "evolution_tracks.json"
+        if tracks_file.exists():
+            try:
+                with open(tracks_file, "r", encoding="utf-8") as f:
+                    manifest = json.load(f)
+                tracks = manifest.get("tracks", {})
+                for tid, trk in tracks.items():
+                    if tid.lower() == galaxy_id.lower() or trk.get("galaxy_id", "").lower() == galaxy_id.lower():
+                        return trk
+            except Exception as exc:
+                logger.warning("Error reading evolution tracks file: %s", exc)
+
+        # 2. Dynamically generate via specsynth.evolution
+        try:
+            from specsynth.evolution import build_demo_disk_track, build_demo_starburst_track
+            if "starburst" in galaxy_id.lower() or "anom" in galaxy_id.lower():
+                contract = build_demo_starburst_track()
+            else:
+                contract = build_demo_disk_track()
+            return contract.to_dict()
+        except Exception as exc:
+            return {"error": f"Failed to generate evolutionary track for {galaxy_id}: {str(exc)}"}
+
+    def _tool_query_hypotheses(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        min_sigma = float(args.get("min_sigma", 2.0))
+        limit = int(args.get("limit", 5))
+
+        cat_path = REPO_ROOT / "perandam-psi" / "src" / "data" / "tng_goods_s_mock_508.json"
+        if cat_path.exists():
+            try:
+                with open(cat_path, "r", encoding="utf-8") as f:
+                    cat = json.load(f)
+                candidates = []
+                for g in cat.get("galaxies", []):
+                    prof = g.get("discovery_profile")
+                    if prof and prof.get("rarity_sigma", 0) >= min_sigma:
+                        candidates.append({
+                            "galaxy_id": g.get("id"),
+                            "redshift": g.get("redshift"),
+                            "log_mstar": g.get("log_mstar"),
+                            "profile": prof,
+                        })
+                        if len(candidates) >= limit:
+                            break
+                return {
+                    "total_discovered": len(candidates),
+                    "candidates": candidates,
+                }
+            except Exception as exc:
+                return {"error": f"Failed to query hypotheses: {str(exc)}"}
+
+        return self._tool_load_tng_demo(args)
+
+    def _tool_check_bridge_status(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        host = args.get("host", "http://127.0.0.1:8000")
+        try:
+            from urllib.parse import urlparse
+            import urllib.request
+            parsed = urlparse(host)
+            if parsed.hostname not in ("localhost", "127.0.0.1", "::1", "[::1]"):
+                return {"error": f"Restricted host '{parsed.hostname}'. Bridge check is restricted to local loopback."}
+            req = urllib.request.Request(f"{host}/api/health", headers={"User-Agent": "specsynth-mcp"})
+            with urllib.request.urlopen(req, timeout=2.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return {"status": "ONLINE", "details": data}
+        except Exception as exc:
+            return {"status": "OFFLINE", "message": str(exc)}
 
     def _tool_run_sentry_audit(self, args: Dict[str, Any]) -> Dict[str, Any]:
         base = args.get("base") or str(REPO_ROOT / "run")
@@ -212,7 +380,13 @@ class SpecsynthMCPServer:
         return tool_clean_catalog(base=base, output_path=out_csv)
 
     def _tool_get_system_info(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        return tool_get_system_info()
+        info = tool_get_system_info()
+        if isinstance(info, dict):
+            if "cpu_count_logical" in info and "cpu_threads" not in info:
+                info["cpu_threads"] = info["cpu_count_logical"]
+            if "total_ram_gb" in info and "ram_total_gb" not in info:
+                info["ram_total_gb"] = info["total_ram_gb"]
+        return info
 
     def _tool_load_tng_demo(self, args: Dict[str, Any]) -> Dict[str, Any]:
         tng_path = REPO_ROOT / "data" / "examples" / "tng_sample" / "sample_catalog.parquet"
@@ -282,13 +456,15 @@ class SpecsynthMCPServer:
             return {"jsonrpc": "2.0", "id": msg_id, "result": {"tools": tools_list}}
 
         elif method == "tools/call":
-            name = params.get("name")
+            raw_name = params.get("name")
+            resolved_name = resolve_tool_name(raw_name) if raw_name else None
+            name = raw_name if raw_name in self.tools else resolved_name
             args = params.get("arguments", {})
-            if name not in self.tools:
+            if not name or name not in self.tools:
                 return {
                     "jsonrpc": "2.0",
                     "id": msg_id,
-                    "error": {"code": -32601, "message": f"Unknown tool: {name}"},
+                    "error": {"code": -32601, "message": f"Unknown tool: {raw_name}"},
                 }
 
             try:

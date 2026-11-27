@@ -78,7 +78,10 @@ nav:
       - Distributed, Cloud & GPU Execution: guides/distributed-and-gpu.md
       - Validation & Benchmarks: guides/validation-and-benchmarks.md
       - Scientific Sentry QA: guides/sentry.md
+      - Ingesting External Simulations: guides/ingesting_external_simulations.md
   - Architecture & Ecosystem:
+      - Scope & Contracts Freeze (ADR-001): architecture/ADR_001_scope_and_contracts_freeze.md
+      - Roadmap Mapping & Status: architecture/roadmap_mapping.md
       - Perandam Space Intelligence (PSI): architecture/perandam_space_intelligence.md
   - TNG → JWST Validation:
       - Overview & Charter: science/tng-jwst-experiment.md

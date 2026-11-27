@@ -21,8 +21,11 @@ from specsynth.contracts.galaxy3d import (
 )
 from specsynth.contracts.mcp import (
     CANONICAL_MCP_TOOLS,
+    LEGACY_TOOL_ALIASES,
     MCPToolContract,
+    get_all_canonical_tools,
     get_canonical_tool_schema,
+    resolve_tool_name,
 )
 from specsynth.contracts.photometry import (
     PhotometryPointContract,
@@ -46,6 +49,9 @@ __all__ = [
     "SyntheticObservationContract",
     "MCPToolContract",
     "CANONICAL_MCP_TOOLS",
+    "LEGACY_TOOL_ALIASES",
+    "resolve_tool_name",
+    "get_all_canonical_tools",
     "get_canonical_tool_schema",
     "ProgenitorNode",
     "MergerEvent",
