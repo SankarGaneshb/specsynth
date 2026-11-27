@@ -239,9 +239,14 @@ class SpecsynthMCPServer:
         # Check sample models
         sample_dir = REPO_ROOT / "sample_models" / "3d"
         manifest_p = sample_dir / f"{galaxy_id}_manifest.json"
-        if not manifest_p.exists() and (sample_dir / "tng100_subhalo_009873_manifest.json").exists():
-            if galaxy_id.lower() in ("tng100", "tng100-1-subhalo-424601", "tng-0059", "tng100_subhalo_009873"):
-                manifest_p = sample_dir / "tng100_subhalo_009873_manifest.json"
+        if not manifest_p.exists():
+            if galaxy_id.lower() in ("tng100", "tng100-1-subhalo-424601", "tng-0059", "tng100_subhalo_009873", "tng100_subhalo_real", "real"):
+                if (sample_dir / "tng100_subhalo_real_manifest.json").exists():
+                    manifest_p = sample_dir / "tng100_subhalo_real_manifest.json"
+                elif (sample_dir / "mock_procedural_specimen_manifest.json").exists():
+                    manifest_p = sample_dir / "mock_procedural_specimen_manifest.json"
+            elif (sample_dir / "mock_procedural_specimen_manifest.json").exists():
+                manifest_p = sample_dir / "mock_procedural_specimen_manifest.json"
 
         if manifest_p.exists():
             try:

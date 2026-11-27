@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "galaxy_id": "tng100_subhalo_424601",
+  "geometry_source": "simulation_derived",
+  "coordinate_frame": "physical_rest",
+  "redshift": 0.0,
+  "center_of_mass_kpc": [
+    0.016276852972901944,
+    0.0024867928569666108,
+    -0.0009071256660004896
+  ],
+  "half_mass_radius_kpc": 2.447408676147461,
+  "total_stellar_mass_msun": 3006610432.0,
+  "particle_counts": {
+    "gas": 4200,
+    "dark_matter": 8000,
+    "star": 14500
+  },
+  "simulation": {
+    "name": "IllustrisTNG-100-1",
+    "snapshot": 99,
+    "subhalo_id": 424601,
+    "source_url": "https://www.tng-project.org/api/TNG100-1/snapshots/99/subhalos/424601/cutout.hdf5",
+    "cosmology": {
+      "h": 0.6774,
+      "omega_m": 0.3089,
+      "omega_lambda": 0.6911,
+      "box_size_ckpc": 75000.0
+    }
+  },
+  "datasets_consumed": [
+    "PartType0/Coordinates",
+    "PartType0/Velocities",
+    "PartType0/Masses",
+    "PartType0/ParticleIDs",
+    "PartType0/SmoothingLength",
+    "PartType1/Coordinates",
+    "PartType1/Velocities",
+    "PartType1/Masses",
+    "PartType1/ParticleIDs",
+    "PartType4/Coordinates",
+    "PartType4/Velocities",
+    "PartType4/Masses",
+    "PartType4/ParticleIDs",
+    "PartType4/GFM_StellarFormationTime",
+    "PartType4/GFM_Metallicity"
+  ],
+  "particle_ids_preserved": true,
+  "unit_conversions": {
+    "coordinates": "comoving ckpc/h -> physical kpc via r_phys = r_comov * a / h",
+    "velocities": "v_pec * sqrt(a) -> km/s via v_phys = v_code * sqrt(a)",
+    "masses": "10^10 M_sun / h -> M_sun via M_phys = M_code * 1e10 / h",
+    "stellar_ages": "cosmic_time(z_snap) - cosmic_time(z_birth) via a_birth"
+  },
+  "checksums": {
+    "hdf5_sha256": "8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31",
+    "webgl_json_sha256": "2778607199eda992f16c5ba0d330f66648038528d7654f9b9d3c0289e6587dd0"
+  },
+  "linked_files": {
+    "hdf5_snapshot": "sample_models/3d/tng100_subhalo_real.hdf5",
+    "webgl_json": "sample_models/3d/tng100_subhalo_real_web.json"
+  }
+}

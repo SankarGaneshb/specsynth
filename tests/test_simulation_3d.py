@@ -187,7 +187,7 @@ def test_mock_simulation_snapshot_generation() -> None:
     )
 
     assert galaxy.galaxy_id == "tng100_subhalo_009873"
-    assert galaxy.geometry_source == GeometrySource.SIMULATION_DERIVED
+    assert galaxy.geometry_source == GeometrySource.PROCEDURAL_ILLUSTRATIVE
     assert galaxy.coordinate_frame == CoordinateFrame.PHYSICAL_REST
     assert np.isclose(galaxy.redshift, 0.5)
     assert galaxy.half_mass_radius_kpc > 0.0
@@ -210,7 +210,7 @@ def test_mock_simulation_snapshot_generation() -> None:
     # Verify web JSON export serialization
     web_json = galaxy.to_web_json(max_particles_per_component=1000)
     assert web_json["version"] == "1.0.0"
-    assert web_json["geometry_source"] == "simulation_derived"
+    assert web_json["geometry_source"] == "procedural_illustrative"
     assert len(web_json["particles"]["star"]["coordinates_kpc"]) == 1000
 
 

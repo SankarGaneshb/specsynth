@@ -54,6 +54,7 @@ class ParticleBatchContract:
     ages_yr: Optional[np.ndarray] = None
     metallicities_z: Optional[np.ndarray] = None
     smoothing_lengths_kpc: Optional[np.ndarray] = None
+    particle_ids: Optional[np.ndarray] = None
 
     def __post_init__(self) -> None:
         self.coordinates_kpc = np.asarray(self.coordinates_kpc, dtype=np.float32)
@@ -66,6 +67,8 @@ class ParticleBatchContract:
             self.metallicities_z = np.asarray(self.metallicities_z, dtype=np.float32)
         if self.smoothing_lengths_kpc is not None:
             self.smoothing_lengths_kpc = np.asarray(self.smoothing_lengths_kpc, dtype=np.float32)
+        if self.particle_ids is not None:
+            self.particle_ids = np.asarray(self.particle_ids)
 
         self.validate()
 
@@ -76,6 +79,10 @@ class ParticleBatchContract:
             raise ValueError(f"coordinates_kpc shape mismatch: expected ({n_particles}, 3), got {self.coordinates_kpc.shape}")
         if self.velocities_km_s.shape != (n_particles, 3):
             raise ValueError(f"velocities_km_s shape mismatch: expected ({n_particles}, 3), got {self.velocities_km_s.shape}")
+
+        if self.particle_ids is not None:
+            if self.particle_ids.ndim != 1 or len(self.particle_ids) != n_particles:
+                raise ValueError(f"particle_ids shape mismatch: expected ({n_particles},), got {self.particle_ids.shape}")
 
         if not np.all(np.isfinite(self.coordinates_kpc)):
             raise ValueError("coordinates_kpc contains non-finite values")
@@ -192,6 +199,14 @@ class Galaxy3DContract:
                 data["metallicities_z"] = np.round(comp_batch.metallicities_z[idx], 6).tolist()
             if v is not None:
                 data["velocities_km_s"] = np.round(v, 2).tolist()
+            if comp_batch.particle_ids is not None:
+                data["particle_ids"] = comp_batch.particle_ids[idx].tolist()
+            data["downsampling"] = {
+                "sampled_particles": len(idx),
+                "total_particles": len(comp_batch.masses_msun),
+                "sampling_fraction": round(len(idx) / max(1, len(comp_batch.masses_msun)), 4),
+                "seed": seed,
+            }
             particles_dict[comp_name] = data
 
         return {
@@ -319,6 +334,7 @@ class Galaxy3DContract:
                 ages_yr=comp.ages_yr,
                 metallicities_z=comp.metallicities_z,
                 smoothing_lengths_kpc=comp.smoothing_lengths_kpc,
+                particle_ids=comp.particle_ids,
             )
 
         # Align with angular momentum of stars (or gas)
@@ -343,6 +359,7 @@ class Galaxy3DContract:
                     ages_yr=comp.ages_yr,
                     metallicities_z=comp.metallicities_z,
                     smoothing_lengths_kpc=comp.smoothing_lengths_kpc,
+                    particle_ids=comp.particle_ids,
                 )
             final_comps = aligned_comps
         else:

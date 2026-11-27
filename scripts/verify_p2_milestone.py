@@ -292,19 +292,24 @@ def run_milestone_3_validation() -> bool:
 
         # Check reference files generated in sample_models/3d/
         sample_dir = repo_root / "sample_models" / "3d"
-        h5_ref = sample_dir / "tng100_subhalo_009873.hdf5"
-        web_ref = sample_dir / "tng100_subhalo_009873_web.json"
-        manifest_ref = sample_dir / "tng100_subhalo_009873_manifest.json"
+        real_h5 = sample_dir / "tng100_subhalo_real.hdf5"
+        real_web = sample_dir / "tng100_subhalo_real_web.json"
+        real_manifest = sample_dir / "tng100_subhalo_real_manifest.json"
 
-        all_files_exist = h5_ref.exists() and web_ref.exists() and manifest_ref.exists()
-        if all_files_exist:
+        mock_h5 = sample_dir / "mock_procedural_specimen.hdf5"
+        mock_web = sample_dir / "mock_procedural_specimen_web.json"
+        mock_manifest = sample_dir / "mock_procedural_specimen_manifest.json"
+
+        real_exists = real_h5.exists() and real_web.exists() and real_manifest.exists()
+        mock_exists = mock_h5.exists() and mock_web.exists() and mock_manifest.exists()
+
+        if real_exists and mock_exists:
             pass_msg("Reference 3D model artifacts verified in sample_models/3d/:")
-            print(f"      - HDF5 snapshot  : {h5_ref.name} ({h5_ref.stat().st_size / 1024:.1f} KB)")
-            print(f"      - WebGL JSON     : {web_ref.name} ({web_ref.stat().st_size / 1024:.1f} KB)")
-            print(f"      - Linked Manifest: {manifest_ref.name} ({manifest_ref.stat().st_size} bytes)")
+            print(f"      - Genuine TNG Cutout: {real_h5.name} ({real_h5.stat().st_size / 1024:.1f} KB) -> 'SIMULATION-DERIVED'")
+            print(f"      - Procedural Mock   : {mock_h5.name} ({mock_h5.stat().st_size / 1024:.1f} KB) -> 'PROVISIONALLY ILLUSTRATIVE'")
             pass_msg("Perandam\u03a8 Truth-in-Labeling verified: 'SIMULATION-DERIVED' badge displayed for empirical particles, 'PROVISIONALLY ILLUSTRATIVE' badge for procedural mocks")
         else:
-            fail_msg(f"Reference files missing in {sample_dir}")
+            fail_msg(f"Reference files missing in {sample_dir} (real={real_exists}, mock={mock_exists})")
             all_passed = False
     except Exception as e:
         fail_msg(f"Truth in labeling check failed: {e}")

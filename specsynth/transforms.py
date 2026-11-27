@@ -39,6 +39,37 @@ def comoving_to_physical_kpc(
     return (np.asarray(coords_ckpc_h, dtype=np.float64) * factor).astype(np.float32)
 
 
+def physical_velocity_km_s(
+    vel_code: np.ndarray,
+    redshift: float,
+    convention: str = "gadget",
+) -> np.ndarray:
+    """
+    Convert simulation peculiar velocity in code units to physical peculiar velocity in km/s:
+      v_phys = v_code * sqrt(a) where a = 1 / (1 + z).
+
+    In Gadget/Arepo/IllustrisTNG, peculiar velocity code units are v_code = v_pec * sqrt(a).
+    """
+    if redshift < 0:
+        raise ValueError(f"redshift must be non-negative, got {redshift}")
+    scale_factor = 1.0 / (1.0 + redshift)
+    return (np.asarray(vel_code, dtype=np.float64) * np.sqrt(scale_factor)).astype(np.float32)
+
+
+def physical_mass_msun(
+    mass_code: np.ndarray,
+    h: float = 0.6774,
+    mass_unit_msun: float = 1e10,
+) -> np.ndarray:
+    """
+    Convert simulation mass in code units (typically 10^10 M_sun / h for TNG/Gadget) to solar masses M_sun:
+      M_phys = M_code * mass_unit_msun / h.
+    """
+    if h <= 0:
+        raise ValueError(f"h must be positive, got {h}")
+    return (np.asarray(mass_code, dtype=np.float64) * (mass_unit_msun / h)).astype(np.float32)
+
+
 def center_of_mass(
     coords: np.ndarray,
     masses: np.ndarray,

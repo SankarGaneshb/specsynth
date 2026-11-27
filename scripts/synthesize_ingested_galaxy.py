@@ -56,9 +56,15 @@ def synthesize_galaxy(galaxy_name: str = "MyGalaxy", redshift: float = 0.5) -> N
 
     model_path = repo_root / "sample_models" / "3d" / f"{galaxy_name}_web.json"
     if not model_path.exists():
-        # Fallback to TNG reference subhalo
-        model_path = repo_root / "sample_models" / "3d" / "tng100_subhalo_009873_web.json"
-        galaxy_name = "tng100_subhalo_009873"
+        # Fallback to genuine TNG reference subhalo or procedural mock
+        real_path = repo_root / "sample_models" / "3d" / "tng100_subhalo_real_web.json"
+        mock_path = repo_root / "sample_models" / "3d" / "mock_procedural_specimen_web.json"
+        if real_path.exists():
+            model_path = real_path
+            galaxy_name = "tng100_subhalo_real"
+        elif mock_path.exists():
+            model_path = mock_path
+            galaxy_name = "mock_procedural_specimen"
 
     print(f"[1/4] Loading 3D galaxy particles from: {model_path.name}")
     galaxy = load_simulation_snapshot(model_path, galaxy_id=galaxy_name, redshift=redshift)

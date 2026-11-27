@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "galaxy_id": "tng100_subhalo_009873",
-  "geometry_source": "simulation_derived",
+  "galaxy_id": "mock_procedural_specimen",
+  "geometry_source": "procedural_illustrative",
   "coordinate_frame": "physical_rest",
   "redshift": 0.0,
   "center_of_mass_kpc": [

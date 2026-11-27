@@ -35,7 +35,7 @@ def load_simulation_snapshot(
     sim_type: str = "tng",
     galaxy_id: Optional[str] = None,
     subhalo_id: Optional[Union[int, str]] = None,
-    h: float = 0.6774,
+    h: Optional[float] = None,
     redshift: Optional[float] = None,
     cosmo: Optional[FlatLambdaCDM] = None,
     align_angular_momentum: bool = True,
@@ -107,12 +107,12 @@ def _load_hdf5_snapshot(
     sim_type: str,
     galaxy_id: str,
     subhalo_id: Optional[Union[int, str]],
-    h: float,
+    h: Optional[float],
     redshift: Optional[float],
     cosmo: FlatLambdaCDM,
     align_angular_momentum: bool,
 ) -> Galaxy3DContract:
-    """Load and parse an HDF5 simulation snapshot using h5py."""
+    """Load and parse an HDF5 simulation snapshot using h5py with strict unit validation."""
     try:
         import h5py
     except ImportError as e:
@@ -124,27 +124,43 @@ def _load_hdf5_snapshot(
     with h5py.File(filepath, "r") as f:
         # Read Header metadata
         header = f.get("Header")
-        snap_z = float(redshift) if redshift is not None else 0.0
-        snap_h = float(h)
+        snap_z = float(redshift) if redshift is not None else None
+        snap_h = float(h) if h is not None else None
         snap_box = 0.0
+        mass_table = None
+        datasets_consumed: list[str] = []
 
         if header is not None:
             attrs = header.attrs
-            if "Redshift" in attrs and redshift is None:
+            if "Redshift" in attrs and snap_z is None:
                 snap_z = float(attrs["Redshift"])
-            if "HubbleParam" in attrs and h == 0.6774:
+            if "HubbleParam" in attrs and snap_h is None:
                 snap_h = float(attrs["HubbleParam"])
-            elif "h" in attrs and h == 0.6774:
+            elif "h" in attrs and snap_h is None:
                 snap_h = float(attrs["h"])
             if "BoxSize" in attrs:
                 snap_box = float(attrs["BoxSize"])
+            if "MassTable" in attrs:
+                mass_table = attrs["MassTable"]
+
+        # Reject missing or ambiguous cosmological unit parameters
+        if snap_h is None or snap_h <= 0.0:
+            raise ValueError(
+                f"Missing cosmological parameter 'h' in {filepath.name}. "
+                "Hubble parameter h must be present in snapshot Header or explicitly provided."
+            )
+        if snap_z is None or snap_z < 0.0:
+            raise ValueError(
+                f"Missing cosmological parameter 'redshift' in {filepath.name}. "
+                "Redshift z >= 0 must be present in snapshot Header or explicitly provided."
+            )
 
         # Mapping of HDF5 group names to ParticleType
         type_mapping = {
-            "PartType0": ParticleType.GAS,
-            "PartType1": ParticleType.DARK_MATTER,
-            "PartType4": ParticleType.STAR,
-            "PartType5": ParticleType.BLACK_HOLE,
+            "PartType0": (ParticleType.GAS, 0),
+            "PartType1": (ParticleType.DARK_MATTER, 1),
+            "PartType4": (ParticleType.STAR, 4),
+            "PartType5": (ParticleType.BLACK_HOLE, 5),
         }
 
         components: dict[str, ParticleBatchContract] = {}
@@ -153,7 +169,7 @@ def _load_hdf5_snapshot(
         a_snap = 1.0 / (1.0 + snap_z)
         t_snap_gyr = cosmo.cosmic_time_gyr(snap_z)
 
-        for p_key, p_enum in type_mapping.items():
+        for p_key, (p_enum, p_idx) in type_mapping.items():
             if p_key not in f:
                 continue
 
@@ -164,6 +180,7 @@ def _load_hdf5_snapshot(
             coords_raw = np.asarray(grp["Coordinates"], dtype=np.float32)
             if len(coords_raw) == 0:
                 continue
+            datasets_consumed.append(f"{p_key}/Coordinates")
 
             # Convert ckpc/h to physical kpc
             coords_kpc = comoving_to_physical_kpc(coords_raw, redshift=snap_z, h=snap_h)
@@ -171,8 +188,8 @@ def _load_hdf5_snapshot(
             # Velocities: in Gadget/TNG, velocities are v_code = v_pec * sqrt(a)
             if "Velocities" in grp:
                 vels_raw = np.asarray(grp["Velocities"], dtype=np.float32)
-                # Convert peculiar velocity to physical km/s
                 vels_km_s = (vels_raw * np.sqrt(a_snap)).astype(np.float32)
+                datasets_consumed.append(f"{p_key}/Velocities")
             else:
                 vels_km_s = np.zeros_like(coords_kpc, dtype=np.float32)
 
@@ -180,8 +197,21 @@ def _load_hdf5_snapshot(
             if "Masses" in grp:
                 masses_raw = np.asarray(grp["Masses"], dtype=np.float32)
                 masses_msun = (masses_raw * (1e10 / snap_h)).astype(np.float32)
+                datasets_consumed.append(f"{p_key}/Masses")
+            elif mass_table is not None and len(mass_table) > p_idx and mass_table[p_idx] > 0:
+                m_code = float(mass_table[p_idx])
+                masses_msun = np.full(len(coords_kpc), m_code * (1e10 / snap_h), dtype=np.float32)
+                datasets_consumed.append("Header/MassTable")
             else:
-                masses_msun = np.ones(len(coords_kpc), dtype=np.float32) * 1e5
+                raise ValueError(
+                    f"Missing particle mass dataset 'Masses' in {p_key} and no Header MassTable entry."
+                )
+
+            # Particle IDs
+            p_ids: Optional[np.ndarray] = None
+            if "ParticleIDs" in grp:
+                p_ids = np.asarray(grp["ParticleIDs"], dtype=np.uint64)
+                datasets_consumed.append(f"{p_key}/ParticleIDs")
 
             ages_yr: Optional[np.ndarray] = None
             mets_z: Optional[np.ndarray] = None
@@ -192,11 +222,14 @@ def _load_hdf5_snapshot(
                 if "GFM_StellarFormationTime" in grp:
                     a_birth = np.asarray(grp["GFM_StellarFormationTime"], dtype=np.float32)
                     valid_mask = a_birth > 0.0
+                    datasets_consumed.append(f"{p_key}/GFM_StellarFormationTime")
                     if not np.all(valid_mask):
                         coords_kpc = coords_kpc[valid_mask]
                         vels_km_s = vels_km_s[valid_mask]
                         masses_msun = masses_msun[valid_mask]
                         a_birth = a_birth[valid_mask]
+                        if p_ids is not None:
+                            p_ids = p_ids[valid_mask]
 
                     # Redshift of formation
                     z_birth = np.maximum(0.0, (1.0 / a_birth) - 1.0)
@@ -210,6 +243,7 @@ def _load_hdf5_snapshot(
                 if "GFM_Metallicity" in grp:
                     mets_raw = np.asarray(grp["GFM_Metallicity"], dtype=np.float32)
                     mets_z = np.clip(mets_raw, 1e-5, 0.1).astype(np.float32)
+                    datasets_consumed.append(f"{p_key}/GFM_Metallicity")
                 else:
                     mets_z = np.full(len(coords_kpc), 0.019, dtype=np.float32)
 
@@ -217,6 +251,7 @@ def _load_hdf5_snapshot(
                 if "SmoothingLength" in grp:
                     h_raw = np.asarray(grp["SmoothingLength"], dtype=np.float32)
                     smoothing_kpc = (h_raw / ((1.0 + snap_z) * snap_h)).astype(np.float32)
+                    datasets_consumed.append(f"{p_key}/SmoothingLength")
 
             components[p_enum.value] = ParticleBatchContract(
                 particle_type=p_enum,
@@ -226,6 +261,7 @@ def _load_hdf5_snapshot(
                 ages_yr=ages_yr,
                 metallicities_z=mets_z,
                 smoothing_lengths_kpc=smoothing_kpc,
+                particle_ids=p_ids,
             )
 
         provenance = {
@@ -235,7 +271,15 @@ def _load_hdf5_snapshot(
             "redshift": snap_z,
             "h": snap_h,
             "box_size_ckpc": snap_box,
+            "datasets_consumed": datasets_consumed,
+            "particle_ids_preserved": any(c.particle_ids is not None for c in components.values()),
             "geometry_source": GeometrySource.SIMULATION_DERIVED.value,
+            "unit_conversions": {
+                "coordinates": "comoving ckpc/h -> physical kpc via r_phys = r_comov * a / h",
+                "velocities": "v_pec * sqrt(a) -> km/s via v_phys = v_code * sqrt(a)",
+                "masses": "10^10 M_sun / h -> M_sun via M_phys = M_code * 1e10 / h",
+                "stellar_ages": "cosmic_time(z_snap) - cosmic_time(z_birth) via a_birth",
+            },
         }
 
         return Galaxy3DContract.from_particles(
@@ -278,6 +322,7 @@ def _parse_snapshot_dict(
         ages = np.asarray(comp_data["ages_yr"], dtype=np.float32) if "ages_yr" in comp_data else None
         mets = np.asarray(comp_data["metallicities_z"], dtype=np.float32) if "metallicities_z" in comp_data else None
         smoothing = np.asarray(comp_data["smoothing_lengths_kpc"], dtype=np.float32) if "smoothing_lengths_kpc" in comp_data else None
+        p_ids = np.asarray(comp_data["particle_ids"], dtype=np.uint64) if "particle_ids" in comp_data else None
 
         components[ptype.value] = ParticleBatchContract(
             particle_type=ptype,
@@ -287,7 +332,14 @@ def _parse_snapshot_dict(
             ages_yr=ages,
             metallicities_z=mets,
             smoothing_lengths_kpc=smoothing,
+            particle_ids=p_ids,
         )
+
+    geom_source_raw = data.get("geometry_source", GeometrySource.SIMULATION_DERIVED.value)
+    try:
+        geom_source = GeometrySource(geom_source_raw)
+    except ValueError:
+        geom_source = GeometrySource.SIMULATION_DERIVED
 
     prov = data.get("provenance", {})
     prov.update({
@@ -295,21 +347,21 @@ def _parse_snapshot_dict(
         "subhalo_id": subhalo_id or data.get("subhalo_id"),
         "redshift": snap_z,
         "h": snap_h,
-        "geometry_source": GeometrySource.SIMULATION_DERIVED.value,
+        "geometry_source": geom_source.value,
     })
 
     return Galaxy3DContract.from_particles(
         galaxy_id=galaxy_id or data.get("galaxy_id", "galaxy_3d"),
         redshift=snap_z,
         components=components,
-        geometry_source=GeometrySource.SIMULATION_DERIVED,
+        geometry_source=geom_source,
         align_angular_momentum=align_angular_momentum,
         provenance=prov,
     )
 
 
 def generate_mock_simulation_snapshot(
-    galaxy_id: str = "tng100_subhalo_009873",
+    galaxy_id: str = "mock_procedural_specimen",
     redshift: float = 0.0,
     n_stars: int = 8000,
     n_gas: int = 2500,
@@ -318,17 +370,12 @@ def generate_mock_simulation_snapshot(
     seed: int = 42,
 ) -> Galaxy3DContract:
     """
-    Generate an empirical, simulation-derived 3D galaxy benchmark model
-    reproducing realistic structural, kinematic, and chemical gradients.
+    Generate an illustrative procedural mock 3D galaxy benchmark model for rapid unit testing,
+    visual calibration, and WebGL rendering benchmarking.
 
-    Model Components:
-      1. Bulge (30% stars): Hernquist sphere (a = 0.8 kpc), isotropic dispersion (sigma = 110 km/s),
-         older stellar population (6-10 Gyr), supersolar metallicity (Z = 0.025).
-      2. Disk (70% stars): Double exponential profile (R_d = 3.2 kpc, z_d = 0.35 kpc),
-         flat circular rotation curve (v_circ = 210 km/s), younger population (0.1-5 Gyr),
-         negative radial metallicity gradient (d log Z / d R = -0.04 dex/kpc).
-      3. Cold Gas: Exponential disk (R_g = 4.5 kpc, z_g = 0.2 kpc) with cold turbulent dispersion.
-      4. Dark Matter Halo: NFW profile (c = 10, R_s = 20 kpc).
+    NOTE: This is a procedural mathematical mock (Hernquist bulge + exponential disk + NFW halo)
+    and is strictly labeled as GeometrySource.PROCEDURAL_ILLUSTRATIVE. It is not an empirical
+    simulation snapshot extraction.
     """
     rng = np.random.default_rng(seed)
 
@@ -457,21 +504,22 @@ def generate_mock_simulation_snapshot(
 
     provenance = {
         "generator": "specsynth.simulation.generate_mock_simulation_snapshot",
-        "simulation": "IllustrisTNG-100-1",
-        "snapshot": 99,
-        "subhalo_id": 9873,
+        "model_type": "analytical_hernquist_exponential_disk_nfw_mock",
+        "simulation": "Procedural Mock (Not Simulation Derived)",
+        "snapshot": None,
+        "subhalo_id": None,
         "redshift": float(redshift),
         "total_stellar_mass_msun": float(total_stellar_mass_msun),
         "kinematics": "aligned_angular_momentum",
         "seed": seed,
-        "geometry_source": GeometrySource.SIMULATION_DERIVED.value,
+        "geometry_source": GeometrySource.PROCEDURAL_ILLUSTRATIVE.value,
     }
 
     return Galaxy3DContract.from_particles(
         galaxy_id=galaxy_id,
         redshift=redshift,
         components=components,
-        geometry_source=GeometrySource.SIMULATION_DERIVED,
+        geometry_source=GeometrySource.PROCEDURAL_ILLUSTRATIVE,
         align_angular_momentum=True,
         provenance=provenance,
     )
@@ -496,6 +544,11 @@ def export_galaxy3d_hdf5(galaxy: Galaxy3DContract, filepath: Union[str, Path]) -
         header.attrs["Redshift"] = float(galaxy.redshift)
         header.attrs["Time"] = 1.0 / (1.0 + float(galaxy.redshift))
         header.attrs["HubbleParam"] = 0.6774
+        header.attrs["BoxSize"] = 75000.0
+        header.attrs["UnitLength_in_cm"] = 3.085678e21
+        header.attrs["UnitMass_in_g"] = 1.989e43
+        header.attrs["UnitVelocity_in_cm_per_s"] = 100000.0
+        header.attrs["Flag_DoublePrecision"] = 0
         header.attrs["GalaxyID"] = str(galaxy.galaxy_id)
         header.attrs["HalfMassRadiusKpc"] = float(galaxy.half_mass_radius_kpc)
         header.attrs["TotalStellarMassMsun"] = float(galaxy.total_stellar_mass_msun())
@@ -525,6 +578,10 @@ def export_galaxy3d_hdf5(galaxy: Galaxy3DContract, filepath: Union[str, Path]) -
             # Masses in 10^10 M_sun / h
             masses_code = comp_batch.masses_msun / (1e10 / h)
             grp.create_dataset("Masses", data=masses_code.astype(np.float32), compression="gzip")
+
+            # Particle IDs
+            if comp_batch.particle_ids is not None:
+                grp.create_dataset("ParticleIDs", data=comp_batch.particle_ids.astype(np.uint64), compression="gzip")
 
             if comp_batch.ages_yr is not None:
                 # Convert age back to birth scale factor
