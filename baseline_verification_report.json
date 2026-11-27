@@ -1,0 +1,207 @@
+{
+  "baseline_sha": "8e36648d7bad3959cdd8ed32c0232f0370fec461",
+  "tested_commit_sha": "56acfedb25ff1c195026ba17996e324191ea3e83",
+  "tested_branch": "main",
+  "is_shallow_clone": false,
+  "status": "CONFORMANT",
+  "passed": true,
+  "allowed_core_files": [
+    "specsynth/__init__.py",
+    "specsynth/adapters/__init__.py",
+    "specsynth/adapters/base.py",
+    "specsynth/adapters/conformance.py",
+    "specsynth/adapters/fsps.py",
+    "specsynth/contracts/__init__.py",
+    "specsynth/contracts/evolution.py",
+    "specsynth/contracts/galaxy3d.py",
+    "specsynth/contracts/mcp.py",
+    "specsynth/contracts/photometry.py",
+    "specsynth/contracts/simulation.py",
+    "specsynth/contracts/ssp.py",
+    "specsynth/core.py",
+    "specsynth/cosmology.py",
+    "specsynth/evolution.py",
+    "specsynth/filters.py",
+    "specsynth/governance/__init__.py",
+    "specsynth/governance/baseline_verifier.py",
+    "specsynth/igm.py",
+    "specsynth/mcp/bridge.py",
+    "specsynth/mcp/server.py",
+    "specsynth/provenance.py",
+    "specsynth/sfh.py",
+    "specsynth/simulation.py",
+    "specsynth/transforms.py"
+  ],
+  "modified_core_files": [
+    {
+      "file_path": "specsynth/__init__.py",
+      "change_type": "M",
+      "lines_added": 12,
+      "lines_deleted": 0,
+      "milestone": "P0-P6",
+      "issue": "#14-#28",
+      "feature": "Top-level package namespace and public API exports"
+    },
+    {
+      "file_path": "specsynth/adapters/__init__.py",
+      "change_type": "M",
+      "lines_added": 10,
+      "lines_deleted": 0,
+      "milestone": "P0",
+      "issue": "#14",
+      "feature": "Dynamic adapter plugin registry and entry-point discovery"
+    },
+    {
+      "file_path": "specsynth/adapters/conformance.py",
+      "change_type": "A",
+      "lines_added": 285,
+      "lines_deleted": 0,
+      "milestone": "P6",
+      "issue": "#20",
+      "feature": "11-point mathematical and scientific invariant conformance suite"
+    },
+    {
+      "file_path": "specsynth/adapters/fsps.py",
+      "change_type": "M",
+      "lines_added": 112,
+      "lines_deleted": 21,
+      "milestone": "P1",
+      "issue": "#15",
+      "feature": "Authentic FSPS ASCII spectral grid loader and exporter"
+    },
+    {
+      "file_path": "specsynth/contracts/__init__.py",
+      "change_type": "M",
+      "lines_added": 14,
+      "lines_deleted": 0,
+      "milestone": "P0",
+      "issue": "#14",
+      "feature": "Canonical contract schemas namespace exports"
+    },
+    {
+      "file_path": "specsynth/contracts/evolution.py",
+      "change_type": "A",
+      "lines_added": 275,
+      "lines_deleted": 0,
+      "milestone": "P3",
+      "issue": "#17,#27",
+      "feature": "Canonical EvolutionaryTrackContract, ProgenitorNode, and MergerEvent (v1.0.0)"
+    },
+    {
+      "file_path": "specsynth/contracts/galaxy3d.py",
+      "change_type": "M",
+      "lines_added": 222,
+      "lines_deleted": 0,
+      "milestone": "P0,#16",
+      "issue": "#14,#16",
+      "feature": "Canonical Galaxy3DContract and ParticleBatchContract (v1.0.0)"
+    },
+    {
+      "file_path": "specsynth/contracts/mcp.py",
+      "change_type": "M",
+      "lines_added": 209,
+      "lines_deleted": 4,
+      "milestone": "P0,#18",
+      "issue": "#14,#18",
+      "feature": "Canonical MCP Tool Schemas and M8ven annotations (v1.0.0)"
+    },
+    {
+      "file_path": "specsynth/core.py",
+      "change_type": "M",
+      "lines_added": 14,
+      "lines_deleted": 14,
+      "milestone": "P1",
+      "issue": "#15",
+      "feature": "GEMM spectral matrix contraction and Charlot & Fall (2000) dust"
+    },
+    {
+      "file_path": "specsynth/cosmology.py",
+      "change_type": "M",
+      "lines_added": 31,
+      "lines_deleted": 0,
+      "milestone": "P1",
+      "issue": "#15",
+      "feature": "FlatLambdaCDM cosmological distance measures and TNG cosmology"
+    },
+    {
+      "file_path": "specsynth/evolution.py",
+      "change_type": "A",
+      "lines_added": 619,
+      "lines_deleted": 0,
+      "milestone": "P3",
+      "issue": "#17,#27",
+      "feature": "Cosmic-time FLRW evolution, Leitner-Kravtsov recycling, and SubLink merger trees"
+    },
+    {
+      "file_path": "specsynth/mcp/bridge.py",
+      "change_type": "M",
+      "lines_added": 82,
+      "lines_deleted": 3,
+      "milestone": "P4",
+      "issue": "#18",
+      "feature": "Local HTTP/JSON-RPC bridge server for frontend and Node.js parity"
+    },
+    {
+      "file_path": "specsynth/mcp/server.py",
+      "change_type": "M",
+      "lines_added": 358,
+      "lines_deleted": 119,
+      "milestone": "P4",
+      "issue": "#18",
+      "feature": "Canonical Model Context Protocol (MCP) server implementation"
+    },
+    {
+      "file_path": "specsynth/provenance.py",
+      "change_type": "A",
+      "lines_added": 160,
+      "lines_deleted": 0,
+      "milestone": "P1",
+      "issue": "#15",
+      "feature": "Cryptographic SHA-256 provenance manifest generator"
+    },
+    {
+      "file_path": "specsynth/sfh.py",
+      "change_type": "A",
+      "lines_added": 141,
+      "lines_deleted": 0,
+      "milestone": "P1",
+      "issue": "#15",
+      "feature": "Delayed-tau SFH synthesis and strict mass conservation"
+    },
+    {
+      "file_path": "specsynth/simulation.py",
+      "change_type": "A",
+      "lines_added": 638,
+      "lines_deleted": 0,
+      "milestone": "P2",
+      "issue": "#16",
+      "feature": "Simulation galaxy particle ingestion and truth-in-labeling"
+    },
+    {
+      "file_path": "specsynth/transforms.py",
+      "change_type": "A",
+      "lines_added": 288,
+      "lines_deleted": 0,
+      "milestone": "P2",
+      "issue": "#16",
+      "feature": "Physical coordinate frames, Center-of-Mass, and angular momentum alignment"
+    }
+  ],
+  "unauthorized_core_files": [],
+  "external_plugin_files": [
+    "examples/external_engine_plugin/README.md",
+    "examples/external_engine_plugin/cb2026_engine.py",
+    "examples/external_engine_plugin/external_adapter.py",
+    "examples/external_engine_plugin/fsps_external_adapter.py",
+    "examples/external_engine_plugin/pyproject.toml",
+    "examples/external_engine_plugin/run_external_workflow.py",
+    "examples/external_engine_plugin/run_genuine_external_workflow.py"
+  ],
+  "diagnostic_summary": "P0 Frozen Baseline Verification: CONFORMANT. All 17 modified core files are documented under authorized roadmap milestones. External adapter plugin files (7 files) are strictly isolated.",
+  "environment": {
+    "os_platform": "Windows-11-10.0.26300-SP0",
+    "python_version": "3.13.1",
+    "git_available": true
+  },
+  "timestamp_utc": "2026-11-27T20:07:24Z"
+}

@@ -101,3 +101,19 @@ To publish your external engine adapter as an independent Python package (e.g. `
    my_engine = "my_package.adapter:MyEngineAdapter"
    ```
 3. When installed, Specsynth automatically discovers and registers `my_engine`!
+
+---
+
+## 7. Zero-Core-Modification Baseline Verification (Issue #29)
+
+Pillar 1 guarantees that external adapters never alter Specsynth core algorithms. Compliance is checked against the immutable P0 architecture-freeze baseline:
+
+- **Baseline Commit**: `8e36648d7bad3959cdd8ed32c0232f0370fec461` (tag `p0-architecture-freeze`)
+- **Verification Command**:
+  ```bash
+  python scripts/verify_frozen_baseline.py --output baseline_verification_report.json
+  ```
+
+### What This Check Proves & Does Not Prove
+- **PROVES**: The external adapter plugin interacts exclusively through public contracts (`BaseAdapter`, `SSPData`, entry points) and does not require modifying core contraction engines or physics routines.
+- **DOES NOT PROVE**: A clean Git diff does not in itself prove astrophysical correctness or external third-party adoption. Scientific validity is certified separately via the 11-point conformance suite and independent float64 reference integration.

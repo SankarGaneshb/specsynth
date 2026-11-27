@@ -10,7 +10,7 @@
     "machine": "AMD64",
     "numpy_version": "2.5.4",
     "astropy_version": "8.0.2",
-    "timestamp_utc": "2026-11-27T19:35:41Z"
+    "timestamp_utc": "2026-11-27T19:50:43Z"
   },
   "criteria_results": {
     "criterion_1_genuine_external_engine": {
@@ -50,7 +50,7 @@
     },
     "criterion_5_provenance_and_reproducibility": {
       "passed": true,
-      "manifest_file": "benchmark_p6_external_acceptance_manifest.json",
+      "manifest_file": "benchmark_external_engine_manifest.json",
       "manifest_exists": true,
       "max_repro_delta_mag": 0.0
     },

@@ -1,14 +1,14 @@
 {
   "manifest_version": "1.0.0",
-  "timestamp_utc": "2026-11-27T19:32:56.937333+00:00",
-  "git_commit": "dbafe144a61b594ad672ff46cad6f1c080bf47d2",
+  "timestamp_utc": "2026-11-27T19:50:43.947152+00:00",
+  "git_commit": "56acfedb25ff1c195026ba17996e324191ea3e83",
   "environment": {
     "python_version": "3.13.1",
     "platform": "Windows-11-10.0.26300-SP0",
     "system": "Windows"
   },
   "target": {
-    "galaxy_id": "EXT-FSPS-GALAXY-001",
+    "galaxy_id": "P6-ACCEPTANCE-GALAXY",
     "simulation_name": "GenuineExternalEngine_FSPS",
     "dataset_type": "empirical_simulation",
     "redshift": 1.5,
@@ -57,6 +57,6 @@
     "jwst_f444w": 16.0435
   },
   "reproducibility": {
-    "code_snippet": "# SpecSynth Deterministic Reproduction Script\n# Galaxy: EXT-FSPS-GALAXY-001 (z = 1.5000)\nfrom specsynth.adapters.fsps import FSPSAdapter\nfrom specsynth.cosmology import FlatLambdaCDM\nfrom specsynth.contracts.photometry import SyntheticObservationContract\n\n# 1. Cosmology\ncosmo = FlatLambdaCDM(H0=67.74, Om0=0.3089)\n\n# 2. Physics & Engine: FSPS v3.2 3.2\n# Input grid SHA-256: f842dbfb8941d27e3b6b78aebc04bb6a7556aba05cabc6bd7f2d1f49de2cc576\nprint(\"Target Galaxy: EXT-FSPS-GALAXY-001, Log(M*/Msun) = 10.5\")\n"
+    "code_snippet": "# SpecSynth Deterministic Reproduction Script\n# Galaxy: P6-ACCEPTANCE-GALAXY (z = 1.5000)\nfrom specsynth.adapters.fsps import FSPSAdapter\nfrom specsynth.cosmology import FlatLambdaCDM\nfrom specsynth.contracts.photometry import SyntheticObservationContract\n\n# 1. Cosmology\ncosmo = FlatLambdaCDM(H0=67.74, Om0=0.3089)\n\n# 2. Physics & Engine: FSPS v3.2 3.2\n# Input grid SHA-256: f842dbfb8941d27e3b6b78aebc04bb6a7556aba05cabc6bd7f2d1f49de2cc576\nprint(\"Target Galaxy: P6-ACCEPTANCE-GALAXY, Log(M*/Msun) = 10.5\")\n"
   }
 }

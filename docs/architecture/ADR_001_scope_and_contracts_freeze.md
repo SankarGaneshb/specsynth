@@ -127,3 +127,16 @@ Both the Python (`specsynth.mcp`) and Node.js (`perandam-psi/mcp_server.mjs`) se
 | `specsynth_calculate_cosmology` | Flat $\Lambda\text{CDM}$ distance measures ($D_L, D_C, D_A$) (`readOnly`, `idempotent`) | `cosmology.flat_lcdm` | `calculateCosmology` |
 | `specsynth_get_3d_galaxy` | Retrieve simulation-derived 3D particle data (`readOnly`, `idempotent`) | `server._tool_get_3d_galaxy` | `psi_get_3d_galaxy` |
 | `specsynth_run_sentry_audit` | 4-tier scientific physical invariant audit (`readOnly`, `idempotent`) | `server._tool_run_sentry_audit` | Via local bridge |
+
+---
+
+## 6. Immutable Architecture-Freeze Baseline & Verification (P0.6 / Issue #29)
+
+To guarantee that external adapters and independent research pipelines can integrate without modifying the core framework (Pillar 1), an immutable baseline commit is formally recorded:
+
+- **Baseline Commit SHA**: `8e36648d7bad3959cdd8ed32c0232f0370fec461`
+- **Git Tag**: `p0-architecture-freeze`
+- **Commit Title**: `feat(contracts): implement Milestone 1 (P0) Scope and Architecture Freeze (#14)`
+- **Verification Rule**: Any external adapter or plugin must prove that it was authored outside the frozen core. Verification tools compare directly against `8e36648d7bad3959cdd8ed32c0232f0370fec461`, not against transient branch tips.
+- **Diagnostic Allowlist**: Any modifications to `specsynth/` since P0 must be explicitly attributed to an authorized roadmap milestone (P1 through P6). Unclassified modifications are cataloged with line diffs and feature subsystem details in the verification report.
+- **Fail-Closed Policy**: If the baseline commit is unreachable (e.g. shallow clones in CI), verification fails closed with explicit remediation instructions (`git fetch origin 8e36648d7bad3959cdd8ed32c0232f0370fec461` or `git fetch --unshallow`).
