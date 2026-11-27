@@ -266,7 +266,7 @@ export const LightconeCanvas3D: React.FC<LightconeCanvas3DProps> = ({
 
   // 3D Visual & Viewport controls
   const [geometryMode, setGeometryMode] = useState<'sky_plane' | 'cone'>('sky_plane');
-  const [fieldSpread, setFieldSpread] = useState<number>(105.0);
+  const [fieldSpread, setFieldSpread] = useState<number>(135.0);
   const [minZ, setMinZ] = useState<number>(0.0);
   const [maxZ, setMaxZ] = useState<number>(9.0);
   const [showEpochShells, setShowEpochShells] = useState<boolean>(true);
@@ -336,19 +336,27 @@ export const LightconeCanvas3D: React.FC<LightconeCanvas3DProps> = ({
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 600;
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
+    } catch (err) {
+      console.warn('[PerandamΨ] WebGL context creation failed in LightconeCanvas3D:', err);
+      return;
+    }
 
     // 1. Scene with dark cosmic nebula gradient
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x03050c);
 
-    // 2. Camera: Symmetrical, centered view framing the full lightcone volume across the canvas
+    // 2. Camera: Symmetrical, centered view dynamically framed to fill 75-85% of canvas
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 3000);
-    camera.position.set(0, 75, 45);
+    const aspect = width / height;
+    const initialCamDist = aspect > 1.5 ? 135 : 160;
+    camera.position.set(30, 45, -130 + initialCamDist);
 
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -1171,15 +1179,15 @@ export const LightconeCanvas3D: React.FC<LightconeCanvas3DProps> = ({
     const { camera, controls } = threeRef.current;
     if (type === 'front') {
       // Front View: 2D Sky alignment
-      camera.position.set(0, 0, 160);
+      camera.position.set(0, 0, 115);
       controls.target.set(0, 0, -130);
     } else if (type === 'isometric') {
       // Angled Cinematic 3D Lightcone Perspective
-      camera.position.set(70, 60, 45);
+      camera.position.set(55, 45, 10);
       controls.target.set(0, 0, -130);
     } else if (type === 'profile') {
       // Side-on Redshift Depth Profile
-      camera.position.set(220, 0, -130);
+      camera.position.set(190, 0, -130);
       controls.target.set(0, 0, -130);
     }
     controls.update();
@@ -1202,7 +1210,11 @@ export const LightconeCanvas3D: React.FC<LightconeCanvas3DProps> = ({
   const resetTrajectoryCamera = useCallback(() => {
     if (!threeRef.current) return;
     const { camera, controls } = threeRef.current;
-    camera.position.set(0, 75, 45);
+    const w = containerRef.current?.clientWidth || 1000;
+    const h = containerRef.current?.clientHeight || 600;
+    const aspect = w / h;
+    const initialCamDist = aspect > 1.5 ? 135 : 160;
+    camera.position.set(30, 45, -130 + initialCamDist);
     controls.target.set(0, 0, -130);
     controls.update();
   }, []);
@@ -1495,6 +1507,13 @@ export const LightconeCanvas3D: React.FC<LightconeCanvas3DProps> = ({
               Profile
             </button>
             <button
+              onClick={resetTrajectoryCamera}
+              className="px-2 py-0.5 rounded hover:bg-slate-800 text-cyan-300 hover:text-white font-medium transition-colors cursor-pointer border-l border-slate-700/80 pl-2"
+              title="Fit & Frame: Auto-scale Lightcone to fill the entire screen"
+            >
+              Fit
+            </button>
+            <button
               onClick={() => setIsControlsOpen((prev) => !prev)}
               className={`ml-1 pl-1.5 border-l border-slate-700 flex items-center space-x-1 px-2 py-0.5 rounded transition-colors cursor-pointer ${
                 isControlsOpen ? 'bg-cyan-900/60 text-cyan-200' : 'text-slate-400 hover:text-slate-200'
@@ -1546,17 +1565,17 @@ export const LightconeCanvas3D: React.FC<LightconeCanvas3DProps> = ({
             </div>
             <input
               type="range"
-              min="40"
-              max="160"
+              min="50"
+              max="240"
               step="5"
               value={fieldSpread}
               onChange={(e) => setFieldSpread(Number(e.target.value))}
               className="w-full accent-cyan-400 cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-slate-500 mt-0.5">
-              <span>Compact (40)</span>
-              <span>Standard (90)</span>
-              <span>Expansive (160)</span>
+              <span>Compact (50)</span>
+              <span>Standard (135)</span>
+              <span>Expansive (240)</span>
             </div>
           </div>
 

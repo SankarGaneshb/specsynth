@@ -6,6 +6,7 @@ import { LightconeCanvas3D } from './components/LightconeCanvas3D';
 import { CosmicTimeScrubber } from './components/CosmicTimeScrubber';
 import { GalaxyInspector } from './components/GalaxyInspector';
 import { GuideModal } from './components/GuideModal';
+import { SentryAuditModal } from './components/SentryAuditModal';
 import { Galaxy, CatalogManifest, SkyColorMode, ViewportMode } from './types/galaxy';
 import rawGoodsSManifest from './data/tng_goods_s_mock_508.json';
 import rawTng100Manifest from './data/tng_100_calibration.json';
@@ -32,6 +33,7 @@ export const App: React.FC = () => {
   const [resetTrigger, setResetTrigger] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
+  const [isAuditOpen, setIsAuditOpen] = useState<boolean>(false);
   const [colorMode, setColorMode] = useState<SkyColorMode>('rgb');
   const [viewportMode, setViewportMode] = useState<ViewportMode>('2d');
   const [previousViewportMode, setPreviousViewportMode] = useState<ViewportMode>('3d');
@@ -147,6 +149,7 @@ export const App: React.FC = () => {
         onResetView={() => setResetTrigger((prev) => prev + 1)}
         onSelectGalaxy={handleSelectById}
         onOpenGuide={() => setIsGuideOpen(true)}
+        onOpenAudit={() => setIsAuditOpen(true)}
         galaxies={galaxies}
         discoveryMode={discoveryMode}
         onToggleDiscoveryMode={() => setDiscoveryMode((prev) => !prev)}
@@ -156,6 +159,9 @@ export const App: React.FC = () => {
 
       {/* Beginner & Student Guide Modal */}
       <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+
+      {/* Scientific Sentry 4-Tier QA Audit Modal */}
+      <SentryAuditModal isOpen={isAuditOpen} onClose={() => setIsAuditOpen(false)} isConnected={isConnected} />
 
       {/* Main Sky & Inspector Area: Persistent Viewports (Zero WebGL Context Churn) */}
       <div className="flex-1 relative flex overflow-hidden">
@@ -236,6 +242,7 @@ export const App: React.FC = () => {
             onOpenGalaxyTwin={() => handleViewportChange('twin')}
             externalZ={scrubberZ}
             onExternalZChange={handleScrubberChange}
+            isConnected={isConnected}
           />
         )}
       </div>

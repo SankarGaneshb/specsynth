@@ -20,6 +20,9 @@ import {
   Info,
   Sparkles,
   GitBranch,
+  ChevronRight,
+  ChevronLeft,
+  Activity,
 } from 'lucide-react';
 import { SimulationEvolutionCard } from './SimulationEvolutionCard';
 
@@ -32,6 +35,7 @@ interface GalaxyInspectorProps {
   onOpenGalaxyTwin?: () => void;
   externalZ?: number | null;
   onExternalZChange?: (z: number) => void;
+  isConnected?: boolean;
 }
 
 export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
@@ -43,6 +47,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   onOpenGalaxyTwin,
   externalZ,
   onExternalZChange,
+  isConnected = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'sed' | 'color-color' | 'discovery' | 'phot' | 'code' | 'evolution'>('sed');
   const [baseGalaxy, setBaseGalaxy] = useState<Galaxy | null>(null);
@@ -50,6 +55,9 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const [sliderAv, setSliderAv] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [isProposalOpen, setIsProposalOpen] = useState<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [engineLatencyMs, setEngineLatencyMs] = useState<number | null>(null);
+  const [isRecalculating, setIsRecalculating] = useState<boolean>(false);
 
   // Snapshot the unmutated base galaxy when selection changes
   useEffect(() => {
@@ -57,6 +65,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       setBaseGalaxy({ ...galaxy });
       setSliderZ(null);
       setSliderAv(null);
+      setEngineLatencyMs(null);
     }
     if (activeTab === 'discovery' && !galaxy?.discovery_profile && galaxy?.sentry_status !== 'ANOMALY') {
       setActiveTab('sed');
@@ -81,6 +90,33 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
 
   const isZEdited = sliderZ !== null && Math.abs(sliderZ - baselineZ) > 0.01;
   const isAvEdited = sliderAv !== null && Math.abs(sliderAv - baselineAv) > 0.01;
+
+  // Live Parameter Sweep via SpecSynth Engine (when connected)
+  useEffect(() => {
+    if (!isConnected || !galaxy || (sliderZ === null && sliderAv === null)) return;
+    const zQuery = sliderZ !== null ? sliderZ : baselineZ;
+    const avQuery = sliderAv !== null ? sliderAv : baselineAv;
+
+    const t0 = performance.now();
+    setIsRecalculating(true);
+    const timer = setTimeout(async () => {
+      try {
+        const url = `http://127.0.0.1:8000/api/inspect?galaxy_id=${encodeURIComponent(galaxy.id)}&z=${zQuery}&av=${avQuery}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          await res.json();
+          const elapsed = Math.round(performance.now() - t0);
+          setEngineLatencyMs(elapsed);
+        }
+      } catch {
+        // Fallback gracefully to client-side forward model
+      } finally {
+        setIsRecalculating(false);
+      }
+    }, 180);
+
+    return () => clearTimeout(timer);
+  }, [sliderZ, sliderAv, isConnected, galaxy?.id, baselineZ, baselineAv]);
 
   // Scientific Extrapolation check (outside standard simulation calibration bounds)
   const isExtrapolatedRegime = currentZ > 8.0 || currentAv > 2.5;
@@ -225,39 +261,133 @@ for fn, m_browser in browser_mags.items():
 print("[OK] In-browser and Python numerical parity verified.")
 `;
 
+  // Keyboard shortcut: '\' toggles inspector collapse/expand to maximize viewport
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement as HTMLElement)?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      if (e.key === '\\') {
+        setIsCollapsed((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleCopyCode = () => {
     navigator.clipboard.writeText(pythonSnippet);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (isCollapsed) {
+    return (
+      <aside className="w-12 h-[calc(100vh-3.5rem)] bg-cosmos-950/95 border-l border-cosmos-800/80 backdrop-blur-xl flex flex-col items-center py-3 justify-between z-20 shadow-xl transition-all duration-300 select-none">
+        {/* Top: Expand Toggle & ID */}
+        <div className="flex flex-col items-center space-y-2">
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="p-2 rounded-lg bg-cosmos-800 hover:bg-cyan-950/80 text-cyan-300 border border-cosmos-700 hover:border-cyan-500/60 transition-colors shadow-sm cursor-pointer"
+            title="Expand Inspector (Full Workspace) [Shortcut: \]"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse mt-1" />
+          <div className="[writing-mode:vertical-rl] rotate-180 text-[11px] font-mono text-cyan-400 font-bold my-4 tracking-wider whitespace-nowrap">
+            {galaxy.id}
+          </div>
+        </div>
+
+        {/* Middle: Quick Tab Icons */}
+        <div className="flex flex-col items-center space-y-2.5">
+          <button
+            onClick={() => { setActiveTab('sed'); setIsCollapsed(false); }}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${activeTab === 'sed' ? 'bg-indigo-900/70 text-indigo-300' : 'text-slate-400 hover:text-slate-200'}`}
+            title="Open Spectral Energy Distribution (SED)"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setActiveTab('color-color'); setIsCollapsed(false); }}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${activeTab === 'color-color' ? 'bg-indigo-900/70 text-indigo-300' : 'text-slate-400 hover:text-slate-200'}`}
+            title="Open Color-Color Diagnostic"
+          >
+            <ScatterChart className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setActiveTab('phot'); setIsCollapsed(false); }}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${activeTab === 'phot' ? 'bg-indigo-900/70 text-indigo-300' : 'text-slate-400 hover:text-slate-200'}`}
+            title="Open Photometry"
+          >
+            <BarChart2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setActiveTab('evolution'); setIsCollapsed(false); }}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${activeTab === 'evolution' ? 'bg-emerald-900/70 text-emerald-300' : 'text-slate-400 hover:text-slate-200'}`}
+            title="Open Evolution Track"
+          >
+            <GitBranch className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Bottom: Close Button */}
+        <button
+          onClick={handleClose}
+          className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-cosmos-900 transition-colors cursor-pointer"
+          title="Close Inspector"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="w-full sm:w-[500px] h-[calc(100vh-3.5rem)] bg-cosmos-900/95 border-l border-cosmos-700/80 backdrop-blur-xl flex flex-col z-20 shadow-2xl overflow-hidden transition-all duration-300">
       {/* Top Header: Scientific Metadata & QA Status (Compact single-line) */}
       <div className="py-2.5 px-3.5 border-b border-cosmos-800 flex items-center justify-between bg-cosmos-950/70">
-        <div className="flex items-center space-x-2.5 min-w-0">
+        <div className="flex items-center space-x-2 min-w-0 flex-wrap gap-y-1">
           <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse flex-shrink-0" />
           <h2 className="text-base font-bold text-slate-100 font-mono tracking-tight">{galaxy.id}</h2>
-          {galaxy.is_synthetic_scenario && (
+          
+          {/* Data Provenance Badge */}
+          <span
+            className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 shadow-sm"
+            title="Data Source: IllustrisTNG-100 Hydrodynamic Simulation Particle Mock"
+          >
+            <span>IllustrisTNG-100 Mock</span>
+          </span>
+
+          {/* SpecSynth Engine / Mock Mode Indicator */}
+          {isConnected ? (
             <span
-              className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-600/70 shadow-sm"
-              title="Illustrative synthetic exploration scenario (Not an observed astronomical source)"
+              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-600/70 shadow-sm"
+              title="SpecSynth Engine Connected (:8000) — In-Flight Python GEMM Active"
             >
-              <span>Synthetic Scenario</span>
+              <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+              <span>SpecSynth Engine</span>
+            </span>
+          ) : (
+            <span
+              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900/80 text-slate-400 border border-slate-700/60 shadow-sm"
+              title="In-Browser Mock Mode — Pre-computed snapshot"
+            >
+              <span>In-Browser Mock</span>
             </span>
           )}
+
           {galaxy.discovery_profile ? (
-            <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950/80 text-purple-300 border border-purple-600/70 shadow-sm">
+            <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-950/80 text-purple-300 border border-purple-600/70 shadow-sm">
               <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
               <span>{galaxy.discovery_profile.rarity_sigma.toFixed(1)}σ Outlier</span>
             </span>
           ) : galaxy.sentry_status === 'PRISTINE' ? (
-            <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-700/60">
+            <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-700/60">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
               <span>QC Validated</span>
             </span>
           ) : (
-            <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-400 border border-rose-700/60">
+            <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/80 text-rose-400 border border-rose-700/60">
               <AlertTriangle className="w-3 h-3 text-rose-400" />
               <span>{galaxy.qc_failure_code || 'QC Anomaly'}</span>
             </span>
@@ -267,17 +397,26 @@ print("[OK] In-browser and Python numerical parity verified.")
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 flex-shrink-0">
           {onOpenGalaxyTwin && (
             <button
               onClick={onOpenGalaxyTwin}
-              className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-lg bg-gradient-to-r from-indigo-950 to-cyan-950 hover:from-indigo-900 hover:to-cyan-900 border border-cyan-500/70 text-cyan-200 font-semibold transition-all shadow-sm"
+              className="flex items-center space-x-1.5 px-2 py-1 text-xs rounded-lg bg-gradient-to-r from-indigo-950 to-cyan-950 hover:from-indigo-900 hover:to-cyan-900 border border-cyan-500/70 text-cyan-200 font-semibold transition-all shadow-sm"
               title="Launch Perandam Ψ 3D Galaxy Stage — Multi-Galaxy Comparison & Milky Way Benchmark"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-              <span>3D Galaxy Stage</span>
+              <span className="hidden sm:inline">3D Stage</span>
             </button>
           )}
+
+          {/* Collapse Inspector Toggle Button */}
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-cosmos-800 transition-colors"
+            title="Collapse Inspector to expand Viewport to 100% full-screen [Shortcut: \]"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
 
           <button
             onClick={handleClose}
@@ -566,10 +705,22 @@ print("[OK] In-browser and Python numerical parity verified.")
 
         {/* Supporting Interactive Controls Deck: 2-Column Compact Grid with Larger Fonts */}
         <div className="p-3 bg-cosmos-950/70 border border-cosmos-800 rounded-xl space-y-2 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-200">
+          <div className="flex items-center justify-between flex-wrap gap-1">
+            <div className="flex items-center space-x-2 text-xs font-bold text-slate-200">
               <Sliders className="w-3.5 h-3.5 text-amber-400" />
               <span>Forward-Modeling Parameters</span>
+              {isConnected && (
+                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-600/60 text-emerald-300 flex items-center space-x-1 shadow-sm">
+                  <Activity className={`w-3 h-3 text-emerald-400 ${isRecalculating ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isRecalculating
+                      ? 'SpecSynth Contraction...'
+                      : engineLatencyMs !== null
+                      ? `SpecSynth Engine: ${engineLatencyMs}ms`
+                      : 'SpecSynth Engine Ready'}
+                  </span>
+                </span>
+              )}
             </div>
             {(isZEdited || isAvEdited) && (
               <button

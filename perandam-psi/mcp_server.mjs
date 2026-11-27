@@ -87,8 +87,10 @@ export function calculateCosmology(z, H0 = 67.74, Om0 = 0.3089) {
   return {
     redshift: z,
     h0: H0,
+    H0: H0,
     om0: Om0,
-    calculation_method: 'Exact Closed-Form & Gauss-Legendre Quadrature',
+    Om0: Om0,
+    calculation_method: 'Numerical Integration (Gauss-Legendre / Trapezoidal)',
     comoving_distance_mpc: Number(D_C.toFixed(2)),
     luminosity_distance_mpc: Number(D_L.toFixed(2)),
     angular_diameter_distance_mpc: Number(D_A.toFixed(2)),

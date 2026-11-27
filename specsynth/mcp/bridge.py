@@ -203,12 +203,30 @@ class BridgeHTTPHandler(BaseHTTPRequestHandler):
             print(f"[{now}] [Catalog API] GET /api/tng-catalog (limit={limit}) -> 200 OK")
 
         elif path == "/api/inspect":
-            idx = int(query.get("galaxy_idx", [0])[0])
+            idx_param = query.get("galaxy_idx", query.get("idx", [None]))[0]
+            gid = query.get("galaxy_id", query.get("id", [None]))[0]
             base = query.get("base", ["./run"])[0]
-            data = mcp._tool_inspect_galaxy({"base": base, "galaxy_idx": idx})
+            args = {"base": base}
+            if gid is not None:
+                args["galaxy_id"] = gid
+            if idx_param is not None:
+                try:
+                    args["galaxy_idx"] = int(idx_param)
+                except ValueError:
+                    args["galaxy_id"] = idx_param
+            elif gid is None:
+                args["galaxy_idx"] = 0
+
+            # Forward-modeling dynamic parameter overrides
+            if "redshift" in query or "z" in query:
+                args["redshift"] = float(query.get("redshift", query.get("z", [None]))[0])
+            if "dust_av" in query or "av" in query:
+                args["dust_av"] = float(query.get("dust_av", query.get("av", [None]))[0])
+
+            data = mcp._tool_inspect_galaxy(args)
             self._set_cors_headers(200)
             self.wfile.write(json.dumps(data).encode("utf-8"))
-            print(f"[{now}] [Inspect API] GET /api/inspect (galaxy_idx={idx}, base={base}) -> 200 OK")
+            print(f"[{now}] [Inspect API] GET /api/inspect ({args}) -> 200 OK")
 
         elif path == "/api/system":
             data = mcp._tool_get_system_info({})

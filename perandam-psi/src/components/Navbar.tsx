@@ -26,6 +26,7 @@ interface NavbarProps {
   onResetView: () => void;
   onSelectGalaxy: (id: string) => void;
   onOpenGuide: () => void;
+  onOpenAudit?: () => void;
   galaxies: Galaxy[];
   discoveryMode: boolean;
   onToggleDiscoveryMode: () => void;
@@ -45,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetView,
   onSelectGalaxy,
   onOpenGuide,
+  onOpenAudit,
   galaxies,
   discoveryMode,
   onToggleDiscoveryMode,
@@ -68,7 +70,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </div>
         <div className="hidden lg:flex items-center text-xs text-slate-400 pl-3 border-l border-cosmos-700">
-          <span>IllustrisTNG → JWST NIRCam Scientific Demo</span>
+          <span title="Data Provenance: IllustrisTNG-100 Hydrodynamic Snapshots forward-modeled with FSPS and JWST NIRCam filter bandpasses">
+            IllustrisTNG-100 Mock · FSPS + NIRCam Synthesis
+          </span>
         </div>
       </div>
 
@@ -233,26 +237,31 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right Stats & Scientific QA / Engine Status */}
       <div className="flex items-center space-x-2.5 text-xs">
-        {/* Global Catalog Sentry QA Status (Non-redundant with Inspector) */}
-        <div
-          title={`Catalog Sentry: ${galaxies.length - anomalies.length} pristine objects, ${anomalies.length} quarantined anomalies (${((1 - anomalies.length / galaxies.length) * 100).toFixed(1)}% invariant compliance)`}
-          className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-cosmos-950/90 border border-cosmos-700 text-slate-300 shadow-sm"
+        {/* Global Catalog Sentry QA Status (Click to inspect 4-tier audit) */}
+        <button
+          onClick={onOpenAudit}
+          title={`Catalog Sentry: ${galaxies.length - anomalies.length} pristine objects, ${anomalies.length} quarantined anomalies (${((1 - anomalies.length / galaxies.length) * 100).toFixed(1)}% invariant compliance). Click to view full 4-tier audit.`}
+          className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-cosmos-950/90 hover:bg-cosmos-800 border border-cosmos-700 text-slate-300 shadow-sm cursor-pointer transition"
         >
           <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
           <span>Catalog Sentry: <strong className="text-emerald-400 font-mono">{galaxies.length - anomalies.length}</strong>/{galaxies.length}</span>
-        </div>
+        </button>
 
-        {/* Engine Connectivity Indicator */}
+        {/* Engine Connectivity Indicator (Truth in Labeling) */}
         <div
-          title={isConnected ? 'Connected to local SpecSynth HTTP Bridge (:8000)' : 'Running in Standalone In-Browser Mode'}
-          className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full border ${
+          title={
             isConnected
-              ? 'bg-indigo-950/60 border-indigo-500/60 text-indigo-300'
-              : 'bg-cosmos-800/80 border-cosmos-700 text-slate-400'
+              ? 'SpecSynth In-Flight Computational Synthesis Engine Connected (:8000). Active Python GEMM backend evaluating matrix contractions in real time via BLAS.'
+              : 'Running in In-Browser Standalone Mock Mode. Pre-computed catalog snapshot.'
+          }
+          className={`flex items-center space-x-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${
+            isConnected
+              ? 'bg-emerald-950/70 border-emerald-500/70 text-emerald-300 shadow-sm ring-1 ring-emerald-500/30'
+              : 'bg-cosmos-950/90 border-cosmos-700 text-slate-400'
           }`}
         >
-          <Cpu className={`w-3.5 h-3.5 ${isConnected ? 'text-indigo-400 animate-pulse' : 'text-slate-500'}`} />
-          <span>{isConnected ? 'Local Bridge Available' : 'Standalone Mode'}</span>
+          <Cpu className={`w-3.5 h-3.5 ${isConnected ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
+          <span>{isConnected ? '⚡ SpecSynth Engine' : '📦 Standalone Mock Mode'}</span>
         </div>
       </div>
     </header>

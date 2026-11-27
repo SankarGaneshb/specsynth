@@ -638,11 +638,17 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
     const camera = new THREE.PerspectiveCamera(40, width / height, 1, 3000);
     camera.position.set(0, 65, 140);
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
+    } catch (err) {
+      console.warn('[PerandamΨ] WebGL context creation failed in MilkyWayComparator3D:', err);
+      return;
+    }
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -924,7 +930,9 @@ export const MilkyWayComparator3D: React.FC<MilkyWayComparator3DProps> = ({
             </span>
           </div>
           <div className="hidden xl:flex items-center text-xs text-slate-400 pl-3 border-l border-cosmos-800">
-            <span className="italic text-slate-300 font-serif">"Where simulations meet the real universe."</span>
+            <span className="text-cyan-300/90 font-mono text-[11px] bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-700/50" title="Scientific Provenance: IllustrisTNG-100 Hydrodynamic Simulation Models compared against Milky Way standard reference">
+              SIMULATION BENCHMARK · IllustrisTNG-100 vs Milky Way Reference
+            </span>
           </div>
         </div>
 

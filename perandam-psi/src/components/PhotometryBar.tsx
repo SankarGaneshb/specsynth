@@ -37,8 +37,14 @@ export const PhotometryBar: React.FC<PhotometryBarProps> = ({
   return (
     <div className="bg-cosmos-950/80 rounded-xl border border-cosmos-800 p-3.5 select-none shadow-md">
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap gap-y-1">
           <span className="text-sm font-bold text-slate-100">Synthetic JWST NIRCam Photometry</span>
+          <span
+            className="text-[10px] text-cyan-300 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-700/60 shadow-sm"
+            title="Synthetic filter-contracted mock observables. Not on-sky telescope observation."
+          >
+            SYNTHETIC MOCK
+          </span>
           <span className="text-xs text-slate-400 font-mono bg-cosmos-900/90 px-2 py-0.5 rounded border border-cosmos-800" title="10 ks reference point-source depth approximation (STScI NIRCam medium-deep limits). Consult STScI Pandeia ETC for proposal planning.">
             10 ks Noise Approx
           </span>

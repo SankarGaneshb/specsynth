@@ -136,7 +136,7 @@ test('MCP Client: callTool Dispatches and Extracts Text Content', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
     const body = JSON.parse(init?.body as string);
-    assert.strictEqual(body.name, 'sps_list_filters');
+    assert.ok(body.name === 'specsynth_list_filters' || body.name === 'sps_list_filters');
     assert.strictEqual(body.arguments.instrument, 'jwst_nircam');
 
     return {

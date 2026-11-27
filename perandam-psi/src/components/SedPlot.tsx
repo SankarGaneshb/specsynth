@@ -155,12 +155,18 @@ export const SedPlot: React.FC<SedPlotProps> = ({
       {/* Header with Title and 1-Click Frame & Unit Toggle */}
       <div className="mb-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
             <span className="text-sm font-bold text-slate-100">
               {viewMode === 'rest' ? 'Rest-Frame Luminosity SED' : 'Observed-Frame Flux Density'}
             </span>
             <span className="text-xs text-indigo-300 font-mono bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/60">
               FSPS MIST
+            </span>
+            <span
+              className="text-[10px] text-cyan-300 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-700/60 shadow-sm"
+              title="Theoretical synthetic forward model forward-modeled via FSPS + filter curves. Not real-time telescope telemetry."
+            >
+              SYNTHETIC FORWARD MODEL
             </span>
           </div>
 

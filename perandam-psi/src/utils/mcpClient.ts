@@ -144,35 +144,69 @@ export class MCPBridgeClient {
    * List available filter sets (e.g. JWST NIRCam, Roman WFI, HST, Euclid).
    */
   async listFilters(instrument?: string): Promise<any> {
-    return this.callTool('sps_list_filters', instrument ? { instrument } : {});
+    return this.callTool('specsynth_list_filters', instrument ? { instrument } : {});
   }
 
   /**
-   * Inspect synthesized properties, flux, and SFH for a galaxy by index.
+   * Inspect synthesized properties, flux, and SFH for a galaxy by ID or index.
    */
-  async inspectGalaxy(galaxyIdx: number, base: string = './run'): Promise<any> {
-    return this.callTool('sps_inspect_galaxy', { galaxy_idx: galaxyIdx, base });
+  async inspectGalaxy(galaxyIdOrIdx: string | number, base: string = './run'): Promise<any> {
+    const args: Record<string, any> = { base };
+    if (typeof galaxyIdOrIdx === 'number') {
+      args.galaxy_idx = galaxyIdOrIdx;
+    } else {
+      args.galaxy_id = galaxyIdOrIdx;
+    }
+    return this.callTool('specsynth_inspect_galaxy', args);
   }
 
   /**
    * Run 4-tier automated Scientific Sentry audit.
    */
-  async runSentryAudit(sampleSize: number = 10000, base: string = './run'): Promise<any> {
-    return this.callTool('sps_run_sentry_audit', { sample_size: sampleSize, base });
+  async runSentryAudit(sampleSize: number = 5000, base: string = './run'): Promise<any> {
+    return this.callTool('specsynth_run_sentry_audit', { sample_size: sampleSize, base });
+  }
+
+  /**
+   * Calculate exact Flat Lambda-CDM cosmological distances, lookback time, and cosmic age.
+   */
+  async calculateCosmology(redshift: number, h0: number = 67.74, om0: number = 0.3089): Promise<any> {
+    return this.callTool('specsynth_calculate_cosmology', { redshift, h0, om0 });
+  }
+
+  /**
+   * Retrieve 3D simulation particle geometry for a galaxy.
+   */
+  async get3DGalaxy(galaxyId: string, coordinateFrame: string = 'physical_rest'): Promise<any> {
+    return this.callTool('specsynth_get_3d_galaxy', { galaxy_id: galaxyId, coordinate_frame: coordinateFrame });
+  }
+
+  /**
+   * Retrieve progenitor evolution track and merger history.
+   */
+  async getEvolutionTrack(galaxyId: string): Promise<any> {
+    return this.callTool('specsynth_get_evolution_track', { galaxy_id: galaxyId });
+  }
+
+  /**
+   * Query scientifically anomalous outlier hypotheses.
+   */
+  async queryHypotheses(minSigma: number = 2.0, limit: number = 5): Promise<any> {
+    return this.callTool('specsynth_query_hypotheses', { min_sigma: minSigma, limit });
   }
 
   /**
    * Load validated IllustrisTNG -> JWST NIRCam demonstration sample.
    */
   async loadTngDemo(limit: number = 5): Promise<any> {
-    return this.callTool('sps_load_tng_demo', { limit });
+    return this.callTool('specsynth_load_tng_demo', { limit });
   }
 
   /**
    * Get host hardware capabilities (CPU, RAM, GPU/BLAS).
    */
   async getSystemInfo(): Promise<any> {
-    return this.callTool('sps_get_system_info', {});
+    return this.callTool('specsynth_get_system_info', {});
   }
 
   /**
@@ -211,3 +245,5 @@ export class MCPBridgeClient {
     };
   }
 }
+
+export const mcpClient = new MCPBridgeClient();
