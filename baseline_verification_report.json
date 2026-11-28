@@ -1,6 +1,6 @@
 {
   "baseline_sha": "8e36648d7bad3959cdd8ed32c0232f0370fec461",
-  "tested_commit_sha": "575629c582299fdd1ea5eb8725aba4392407a36c",
+  "tested_commit_sha": "bd12c560cece589199d410afa25fc13e6c0486b9",
   "tested_branch": "main",
   "is_shallow_clone": false,
   "status": "CONFORMANT",
@@ -12,6 +12,7 @@
     "specsynth/adapters/conformance.py",
     "specsynth/adapters/fsps.py",
     "specsynth/contracts/__init__.py",
+    "specsynth/contracts/data_mode.py",
     "specsynth/contracts/evolution.py",
     "specsynth/contracts/galaxy3d.py",
     "specsynth/contracts/mcp.py",
@@ -221,5 +222,5 @@
     "python_version": "3.13.1",
     "git_available": true
   },
-  "timestamp_utc": "2026-11-28T08:11:42Z"
+  "timestamp_utc": "2026-11-28T09:34:45Z"
 }

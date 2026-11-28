@@ -1,6 +1,39 @@
 export type SkyColorMode = 'rgb' | 'redshift' | 'ssfr' | 'mass';
 export type ViewportMode = '2d' | 'twin' | '3d';
 
+export type DataMode =
+  | 'simulation_derived'
+  | 'cached_reference'
+  | 'live_computation'
+  | 'analytical_mock'
+  | 'illustrative_demo';
+
+export interface GalaxyProvenance {
+  data_mode: DataMode;
+  source?: string;
+  simulation?: string;
+  snapshot?: number | string;
+  subhalo_id?: number | string;
+  redshift?: number;
+  cosmology?: {
+    h0?: number;
+    om0?: number;
+    ol0?: number;
+  };
+  total_particles?: number;
+  particle_counts?: {
+    star?: number;
+    gas?: number;
+    dark_matter?: number;
+  };
+  physical_properties?: Record<string, any>;
+  software_versions?: Record<string, string>;
+  timestamp_utc?: string;
+  git_sha?: string;
+  manifest_hash?: string;
+  sentry_certified?: boolean;
+}
+
 export type DiscoveryClass =
   | 'COSMIC_NOON_SUPER_STARBURST'
   | 'EARLY_QUENCHED_GIANT'
@@ -105,6 +138,7 @@ export interface EvolutionaryTrack {
 export interface Galaxy3DModel {
   version: string;
   galaxy_id: string;
+  data_mode?: DataMode;
   geometry_source: 'simulation_derived' | 'procedural_illustrative';
   coordinate_frame: 'physical_rest' | 'comoving_box' | 'observer_sky';
   redshift: number;
@@ -126,6 +160,8 @@ export interface Galaxy3DModel {
 export interface Galaxy {
   id: string;
   subhalo_id?: string;
+  data_mode?: DataMode;
+  provenance?: GalaxyProvenance | Record<string, any>;
   ra: number;
   dec: number;
   redshift: number;

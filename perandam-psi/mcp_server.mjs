@@ -206,12 +206,25 @@ export const CANONICAL_MCP_TOOLS = {
       if (!manifest) return { error: `Dataset ${ds} not available` };
 
       let galaxy = null;
-      if (args?.galaxy_id) {
-        galaxy = manifest.galaxies.find((g) => g.id.toLowerCase() === args.galaxy_id.toLowerCase());
+      if (args?.galaxy_id !== undefined && args?.galaxy_id !== null) {
+        const gidStr = String(args.galaxy_id).trim();
+        galaxy = manifest.galaxies.find((g) => g.id.toLowerCase() === gidStr.toLowerCase());
+        if (!galaxy && /^\d+$/.test(gidStr)) {
+          const idx = parseInt(gidStr, 10);
+          if (idx >= 0 && idx < manifest.galaxies.length) {
+            galaxy = manifest.galaxies[idx];
+          }
+        }
         if (!galaxy) {
           const fallbackManifest = ds === 'tng_100' ? goodsSManifest : tng100Manifest;
           if (fallbackManifest) {
-            galaxy = fallbackManifest.galaxies.find((g) => g.id.toLowerCase() === args.galaxy_id.toLowerCase());
+            galaxy = fallbackManifest.galaxies.find((g) => g.id.toLowerCase() === gidStr.toLowerCase());
+            if (!galaxy && /^\d+$/.test(gidStr)) {
+              const idx = parseInt(gidStr, 10);
+              if (idx >= 0 && idx < fallbackManifest.galaxies.length) {
+                galaxy = fallbackManifest.galaxies[idx];
+              }
+            }
           }
         }
       } else if (typeof args?.galaxy_index === 'number') {
@@ -249,6 +262,7 @@ export const CANONICAL_MCP_TOOLS = {
       return {
         id: galaxy.id,
         galaxy_id: galaxy.id,
+        data_mode: galaxy.data_mode || 'cached_reference',
         redshift: galaxy.redshift,
         log_mstar: galaxy.log_mstar,
         sfr: galaxy.sfr,
@@ -271,6 +285,11 @@ export const CANONICAL_MCP_TOOLS = {
         has_discovery_profile: Boolean(galaxy.discovery_profile),
         sed: galaxy.sed || [],
         sed_points_count: galaxy.sed ? galaxy.sed.length : 0,
+        provenance: {
+          data_mode: galaxy.data_mode || 'cached_reference',
+          source: 'IllustrisTNG-100 Mock Catalog',
+          sentry_status: galaxy.sentry_status || 'PASS',
+        },
       };
     },
   },
@@ -335,15 +354,23 @@ export const CANONICAL_MCP_TOOLS = {
       if (fs.existsSync(manifestPath)) {
         try {
           const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          const geomSrc = data.geometry_source || 'simulation_derived';
+          const dataMode = data.data_mode || (geomSrc === 'simulation_derived' ? 'simulation_derived' : 'analytical_mock');
           return {
             galaxy_id: galaxyId,
-            geometry_source: data.geometry_source || 'simulation_derived',
+            data_mode: dataMode,
+            geometry_source: geomSrc,
             coordinate_frame: coordFrame,
             center_of_mass_kpc: data.center_of_mass_kpc || [0, 0, 0],
             half_mass_radius_kpc: data.half_mass_radius_kpc || 2.85,
             total_stellar_mass_msun: data.total_stellar_mass_msun || 1.78e10,
             simulation_metadata: data.simulation_metadata || {},
             total_particles: data.total_particles || 4000,
+            provenance: data.provenance || {
+              data_mode: dataMode,
+              geometry_source: geomSrc,
+              source_manifest: path.basename(manifestPath),
+            },
             status: 'LOADED_FROM_SNAPSHOT',
           };
         } catch {}
@@ -354,14 +381,23 @@ export const CANONICAL_MCP_TOOLS = {
         if (!manifest) continue;
         const g = manifest.galaxies.find((x) => x.id.toLowerCase() === galaxyId.toLowerCase());
         if (g) {
+          const isSim = Boolean(g.galaxy3d);
+          const geomSrc = isSim ? 'simulation_derived' : 'procedural_illustrative';
+          const dataMode = isSim ? 'simulation_derived' : 'analytical_mock';
           return {
             galaxy_id: g.id,
-            geometry_source: g.galaxy3d ? 'simulation_derived' : 'procedural_illustrative',
+            data_mode: dataMode,
+            geometry_source: geomSrc,
             coordinate_frame: coordFrame,
             center_of_mass_kpc: [0, 0, 0],
             half_mass_radius_kpc: g.galaxy3d?.half_mass_radius_kpc || 2.5,
             total_stellar_mass_msun: Math.pow(10, g.log_mstar || 10),
             components: g.galaxy3d?.components || { star: { count: Math.min(maxParticles, 2000), sampled: true } },
+            provenance: {
+              data_mode: dataMode,
+              geometry_source: geomSrc,
+              catalog: manifest.title,
+            },
             status: 'LOADED_FROM_CATALOG',
           };
         }
@@ -370,12 +406,18 @@ export const CANONICAL_MCP_TOOLS = {
       // 3. Fallback
       return {
         galaxy_id: galaxyId,
+        data_mode: 'analytical_mock',
         geometry_source: 'procedural_illustrative',
         coordinate_frame: coordFrame,
         center_of_mass_kpc: [0, 0, 0],
         half_mass_radius_kpc: 2.5,
         total_stellar_mass_msun: 1e10,
         components: { star: { count: Math.min(maxParticles, 2000), sampled: true } },
+        provenance: {
+          data_mode: 'analytical_mock',
+          geometry_source: 'procedural_illustrative',
+          source: 'procedural_fallback',
+        },
         status: 'PROCEDURAL_FALLBACK',
       };
     },
@@ -404,7 +446,12 @@ export const CANONICAL_MCP_TOOLS = {
       if (evolutionTracksData && evolutionTracksData.tracks) {
         for (const [tid, trk] of Object.entries(evolutionTracksData.tracks)) {
           if (tid.toLowerCase() === galaxyId.toLowerCase() || trk.galaxy_id?.toLowerCase() === galaxyId.toLowerCase()) {
-            return trk;
+            const dataMode = trk.data_mode || 'simulation_derived';
+            return {
+              ...trk,
+              data_mode: dataMode,
+              provenance: trk.provenance || { data_mode: dataMode, tree_type: trk.tree_type || 'SubLink' },
+            };
           }
         }
       }

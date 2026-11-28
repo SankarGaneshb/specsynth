@@ -98,6 +98,44 @@ def test_evolution_track_cross_language_parity():
     assert "main_branch" in node_data
     assert len(py_data["main_branch"]) == len(node_data["main_branch"])
     assert len(py_data["main_branch"]) >= 5
+    assert py_data.get("data_mode") == node_data.get("data_mode")
+    assert "provenance" in py_data and "provenance" in node_data
+
+
+def test_data_mode_and_provenance_cross_language_parity():
+    """Verify data_mode and structured provenance parity for inspect and 3D galaxy tools."""
+    py_server = SpecsynthMCPServer()
+
+    # 1. specsynth_inspect_galaxy
+    py_resp = py_server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {"name": "specsynth_inspect_galaxy", "arguments": {"galaxy_id": "0"}},
+    })
+    py_inspect = json.loads(py_resp["result"]["content"][0]["text"])
+    node_inspect = run_node_mcp_call("specsynth_inspect_galaxy", {"galaxy_id": "0"})
+
+    assert "data_mode" in py_inspect
+    assert "data_mode" in node_inspect
+    assert py_inspect["data_mode"] == node_inspect["data_mode"] == "cached_reference"
+    assert "provenance" in py_inspect and "provenance" in node_inspect
+
+    # 2. specsynth_get_3d_galaxy
+    py_3d_resp = py_server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "tools/call",
+        "params": {"name": "specsynth_get_3d_galaxy", "arguments": {"galaxy_id": "tng100_subhalo_real"}},
+    })
+    py_3d = json.loads(py_3d_resp["result"]["content"][0]["text"])
+    node_3d = run_node_mcp_call("specsynth_get_3d_galaxy", {"galaxy_id": "tng100_subhalo_real"})
+
+    assert "data_mode" in py_3d
+    assert "data_mode" in node_3d
+    assert py_3d["data_mode"] == node_3d["data_mode"] == "simulation_derived"
+    assert "provenance" in py_3d and "provenance" in node_3d
+
 
 
 def test_legacy_aliases_across_languages():

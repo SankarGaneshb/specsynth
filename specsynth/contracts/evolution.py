@@ -4,6 +4,8 @@ import json
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from specsynth.contracts.data_mode import DataMode
+
 
 @dataclass
 class ProgenitorNode:
@@ -56,6 +58,7 @@ class ProgenitorNode:
     subhalo_id: str | int = ""
 
     def __post_init__(self):
+        DataMode.from_str(self.data_mode)
         if self.redshift < 0.0:
             raise ValueError(f"Redshift must be non-negative, got {self.redshift}")
         if self.stellar_mass_msun <= 0.0:
@@ -161,8 +164,7 @@ class EvolutionaryTrackContract:
     version: str = "1.0.0"
 
     def __post_init__(self):
-        if self.data_mode not in ("simulation_derived", "illustrative_demo"):
-            raise ValueError(f"Invalid data_mode '{self.data_mode}'. Must be 'simulation_derived' or 'illustrative_demo'.")
+        DataMode.from_str(self.data_mode)
         self.validate()
 
     def validate(self) -> None:

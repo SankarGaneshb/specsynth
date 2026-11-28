@@ -11,6 +11,8 @@ from enum import Enum
 from typing import Any, Optional
 import numpy as np
 
+from specsynth.contracts.data_mode import DataMode, propagate_mode
+
 
 class ParticleType(str, Enum):
     """Astrophysical particle and component types in simulations."""
@@ -124,6 +126,7 @@ class Galaxy3DContract:
     center_of_mass_kpc: tuple[float, float, float]
     half_mass_radius_kpc: float
     components: dict[str, ParticleBatchContract]
+    data_mode: str = "simulation_derived"
     version: str = "1.0.0"
     provenance: dict[str, Any] = field(default_factory=dict)
 
@@ -132,6 +135,12 @@ class Galaxy3DContract:
 
     def validate(self) -> None:
         """Validate 3D galaxy physical parameters."""
+        mode = DataMode.from_str(self.data_mode)
+        if self.geometry_source == GeometrySource.PROCEDURAL_ILLUSTRATIVE and mode.is_empirical_science():
+            raise ValueError(
+                f"Truth-in-labeling violation: Procedural illustrative galaxy cannot have empirical data_mode '{self.data_mode}'"
+            )
+
         if not self.galaxy_id:
             raise ValueError("galaxy_id cannot be empty")
         if self.redshift < 0.0:
@@ -158,6 +167,7 @@ class Galaxy3DContract:
         return {
             "version": self.version,
             "galaxy_id": self.galaxy_id,
+            "data_mode": self.data_mode,
             "geometry_source": self.geometry_source.value,
             "coordinate_frame": self.coordinate_frame.value,
             "redshift": self.redshift,
@@ -212,6 +222,7 @@ class Galaxy3DContract:
         return {
             "version": self.version,
             "galaxy_id": self.galaxy_id,
+            "data_mode": self.data_mode,
             "geometry_source": self.geometry_source.value,
             "coordinate_frame": self.coordinate_frame.value,
             "redshift": float(self.redshift),
@@ -292,6 +303,42 @@ class Galaxy3DContract:
         # Flatten in C order to shape (1, N_age * N_met)
         return H.reshape(1, n_age * n_met).astype(np.float64)
 
+    def to_observation_contract(
+        self,
+        photometry_points: list[Any],
+        sed_wave_angstrom: np.ndarray,
+        sed_flux_obs_cgs: np.ndarray,
+        cosmology: dict[str, float],
+        dust_model: str = "charlot_fall_2000",
+        igm_model: str = "madau_1995",
+        ssp_model: str = "fsps_v3.2_mist",
+        requested_data_mode: Optional[str] = None,
+    ) -> Any:
+        """
+        Produce a SyntheticObservationContract from this 3D galaxy model
+        enforcing the non-promotion invariant fail-closed.
+        """
+        from specsynth.contracts.photometry import SyntheticObservationContract
+        eff_mode = propagate_mode(self.data_mode, requested_data_mode).value
+        return SyntheticObservationContract(
+            galaxy_id=self.galaxy_id,
+            redshift=self.redshift,
+            cosmology=cosmology,
+            dust_model=dust_model,
+            igm_model=igm_model,
+            ssp_model=ssp_model,
+            photometry=photometry_points,
+            sed_wave_angstrom=sed_wave_angstrom,
+            sed_flux_obs_cgs=sed_flux_obs_cgs,
+            data_mode=eff_mode,
+            provenance={
+                "source_galaxy_id": self.galaxy_id,
+                "source_geometry": self.geometry_source.value,
+                "source_data_mode": self.data_mode,
+                "inherited_data_mode": eff_mode,
+            },
+        )
+
     @classmethod
     def from_particles(
         cls,
@@ -301,6 +348,7 @@ class Galaxy3DContract:
         geometry_source: GeometrySource = GeometrySource.SIMULATION_DERIVED,
         align_angular_momentum: bool = True,
         provenance: dict[str, Any] | None = None,
+        data_mode: str | None = None,
     ) -> Galaxy3DContract:
         """
         Factory method to construct a validated Galaxy3DContract from particle batches.
@@ -372,6 +420,14 @@ class Galaxy3DContract:
         prov = provenance.copy() if provenance else {}
         prov.setdefault("pipeline", "specsynth.contracts.Galaxy3DContract.from_particles")
 
+        if data_mode is None:
+            if geometry_source == GeometrySource.PROCEDURAL_ILLUSTRATIVE:
+                actual_data_mode = DataMode.ANALYTICAL_MOCK.value
+            else:
+                actual_data_mode = DataMode.SIMULATION_DERIVED.value
+        else:
+            actual_data_mode = str(data_mode)
+
         return cls(
             galaxy_id=galaxy_id,
             geometry_source=geometry_source,
@@ -380,5 +436,6 @@ class Galaxy3DContract:
             center_of_mass_kpc=(float(com[0]), float(com[1]), float(com[2])),
             half_mass_radius_kpc=float(r_half),
             components=final_comps,
+            data_mode=actual_data_mode,
             provenance=prov,
         )

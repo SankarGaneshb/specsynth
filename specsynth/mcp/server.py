@@ -175,6 +175,7 @@ class SpecsynthMCPServer:
                         av_val = float(args["dust_av"]) if "dust_av" in args else found.get("av", 0.0)
                         return {
                             "galaxy_id": found.get("id", gid_str),
+                            "data_mode": "cached_reference",
                             "redshift": z_val,
                             "physical_properties": {
                                 "log_mstar": found.get("log_mstar"),
@@ -187,6 +188,7 @@ class SpecsynthMCPServer:
                             "fluxes_cgs": found.get("fluxes", {}),
                             "sed": found.get("sed", []),
                             "provenance": {
+                                "data_mode": "cached_reference",
                                 "source": f"{cat_name} (IllustrisTNG-100 Mock)",
                                 "engine": "SpecSynth Python GEMM Backend",
                                 "sentry_status": found.get("sentry_status", "PASS"),
@@ -198,7 +200,10 @@ class SpecsynthMCPServer:
 
         # Fallback to standard tool_inspect_galaxy
         idx = int(galaxy_idx_arg or 0)
-        return tool_inspect_galaxy(base=base, galaxy_idx=idx)
+        res = tool_inspect_galaxy(base=base, galaxy_idx=idx)
+        if isinstance(res, dict) and "error" not in res and "data_mode" not in res:
+            res["data_mode"] = "cached_reference"
+        return res
 
     def _tool_calculate_cosmology(self, args: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -252,15 +257,23 @@ class SpecsynthMCPServer:
             try:
                 with open(manifest_p, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                geom_src = data.get("geometry_source", "simulation_derived")
+                data_mode = data.get("data_mode", "simulation_derived" if geom_src == "simulation_derived" else "analytical_mock")
                 return {
                     "galaxy_id": galaxy_id,
-                    "geometry_source": data.get("geometry_source", "simulation_derived"),
+                    "data_mode": data_mode,
+                    "geometry_source": geom_src,
                     "coordinate_frame": coord_frame,
                     "center_of_mass_kpc": data.get("center_of_mass_kpc", [0.0, 0.0, 0.0]),
                     "half_mass_radius_kpc": data.get("half_mass_radius_kpc", 2.85),
                     "total_stellar_mass_msun": data.get("total_stellar_mass_msun", 1.78e10),
                     "simulation_metadata": data.get("simulation_metadata", {}),
                     "total_particles": data.get("total_particles", 4000),
+                    "provenance": data.get("provenance", {
+                        "data_mode": data_mode,
+                        "geometry_source": geom_src,
+                        "source_file": str(manifest_p.name),
+                    }),
                     "status": "LOADED_FROM_SNAPSHOT",
                 }
             except Exception:
@@ -275,14 +288,23 @@ class SpecsynthMCPServer:
                         cat_data = json.load(f)
                     for g in cat_data.get("galaxies", []):
                         if g.get("id", "").lower() == galaxy_id.lower():
+                            is_sim = bool(g.get("galaxy3d"))
+                            geom_src = "simulation_derived" if is_sim else "procedural_illustrative"
+                            data_mode = "simulation_derived" if is_sim else "analytical_mock"
                             return {
                                 "galaxy_id": g["id"],
-                                "geometry_source": "simulation_derived" if g.get("galaxy3d") else "procedural_illustrative",
+                                "data_mode": data_mode,
+                                "geometry_source": geom_src,
                                 "coordinate_frame": coord_frame,
                                 "center_of_mass_kpc": [0.0, 0.0, 0.0],
                                 "half_mass_radius_kpc": g.get("galaxy3d", {}).get("half_mass_radius_kpc", 2.5),
                                 "total_stellar_mass_msun": 10 ** g.get("log_mstar", 10.0),
                                 "components": g.get("galaxy3d", {}).get("components", {}),
+                                "provenance": {
+                                    "data_mode": data_mode,
+                                    "geometry_source": geom_src,
+                                    "catalog": cat_name,
+                                },
                                 "status": "LOADED_FROM_CATALOG",
                             }
                 except Exception:
@@ -291,6 +313,7 @@ class SpecsynthMCPServer:
         # Standard clean fallback conforming to Galaxy3DContract
         return {
             "galaxy_id": galaxy_id,
+            "data_mode": "analytical_mock",
             "geometry_source": "procedural_illustrative",
             "coordinate_frame": coord_frame,
             "center_of_mass_kpc": [0.0, 0.0, 0.0],
@@ -298,6 +321,11 @@ class SpecsynthMCPServer:
             "total_stellar_mass_msun": 1e10,
             "components": {
                 "star": {"count": min(max_particles, 2000), "sampled": True},
+            },
+            "provenance": {
+                "data_mode": "analytical_mock",
+                "geometry_source": "procedural_illustrative",
+                "source": "procedural_fallback",
             },
             "status": "PROCEDURAL_FALLBACK",
         }

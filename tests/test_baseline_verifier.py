@@ -56,7 +56,7 @@ def test_current_repository_conforms_to_baseline():
 
     # Ensure every modified core file is tracked under an authorized milestone
     for item in res.modified_core_files:
-        assert item["milestone"] in ("P0", "P1", "P2", "P3", "P4", "P6", "P0-P6", "P0,#15", "P0,#16", "P0,#18")
+        assert item["milestone"] in ("P0", "P1", "P2", "P3", "P4", "P5", "P6", "P0-P6", "P0,#15", "P0,#16", "P0,#18")
         assert "feature" in item
 
 

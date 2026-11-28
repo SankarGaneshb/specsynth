@@ -113,6 +113,11 @@ ROADMAP_CORE_ALLOWLIST: dict[str, dict[str, Any]] = {
         "issue": "#14",
         "feature": "Canonical contract schemas namespace exports",
     },
+    "specsynth/contracts/data_mode.py": {
+        "milestone": "P5",
+        "issue": "#32",
+        "feature": "Canonical DataMode and scientific provenance classifications (v1.0.0)",
+    },
     "specsynth/contracts/ssp.py": {
         "milestone": "P0",
         "issue": "#14",

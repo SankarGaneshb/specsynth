@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Galaxy, FilterCurveData } from '../types/galaxy';
+import { Galaxy, FilterCurveData, DataMode } from '../types/galaxy';
 import { forwardModelGalaxy } from '../utils/physics';
 import { SedPlot } from './SedPlot';
 import { ColorColorPlot } from './ColorColorPlot';
 import { PhotometryBar } from './PhotometryBar';
 import { DiscoveryHypothesisCard } from './DiscoveryHypothesisCard';
 import { ProposalGeneratorModal } from './ProposalGeneratorModal';
+import { ProvenanceModal } from './ProvenanceModal';
 import {
   X,
   Sliders,
@@ -55,6 +56,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const [sliderAv, setSliderAv] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [isProposalOpen, setIsProposalOpen] = useState<boolean>(false);
+  const [isProvenanceModalOpen, setIsProvenanceModalOpen] = useState<boolean>(false);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [engineLatencyMs, setEngineLatencyMs] = useState<number | null>(null);
   const [isRecalculating, setIsRecalculating] = useState<boolean>(false);
@@ -84,6 +86,46 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const originGalaxy = baseGalaxy && baseGalaxy.id === galaxy.id ? baseGalaxy : galaxy;
   const baselineZ = originGalaxy.redshift;
   const baselineAv = originGalaxy.av;
+
+  // Determine effective data mode and styling for truth-in-labeling
+  let effectiveMode: DataMode = 'cached_reference';
+  if (originGalaxy.data_mode) {
+    effectiveMode = originGalaxy.data_mode;
+  } else if (originGalaxy.subhalo_id && (originGalaxy.subhalo_id === '424601' || originGalaxy.galaxy3d?.geometry_source === 'simulation_derived')) {
+    effectiveMode = 'simulation_derived';
+  } else if (isConnected) {
+    effectiveMode = 'live_computation';
+  } else if (originGalaxy.is_synthetic_scenario || originGalaxy.galaxy3d?.geometry_source === 'procedural_illustrative') {
+    effectiveMode = 'analytical_mock';
+  }
+
+  const modeBadgeStyles: Record<DataMode, { label: string; badge: string; drawerBadge: string }> = {
+    simulation_derived: {
+      label: 'SIMULATION-DERIVED',
+      badge: 'bg-emerald-950/80 text-emerald-300 border-emerald-600/70',
+      drawerBadge: 'bg-emerald-950 text-emerald-300 border-emerald-600',
+    },
+    cached_reference: {
+      label: 'CACHED REFERENCE',
+      badge: 'bg-indigo-950/80 text-indigo-300 border-indigo-600/70',
+      drawerBadge: 'bg-indigo-950 text-indigo-300 border-indigo-600',
+    },
+    live_computation: {
+      label: 'LIVE COMPUTATION',
+      badge: 'bg-amber-950/80 text-amber-300 border-amber-600/70',
+      drawerBadge: 'bg-amber-950 text-amber-300 border-amber-600',
+    },
+    analytical_mock: {
+      label: 'ANALYTICAL MOCK',
+      badge: 'bg-purple-950/80 text-purple-300 border-purple-600/70',
+      drawerBadge: 'bg-purple-950 text-purple-300 border-purple-600',
+    },
+    illustrative_demo: {
+      label: 'ILLUSTRATIVE DEMO',
+      badge: 'bg-slate-900/80 text-slate-300 border-slate-700/60',
+      drawerBadge: 'bg-slate-900 text-slate-300 border-slate-700',
+    },
+  };
 
   const currentZ = sliderZ !== null ? sliderZ : baselineZ;
   const currentAv = sliderAv !== null ? sliderAv : baselineAv;
@@ -350,13 +392,14 @@ print("[OK] In-browser and Python numerical parity verified.")
           <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse flex-shrink-0" />
           <h2 className="text-base font-bold text-slate-100 font-mono tracking-tight">{galaxy.id}</h2>
           
-          {/* Data Provenance Badge */}
-          <span
-            className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 shadow-sm"
-            title="Data Source: IllustrisTNG-100 Hydrodynamic Simulation Particle Mock"
+          {/* Data Provenance Badge (Clickable to open ProvenanceModal) */}
+          <button
+            onClick={() => setIsProvenanceModalOpen(true)}
+            className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shadow-sm transition-all hover:brightness-125 cursor-pointer ${modeBadgeStyles[effectiveMode].badge}`}
+            title="Click to view comprehensive data-mode provenance and audit trail"
           >
-            <span>IllustrisTNG-100 Mock</span>
-          </span>
+            <span>{modeBadgeStyles[effectiveMode].label}</span>
+          </button>
 
           {/* SpecSynth Engine / Mock Mode Indicator */}
           {isConnected ? (
@@ -672,6 +715,27 @@ print("[OK] In-browser and Python numerical parity verified.")
           </div>
         )}
 
+        {/* Data Provenance Summary Line inside Drawer */}
+        <div
+          onClick={() => setIsProvenanceModalOpen(true)}
+          className="flex items-center justify-between px-2.5 py-1.5 bg-cosmos-950/70 hover:bg-cosmos-950 border border-cosmos-800 hover:border-cosmos-700 rounded-lg text-xs cursor-pointer transition-colors group shadow-sm"
+          title="Click to view complete cryptographic provenance manifest and audit trail"
+        >
+          <div className="flex items-center space-x-2 truncate min-w-0">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Provenance:</span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${modeBadgeStyles[effectiveMode].drawerBadge}`}>
+              {effectiveMode}
+            </span>
+            <span className="text-[11px] text-slate-300 truncate font-mono">
+              {originGalaxy.subhalo_id === '424601' ? 'IllustrisTNG-100-1 (Subhalo 424601)' : (originGalaxy.provenance_type || 'TNG-100 Mock Suite')}
+            </span>
+          </div>
+          <span className="text-[10px] text-cyan-400 group-hover:text-cyan-300 font-medium flex items-center space-x-0.5 flex-shrink-0">
+            <span>Audit Trail</span>
+            <ChevronRight className="w-3 h-3" />
+          </span>
+        </div>
+
         {/* Supporting Physical Parameters: Single Roomy Row with Increased Legibility */}
         <div className="grid grid-cols-4 gap-2 text-xs">
           <div className="bg-cosmos-950/80 border border-cosmos-800 rounded-lg p-2 shadow-sm">
@@ -775,6 +839,14 @@ print("[OK] In-browser and Python numerical parity verified.")
         isOpen={isProposalOpen}
         onClose={() => setIsProposalOpen(false)}
         galaxy={galaxy}
+      />
+
+      {/* Data Mode Provenance & Audit Trail Modal */}
+      <ProvenanceModal
+        isOpen={isProvenanceModalOpen}
+        onClose={() => setIsProvenanceModalOpen(false)}
+        galaxy={originGalaxy}
+        isConnected={isConnected}
       />
     </aside>
   );

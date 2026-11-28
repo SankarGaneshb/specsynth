@@ -7,6 +7,11 @@ Enforces P0 Scope and Architecture Freeze (Issue #14).
 
 from __future__ import annotations
 
+from specsynth.contracts.data_mode import (
+    DataMode,
+    classify_source_data_mode,
+    propagate_mode,
+)
 from specsynth.contracts.evolution import (
     EvolutionaryTrackContract,
     MergerEvent,
@@ -38,6 +43,9 @@ __version__ = "1.0.0"
 
 __all__ = [
     "__version__",
+    "DataMode",
+    "propagate_mode",
+    "classify_source_data_mode",
     "SSPGridContract",
     "SimulationGalaxyContract",
     "ParticleType",

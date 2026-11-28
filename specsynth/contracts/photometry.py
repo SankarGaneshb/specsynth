@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 import numpy as np
 
+from specsynth.contracts.data_mode import DataMode
+
 
 @dataclass
 class PhotometryPointContract:
@@ -69,6 +71,7 @@ class SyntheticObservationContract:
     sed_wave_angstrom: np.ndarray
     sed_flux_obs_cgs: np.ndarray
     sed_flux_rest_lsun_angstrom: Optional[np.ndarray] = None
+    data_mode: str = "simulation_derived"
     version: str = "1.0.0"
     provenance: dict[str, Any] = field(default_factory=dict)
 
@@ -82,6 +85,7 @@ class SyntheticObservationContract:
 
     def validate(self) -> None:
         """Validate dimensions, non-negativity, and numerical integrity."""
+        DataMode.from_str(self.data_mode)
         if not self.galaxy_id:
             raise ValueError("galaxy_id cannot be empty")
         if self.redshift < 0:
@@ -104,6 +108,7 @@ class SyntheticObservationContract:
         return {
             "version": self.version,
             "galaxy_id": self.galaxy_id,
+            "data_mode": self.data_mode,
             "redshift": self.redshift,
             "cosmology": self.cosmology,
             "dust_model": self.dust_model,

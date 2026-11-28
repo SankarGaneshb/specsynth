@@ -9,6 +9,7 @@ import pytest
 from specsynth.contracts import (
     CANONICAL_MCP_TOOLS,
     CoordinateFrame,
+    DataMode,
     Galaxy3DContract,
     GeometrySource,
     ParticleBatchContract,
@@ -18,6 +19,7 @@ from specsynth.contracts import (
     SSPGridContract,
     SyntheticObservationContract,
     get_canonical_tool_schema,
+    propagate_mode,
 )
 
 
@@ -197,3 +199,102 @@ def test_canonical_mcp_tools():
 
     with pytest.raises(KeyError):
         get_canonical_tool_schema("non_existent_tool")
+
+
+def test_data_mode_enum_and_propagation():
+    """Verify DataMode parsing, categories, and non-promotion invariant."""
+    assert DataMode.from_str("simulation_derived") == DataMode.SIMULATION_DERIVED
+    assert DataMode.from_str("cached_reference") == DataMode.CACHED_REFERENCE
+    assert DataMode.from_str("live_computation") == DataMode.LIVE_COMPUTATION
+    assert DataMode.from_str("analytical_mock") == DataMode.ANALYTICAL_MOCK
+    assert DataMode.from_str("illustrative_demo") == DataMode.ILLUSTRATIVE_DEMO
+
+    # Empirical vs mock classification
+    assert DataMode.SIMULATION_DERIVED.is_empirical_science() is True
+    assert DataMode.LIVE_COMPUTATION.is_empirical_science() is True
+    assert DataMode.ANALYTICAL_MOCK.is_empirical_science() is False
+    assert DataMode.ANALYTICAL_MOCK.is_mock_or_demo() is True
+
+    # Non-promotion invariant
+    assert propagate_mode(DataMode.SIMULATION_DERIVED) == DataMode.SIMULATION_DERIVED
+    assert propagate_mode(DataMode.ANALYTICAL_MOCK, DataMode.ANALYTICAL_MOCK) == DataMode.ANALYTICAL_MOCK
+
+    with pytest.raises(ValueError, match="Non-promotion invariant violation"):
+        propagate_mode(DataMode.ANALYTICAL_MOCK, DataMode.SIMULATION_DERIVED)
+
+    with pytest.raises(ValueError, match="Non-promotion invariant violation"):
+        propagate_mode(DataMode.ILLUSTRATIVE_DEMO, DataMode.LIVE_COMPUTATION)
+
+
+def test_truth_in_labeling_procedural_cannot_be_simulation_derived():
+    """Verify that procedural mock cannot claim empirical simulation_derived mode."""
+    stars = ParticleBatchContract(
+        particle_type=ParticleType.STAR,
+        coordinates_kpc=np.zeros((10, 3)),
+        velocities_km_s=np.zeros((10, 3)),
+        masses_msun=np.ones(10) * 1e4,
+    )
+
+    with pytest.raises(ValueError, match="Truth-in-labeling violation"):
+        Galaxy3DContract(
+            galaxy_id="mock_specimen",
+            geometry_source=GeometrySource.PROCEDURAL_ILLUSTRATIVE,
+            coordinate_frame=CoordinateFrame.PHYSICAL_REST,
+            redshift=1.0,
+            center_of_mass_kpc=(0.0, 0.0, 0.0),
+            half_mass_radius_kpc=2.0,
+            components={"star": stars},
+            data_mode="simulation_derived",
+        )
+
+
+def test_galaxy3d_non_promotion_to_observation():
+    """Verify non-promotion invariant when generating observations from 3D models."""
+    stars = ParticleBatchContract(
+        particle_type=ParticleType.STAR,
+        coordinates_kpc=np.zeros((10, 3)),
+        velocities_km_s=np.zeros((10, 3)),
+        masses_msun=np.ones(10) * 1e4,
+    )
+    mock_galaxy = Galaxy3DContract(
+        galaxy_id="mock_specimen",
+        geometry_source=GeometrySource.PROCEDURAL_ILLUSTRATIVE,
+        coordinate_frame=CoordinateFrame.PHYSICAL_REST,
+        redshift=1.0,
+        center_of_mass_kpc=(0.0, 0.0, 0.0),
+        half_mass_radius_kpc=2.0,
+        components={"star": stars},
+        data_mode="analytical_mock",
+    )
+
+    phot = [
+        PhotometryPointContract(
+            filter_name="jwst_nircam_f200w",
+            pivot_wavelength_angstrom=19886.0,
+            flux_density_ujy=10.0,
+            ab_magnitude=21.4,
+        )
+    ]
+    sed_wave = np.linspace(1000, 50000, 20)
+    sed_flux = np.ones(20, dtype=np.float32) * 1e-18
+    cosmo = {"H0": 67.74, "Om0": 0.3089, "Ol0": 0.6911}
+
+    # Inherits analytical_mock
+    obs = mock_galaxy.to_observation_contract(
+        photometry_points=phot,
+        sed_wave_angstrom=sed_wave,
+        sed_flux_obs_cgs=sed_flux,
+        cosmology=cosmo,
+    )
+    assert obs.data_mode == "analytical_mock"
+
+    # Attempted promotion raises
+    with pytest.raises(ValueError, match="Non-promotion invariant violation"):
+        mock_galaxy.to_observation_contract(
+            photometry_points=phot,
+            sed_wave_angstrom=sed_wave,
+            sed_flux_obs_cgs=sed_flux,
+            cosmology=cosmo,
+            requested_data_mode="simulation_derived",
+        )
+

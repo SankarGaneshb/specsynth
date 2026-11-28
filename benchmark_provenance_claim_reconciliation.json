@@ -1,0 +1,52 @@
+{
+  "milestone": "P5",
+  "issue": "#32",
+  "title": "End-to-End Data-Mode Provenance & Claim Reconciliation",
+  "timestamp_utc": "2026-11-28T09:34:20.286283+00:00",
+  "checks": {
+    "datamode_enumeration": {
+      "status": "PASS",
+      "modes": [
+        "illustrative_demo",
+        "analytical_mock",
+        "cached_reference",
+        "live_computation",
+        "simulation_derived"
+      ]
+    },
+    "non_promotion_invariant": {
+      "status": "PASS",
+      "mock_to_sim_rejected": true,
+      "demo_to_live_rejected": true
+    },
+    "truth_in_labeling": {
+      "status": "PASS",
+      "mock_simulation_derived_rejected": true,
+      "factory_mode_default": "analytical_mock",
+      "derived_observation_mode": "analytical_mock"
+    },
+    "mcp_data_mode_parity": {
+      "status": "PASS",
+      "py_inspect_mode": "cached_reference",
+      "node_inspect_mode": "cached_reference",
+      "py_3d_mode": "simulation_derived",
+      "node_3d_mode": "simulation_derived"
+    },
+    "frozen_baseline_conformance": {
+      "status": "PASS",
+      "baseline_sha": "8e36648d7bad",
+      "head_sha": "bd12c560cece",
+      "modified_core_files": 19,
+      "unauthorized_core_files": 0
+    },
+    "reviewer_readiness_reconciliation": {
+      "status": "PASS",
+      "assessment_path": "docs\\governance\\reviewer_readiness_assessment.md",
+      "ci_test_run_cited": "318 passed, 5 skipped, 0 failed",
+      "claim_to_evidence_matrix_present": true,
+      "genuine_simulation_cutout_cited": true,
+      "sublink_merger_tree_cited": true
+    }
+  },
+  "status": "PASS"
+}
