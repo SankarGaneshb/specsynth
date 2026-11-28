@@ -72,6 +72,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
     latencyMs: number;
   } | null>(null);
   const [backendPulse, setBackendPulse] = useState<boolean>(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   // Active request tracking refs to prevent stale responses
   const activeFingerprintRef = useRef<string>('');
@@ -84,6 +85,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       setSliderZ(null);
       setSliderAv(null);
       setBackendCalculation(null);
+      setBackendError(null);
       setBackendPulse(false);
     }
     if (activeTab === 'discovery' && !galaxy?.discovery_profile && galaxy?.sentry_status !== 'ANOMALY') {
@@ -154,8 +156,10 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const isAvEdited = sliderAv !== null && Math.abs(sliderAv - baselineAv) > 0.01;
   const isEdited = isZEdited || isAvEdited;
 
-  // Compute deterministic active fingerprint
-  const currentFingerprint = `${originGalaxy.id}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}`;
+  // Compute deterministic active fingerprint binding input-data identity and engine version
+  const inputDataId = (originGalaxy as any).manifest_hash || (originGalaxy as any).subhalo_id || (originGalaxy as any).dataset_name || 'baseline';
+  const engineCfgVersion = 'v1.2.0';
+  const currentFingerprint = `${originGalaxy.id}:${inputDataId}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}:cfg=${engineCfgVersion}`;
   activeFingerprintRef.current = currentFingerprint;
   activeGalaxyIdRef.current = originGalaxy.id;
 
@@ -179,7 +183,9 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       activeLatencyMs = backendCalculation!.latencyMs;
     } else {
       activeExecutionMode = 'client_browser';
-      activeExecutor = 'In-Browser JavaScript Engine (WebAssembly/JS)';
+      activeExecutor = backendError
+        ? `In-Browser JS Engine (Backend Fallback: ${backendError})`
+        : 'In-Browser JavaScript Engine (WebAssembly/JS)';
       activeLatencyMs = null;
     }
   }
@@ -190,7 +196,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       setBackendCalculation(null);
       return;
     }
-    const reqFingerprint = `${originGalaxy.id}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}`;
+    const reqFingerprint = `${originGalaxy.id}:${inputDataId}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}:cfg=${engineCfgVersion}`;
     const reqGalaxyId = originGalaxy.id;
     const reqZ = currentZ;
     const reqAv = currentAv;
@@ -203,31 +209,55 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       try {
         const url = `http://127.0.0.1:8000/api/inspect?galaxy_id=${encodeURIComponent(reqGalaxyId)}&z=${reqZ}&av=${reqAv}`;
         const res = await fetch(url, { signal: controller.signal });
-        if (res.ok) {
-          const data = await res.json();
-          const elapsed = Math.round(performance.now() - t0);
-          // Discard if user moved sliders or switched galaxies while request was in-flight
-          if (
-            activeFingerprintRef.current === reqFingerprint &&
-            activeGalaxyIdRef.current === reqGalaxyId
-          ) {
-            setBackendCalculation({
-              fingerprint: reqFingerprint,
-              galaxyId: reqGalaxyId,
-              fluxes: data.fluxes_cgs || data.fluxes || {},
-              mags: data.photometry || data.mags || {},
-              sed: data.sed,
-              executor: data.execution_provenance?.executor || 'SpecSynth Python GEMM (:8000)',
-              latencyMs: elapsed,
-            });
-            setBackendPulse(true);
-            setTimeout(() => setBackendPulse(false), 900);
+        if (!res.ok) {
+          if (activeFingerprintRef.current === reqFingerprint) {
+            setBackendError(`HTTP ${res.status}: Backend calculation failed`);
+            setBackendCalculation(null);
           }
+          return;
         }
-      } catch {
+        const data = await res.json();
+        // Explicit validation: reject malformed responses lacking fluxes or mags
+        const hasFluxes = Boolean(data && (data.fluxes_cgs || data.fluxes));
+        const hasMags = Boolean(data && (data.photometry || data.mags));
+        if (!hasFluxes || !hasMags) {
+          if (activeFingerprintRef.current === reqFingerprint) {
+            setBackendError('Malformed backend payload: missing fluxes or photometry');
+            setBackendCalculation(null);
+          }
+          return;
+        }
+
+        const elapsed = Math.round(performance.now() - t0);
+        // Discard if user moved sliders or switched galaxies while request was in-flight
+        if (
+          activeFingerprintRef.current === reqFingerprint &&
+          activeGalaxyIdRef.current === reqGalaxyId
+        ) {
+          setBackendError(null);
+          setBackendCalculation({
+            fingerprint: reqFingerprint,
+            galaxyId: reqGalaxyId,
+            fluxes: data.fluxes_cgs || data.fluxes || {},
+            mags: data.photometry || data.mags || {},
+            sed: data.sed,
+            executor: data.execution_provenance?.executor || 'SpecSynth Python GEMM (:8000)',
+            latencyMs: elapsed,
+          });
+          setBackendPulse(true);
+          setTimeout(() => setBackendPulse(false), 900);
+        }
+      } catch (err: any) {
         // Fallback gracefully to client-side forward model without leaving a stale backend state
+        if (err?.name !== 'AbortError' && activeFingerprintRef.current === reqFingerprint) {
+          setBackendError(err?.message || 'Network error communicating with SpecSynth engine');
+          setBackendCalculation(null);
+        }
       } finally {
-        setIsRecalculating(false);
+        // Prevent stale superseded requests from resetting active recalculating state
+        if (activeFingerprintRef.current === reqFingerprint) {
+          setIsRecalculating(false);
+        }
       }
     }, 180);
 
@@ -235,7 +265,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [sliderZ, sliderAv, isConnected, originGalaxy.id, currentZ, currentAv]);
+  }, [sliderZ, sliderAv, isConnected, originGalaxy.id, currentZ, currentAv, inputDataId]);
 
   // Scientific Extrapolation check (outside standard simulation calibration bounds)
   const isExtrapolatedRegime = currentZ > 8.0 || currentAv > 2.5;

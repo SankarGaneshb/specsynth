@@ -26,6 +26,7 @@ from specsynth.contracts.data_mode import (
     compute_file_sha256,
     propagate_mode,
     validate_source_provenance_evidence,
+    verify_simulation_asset,
     verify_simulation_cutout_manifest,
 )
 from specsynth.contracts.photometry import (
@@ -41,9 +42,12 @@ from specsynth.contracts.galaxy3d import (
 )
 
 
-# Path to authentic IllustrisTNG cutout in repo
+# Path to authentic IllustrisTNG cutout and manifest in repo
 TNG_REAL_CUTOUT = os.path.join(
     os.path.dirname(__file__), "..", "sample_models", "3d", "tng100_subhalo_real.hdf5"
+)
+TNG_REAL_MANIFEST = os.path.join(
+    os.path.dirname(__file__), "..", "sample_models", "3d", "tng100_subhalo_real_manifest.json"
 )
 EXPECTED_TNG_SHA256 = "8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31"
 
@@ -69,7 +73,11 @@ def test_unmanifested_galaxy_cannot_be_simulation_derived():
     with pytest.raises(ValueError, match="requires identifiable snapshot"):
         validate_source_provenance_evidence(
             DataMode.SIMULATION_DERIVED,
-            {"source_name": "IllustrisTNG-100-1"},
+            {
+                "source_name": "IllustrisTNG-100-1",
+                "verification_status": VerificationStatus.VERIFIED,
+                "content_sha256": EXPECTED_TNG_SHA256,
+            },
         )
 
 
@@ -120,7 +128,7 @@ def test_tampered_checksum_fails_verification():
                 "source_name": "IllustrisTNG-100-1",
                 "subhalo_id": 424601,
                 "snapshot": 99,
-                "verification_status": VerificationStatus.DECLARED,
+                "verification_status": VerificationStatus.VERIFIED,
                 "content_sha256": "bad_digest_12345",
                 "expected_sha256": EXPECTED_TNG_SHA256,
             },
@@ -135,6 +143,75 @@ def test_tampered_checksum_fails_verification():
                 "subhalo_id": 424601,
                 "snapshot": 99,
                 "verification_status": VerificationStatus.INVALID,
+                "content_sha256": EXPECTED_TNG_SHA256,
+            },
+        )
+
+
+def test_rule_1_source_provenance_cannot_be_self_certified():
+    """Rule 1: SourceProvenance cannot be constructed with status=VERIFIED without on-disk manifest proof."""
+    # Attempting to self-certify with verification_status='verified' without manifest_path
+    with pytest.raises(ValueError, match="Rule 1 Violation.*manifest"):
+        SourceProvenance(
+            data_mode=DataMode.SIMULATION_DERIVED,
+            source_name="IllustrisTNG-100-1",
+            source_id=424601,
+            verification_status=VerificationStatus.VERIFIED,
+            content_sha256=EXPECTED_TNG_SHA256,
+        )
+
+    # Attempting to self-certify with a nonexistent manifest path
+    with pytest.raises(ValueError, match="Rule 1 Violation.*manifest"):
+        SourceProvenance(
+            data_mode=DataMode.SIMULATION_DERIVED,
+            source_name="IllustrisTNG-100-1",
+            source_id=424601,
+            verification_status=VerificationStatus.VERIFIED,
+            content_sha256=EXPECTED_TNG_SHA256,
+            manifest_path="nonexistent_manifest.json",
+        )
+
+
+def test_rule_1_operative_factory_verification():
+    """Rule 1: Verified state emerges only from an active operation against the on-disk asset."""
+    if not os.path.exists(TNG_REAL_CUTOUT):
+        pytest.skip(f"TNG cutout asset not found at {TNG_REAL_CUTOUT}")
+
+    # Operative verification produces verified SourceProvenance
+    src = SourceProvenance.from_verified_asset(
+        file_path=TNG_REAL_CUTOUT,
+        manifest_path=TNG_REAL_MANIFEST,
+    )
+    assert src.is_verified is True
+    assert src.verification_status == VerificationStatus.VERIFIED
+    assert src.content_sha256 == EXPECTED_TNG_SHA256
+    assert src.source_name == "IllustrisTNG-100-1"
+    assert src.source_id == 424601
+
+
+def test_rule_2_declared_status_rejected_for_simulation_derived():
+    """Rule 2: Scientific claims must fail closed; simulation_derived rejects DECLARED status."""
+    with pytest.raises(ValueError, match="Rule 2 Violation.*verification_status='verified'"):
+        validate_source_provenance_evidence(
+            DataMode.SIMULATION_DERIVED,
+            {
+                "source_name": "IllustrisTNG-100-1",
+                "subhalo_id": 424601,
+                "snapshot": 99,
+                "verification_status": VerificationStatus.DECLARED,
+                "content_sha256": EXPECTED_TNG_SHA256,
+            },
+        )
+
+    # Missing checksum is also strictly rejected for simulation_derived
+    with pytest.raises(ValueError, match="Rule 2 Violation.*cryptographic checksum"):
+        validate_source_provenance_evidence(
+            DataMode.SIMULATION_DERIVED,
+            {
+                "source_name": "IllustrisTNG-100-1",
+                "subhalo_id": 424601,
+                "snapshot": 99,
+                "verification_status": VerificationStatus.VERIFIED,
             },
         )
 
@@ -197,6 +274,7 @@ def test_typed_source_and_execution_provenance_roundtrip():
         verification_status=VerificationStatus.VERIFIED,
         content_sha256=EXPECTED_TNG_SHA256,
         expected_sha256=EXPECTED_TNG_SHA256,
+        manifest_path=TNG_REAL_MANIFEST,
     )
     assert src.is_verified is True
     assert src.verification_state == "VERIFIED_AGAINST_MANIFEST"

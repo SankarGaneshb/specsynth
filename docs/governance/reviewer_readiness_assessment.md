@@ -72,9 +72,10 @@
       - Snap `snap_067` ($z=0.48$): mass ratio = 0.182, mass residual = 4.75%.
       - Snap `snap_040` ($z=1.50$): mass ratio = 0.384, mass residual = 16.96%.
     * Cryptographic SubLink SHA-256: `10ac59358b957c97ccf4628073f17b2d201713614a9c1cc702ff8651bf108b40`.
-* **Truth-in-Labeling & DataMode Contracts (Issue #32)**:
-  - Canonical `DataMode` enumeration: `simulation_derived`, `cached_reference`, `live_computation`, `analytical_mock`, `illustrative_demo`.
-  - Non-promotion invariant: mock or procedural models cannot be promoted to simulation-derived or live computation.
+* **Truth-in-Labeling & DataMode Contracts (Issue #32 / #33)**:
+  - Canonical `DataMode` enumeration: `simulation_derived`, `cached_reference`, `analytical_mock`, `illustrative_demo`, `unknown_unverified` (legacy alias `live_computation` is deprecated in favor of orthogonal `ExecutionMode.LIVE_BACKEND`).
+  - Canonical `ExecutionMode` enumeration: `live_backend`, `client_browser`, `precomputed_cached`.
+  - Non-promotion invariant: mock or procedural models cannot be promoted to simulation-derived or live backend computation.
 
 ---
 
@@ -94,12 +95,16 @@
 
 ### 5. Frontend & Delivery Evidence
 * **Truth-in-Labeling UI Badges**:
-  - Dynamic persistent badge in `GalaxyInspector.tsx`:
-    * `SIMULATION-DERIVED`: Emerald badge for genuine snapshot cutouts (Subhalo 424601).
-    * `CACHED REFERENCE`: Indigo badge for calibrated mock catalogs (GOODS-S, TNG-100 calibration).
-    * `LIVE COMPUTATION`: Amber badge for real-time `:8000` Python GEMM synthesis.
-    * `ANALYTICAL MOCK`: Purple badge for procedural Hernquist/exponential disk models.
-    * `ILLUSTRATIVE DEMO`: Slate badge for interface demo fallbacks.
+  - Independent persistent badges in `GalaxyInspector.tsx`:
+    * **Source Provenance (`DataMode`)**:
+      - `SIMULATION-DERIVED`: Emerald badge for verified snapshot cutouts (Subhalo 424601).
+      - `CACHED REFERENCE`: Indigo badge for calibrated mock catalogs (GOODS-S, TNG-100 calibration).
+      - `ANALYTICAL MOCK`: Purple badge for procedural Hernquist/exponential disk models.
+      - `ILLUSTRATIVE DEMO`: Slate badge for interface demo fallbacks.
+    * **Execution Provenance (`ExecutionMode`)**:
+      - `LIVE BACKEND`: Amber badge for real-time `:8000` Python GEMM synthesis with measured roundtrip latency.
+      - `CLIENT BROWSER`: Cyan badge for in-browser JavaScript forward modeling (with fallback error reporting).
+      - `PRECOMPUTED CACHED`: Slate badge for baseline catalog lookups without slider edits.
   - Clicking badge opens `ProvenanceModal.tsx` displaying full simulation metadata, particle accounting, cosmological parameters, and SHA-256 digests.
   - Summary line inside inspector drawer provides immediate provenance transparency.
 * **Testing & CI Evidence**:
@@ -110,21 +115,23 @@
 
 ## 🔬 Section 6: Claim-to-Evidence Matrix
 
+> **Governance Note on Verification Scope**: Status labels in this matrix (e.g. `TEST-CONFORMANT`) document that software contract specifications, unit test suites, cryptographic hashing pipelines, and UI race safety handlers have passed 100% of automated checks. A passing software test suite verifies implementation conformance to specified software contracts; it does not constitute independent astrophysical validation of external cosmological simulation physics.
+
 | # | Claim | Implementation / Code Location | Verification Test / Evidence | Limitations / Scope Boundaries | Reviewer Status |
 | :- | :--- | :--- | :--- | :--- | :-: |
-| **C1** | **GEMM Spectral Contraction** contracts spectra into broadband photometry in-flight without intermediate disk I/O. | `specsynth/core.py` (`synth_block`) | `tests/test_core.py::test_synth_block`, `test_benchmark.py` | Requires 2D grid $(N_{\rm age} \times N_{\rm met}, N_\lambda)$ matching filter wavelength grids. | **VERIFIED** |
-| **C2** | **Zero-Core-Modification Pluggability**: External engines plug in via clean adapter interfaces without altering core code. | `specsynth/adapters/base.py`, `conformance.py` | `scripts/verify_frozen_baseline.py`, `tests/test_adapter_conformance.py`, `tests/test_external_engine_workflow.py` | Core frozen at commit `8e36648`. Adapters must satisfy 11-point invariant suite. | **VERIFIED** |
-| **C3** | **FLRW Analytical Parity**: Closed-form distance measures agree with numerical quadrature to $< 10^{-5}$ relative error. | `specsynth/cosmology.py` (`FlatLambdaCDM`) | `tests/test_validation_external.py::test_cosmology_quadrature_parity` | Flat $\Lambda\text{CDM}$ geometry ($\Omega_k = 0$). | **VERIFIED** |
-| **C4** | **Dust Absorption Non-Amplification**: Attenuation strictly decreases line-of-sight flux ($F_{\rm obs} \le F_{\rm int}$). | `specsynth/core.py` (`attenuation_curve`) | `tests/test_core.py::test_dust_attenuation_energy_conservation` | Continuum attenuation only; far-IR dust thermal re-emission is not synthesized. | **VERIFIED** |
-| **C5** | **Madau (1995) IGM Absorption**: Accurate Ly$\alpha$ blanketing and photoelectric edge ($912\,\text{\AA}$). | `specsynth/igm.py` (`madau_igm_transmission`) | `tests/test_validation_external.py::test_madau_transmission_ranges` | Neutral hydrogen continuum and discrete resonant transitions (Ly$\alpha$ through Ly$\theta$). | **VERIFIED** |
-| **C6** | **Genuine Simulation Provenance**: Authentic cutout contains real particles with preserved IDs. | `sample_models/3d/tng100_subhalo_real.hdf5`, `specsynth/simulation.py` | `scripts/fetch_tng_cutout.py --verify`, `tests/test_simulation_3d.py` | 14,500 real star, 4,200 gas, 8,000 DM particles from TNG100-1 snapshot 99. | **VERIFIED** |
-| **C7** | **Authentic SubLink Merger Trees**: Progenitor branches maintain tree connectivity and mass conservation ($\le 35\%$). | `sample_models/evolution/`, `specsynth/evolution.py` | `scripts/fetch_tng_merger_tree.py --verify`, `tests/test_evolution.py` | 10 snapshots ($z \in [0.0, 8.5]$); residual budget accounts for tidal stripping and gas accretion. | **VERIFIED** |
-| **C8** | **Dual-Runtime MCP Parity**: Python and Node.js MCP servers exhibit matching schemas, outputs, and provenance. | `specsynth/mcp/server.py`, `perandam-psi/mcp_server.mjs` | `tests/test_mcp_parity.py`, `tests/test_mcp_canonical.py` | JSON-RPC 2.0 stdio transport; 10 canonical tools with identical parameter signatures. | **VERIFIED** |
-| **C9** | **Truth-in-Labeling & Non-Promotion**: Mock/demo models cannot be promoted to simulation-derived. | `specsynth/contracts/data_mode.py`, `GalaxyInspector.tsx` | `tests/test_contracts.py::test_truth_in_labeling_*` | DataMode strictly enforced across contracts, MCP, and UI badges. | **VERIFIED** |
-| **C10** | **Orthogonal Source vs Execution Provenance**: Source data mode and execution mode are modeled as independent, fail-closed contracts. | `specsynth/contracts/data_mode.py`, `photometry.py`, `galaxy3d.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `benchmark_scientific_provenance_truth.json` | Default is `unknown_unverified`; strict cryptographic/simulation evidence required to claim `simulation_derived`. | **VERIFIED** |
-| **C11** | **Truthful Execution Reporting & Zero UI Hardcoding**: UI and MCP report actual runtime computation engine without conflating connection status with computation authenticity. | `GalaxyInspector.tsx`, `ProvenanceModal.tsx`, `specsynth/mcp/server.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `tests/test_mcp_parity.py` | Sliders report `client_browser`; backend contractions report `live_backend` with latency; baseline lookups report `precomputed_cached`. Zero hardcoded galaxy IDs or particle fallbacks. | **VERIFIED** |
-| **C12** | **Evidence-Based Verification Status**: Explicit distinction between `declared`, `verified`, `invalid`, and `unknown` status with disk byte SHA-256 validation. | `specsynth/contracts/data_mode.py` (`verify_simulation_cutout_manifest`) | `tests/test_scientific_provenance_truth.py`, `perandam-psi/test/scientific_provenance_truth.test.ts` | Rejects unmanifested models, fabricated identities, and tampered checksums. Genuine cutout verified against authentic SHA-256 (`8f5853a5fb...`). | **VERIFIED** |
-| **C13** | **Atomic Request Fingerprinting & Race Elimination**: Unique input fingerprints (`galaxy_id:z:av`) guard against stale or out-of-order backend responses. | `GalaxyInspector.tsx` (`activeFingerprintRef`, `activeCalculationState`) | `perandam-psi/test/scientific_provenance_truth.test.ts`, `node test/e2e_loaf.mjs` | Immediate synchronous invalidation on slider move; superseded backend responses and responses from switched galaxies are strictly discarded. | **VERIFIED** |
+| **C1** | **GEMM Spectral Contraction** contracts spectra into broadband photometry in-flight without intermediate disk I/O. | `specsynth/core.py` (`synth_block`) | `tests/test_core.py::test_synth_block`, `test_benchmark.py` | Requires 2D grid $(N_{\rm age} \times N_{\rm met}, N_\lambda)$ matching filter wavelength grids. | **TEST-CONFORMANT** |
+| **C2** | **Zero-Core-Modification Pluggability**: External engines plug in via clean adapter interfaces without altering core code. | `specsynth/adapters/base.py`, `conformance.py` | `scripts/verify_frozen_baseline.py`, `tests/test_adapter_conformance.py`, `tests/test_external_engine_workflow.py` | Core frozen at commit `8e36648`. Adapters must satisfy 11-point invariant suite. | **TEST-CONFORMANT** |
+| **C3** | **FLRW Analytical Parity**: Closed-form distance measures agree with numerical quadrature to $< 10^{-5}$ relative error. | `specsynth/cosmology.py` (`FlatLambdaCDM`) | `tests/test_validation_external.py::test_cosmology_quadrature_parity` | Flat $\Lambda\text{CDM}$ geometry ($\Omega_k = 0$). | **TEST-CONFORMANT** |
+| **C4** | **Dust Absorption Non-Amplification**: Attenuation strictly decreases line-of-sight flux ($F_{\rm obs} \le F_{\rm int}$). | `specsynth/core.py` (`attenuation_curve`) | `tests/test_core.py::test_dust_attenuation_energy_conservation` | Continuum attenuation only; far-IR dust thermal re-emission is not synthesized. | **TEST-CONFORMANT** |
+| **C5** | **Madau (1995) IGM Absorption**: Accurate Ly$\alpha$ blanketing and photoelectric edge ($912\,\text{\AA}$). | `specsynth/igm.py` (`madau_igm_transmission`) | `tests/test_validation_external.py::test_madau_transmission_ranges` | Neutral hydrogen continuum and discrete resonant transitions (Ly$\alpha$ through Ly$\theta$). | **TEST-CONFORMANT** |
+| **C6** | **Genuine Simulation Provenance**: Authentic cutout contains real particles with preserved IDs. | `sample_models/3d/tng100_subhalo_real.hdf5`, `specsynth/simulation.py` | `scripts/fetch_tng_cutout.py --verify`, `tests/test_simulation_3d.py` | 14,500 real star, 4,200 gas, 8,000 DM particles from TNG100-1 snapshot 99. | **TEST-CONFORMANT** |
+| **C7** | **Authentic SubLink Merger Trees**: Progenitor branches maintain tree connectivity and mass conservation ($\le 35\%$). | `sample_models/evolution/`, `specsynth/evolution.py` | `scripts/fetch_tng_merger_tree.py --verify`, `tests/test_evolution.py` | 10 snapshots ($z \in [0.0, 8.5]$); residual budget accounts for tidal stripping and gas accretion. | **TEST-CONFORMANT** |
+| **C8** | **Dual-Runtime MCP Parity**: Python and Node.js MCP servers exhibit matching schemas, outputs, and provenance. | `specsynth/mcp/server.py`, `perandam-psi/mcp_server.mjs` | `tests/test_mcp_parity.py`, `tests/test_mcp_canonical.py` | JSON-RPC 2.0 stdio transport; 10 canonical tools with identical parameter signatures. | **TEST-CONFORMANT** |
+| **C9** | **Truth-in-Labeling & Non-Promotion**: Mock/demo models cannot be promoted to simulation-derived. | `specsynth/contracts/data_mode.py`, `GalaxyInspector.tsx` | `tests/test_contracts.py::test_truth_in_labeling_*` | DataMode strictly enforced across contracts, MCP, and UI badges. | **TEST-CONFORMANT** |
+| **C10** | **Orthogonal Source vs Execution Provenance**: Source data mode and execution mode are modeled as independent, fail-closed contracts. | `specsynth/contracts/data_mode.py`, `photometry.py`, `galaxy3d.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `benchmark_scientific_provenance_truth.json` | Default is `unknown_unverified`; strict cryptographic/simulation evidence required to claim `simulation_derived`. | **TEST-CONFORMANT** |
+| **C11** | **Truthful Execution Reporting & Zero UI Hardcoding**: UI and MCP report actual runtime computation engine without conflating connection status with computation authenticity. | `GalaxyInspector.tsx`, `ProvenanceModal.tsx`, `specsynth/mcp/server.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `tests/test_mcp_parity.py` | Sliders report `client_browser`; backend contractions report `live_backend` with latency; baseline lookups report `precomputed_cached`. Zero hardcoded galaxy IDs or particle fallbacks. | **TEST-CONFORMANT** |
+| **C12** | **Evidence-Based Verification Status (Rule 1 & Rule 2)**: Verification is an active operation against authoritative on-disk manifests (`verify_simulation_asset`). Cannot be self-certified as a field. Simulation-derived claims fail closed if unverified. | `specsynth/contracts/data_mode.py` (`verify_simulation_asset`), `perandam-psi/mcp_server.mjs` | `tests/test_scientific_provenance_truth.py`, `perandam-psi/test/scientific_provenance_truth.test.ts` | Rejects unmanifested models, fabricated identities, self-certified statuses, and tampered checksums. Genuine cutout verified against authentic SHA-256 (`8f5853a5fb...`). | **TEST-CONFORMANT** |
+| **C13** | **Atomic Request Fingerprinting & Race Elimination**: Unique input fingerprints (`galaxy_id:input_data_hash:z:av:cfg`) and guarded `finally` blocks guard against stale responses and state churn. | `GalaxyInspector.tsx` (`activeFingerprintRef`, `activeGalaxyIdRef`) | `perandam-psi/test/scientific_provenance_truth.test.ts`, `node test/e2e_loaf.mjs` | Immediate synchronous invalidation on slider move; superseded backend responses and responses from switched galaxies are strictly discarded. `finally` block cannot clear recalculation of superseded requests. | **TEST-CONFORMANT** |
 
 ---
 
@@ -133,9 +140,13 @@
 To eliminate ambiguity across scientific tooling, Specsynth and PerandamΨ define strict operational criteria for provenance states:
 
 1. **`declared`**: Metadata asserted by an ingestion source, catalog record, or user query without independent cryptographic or on-disk manifest validation. A declared record preserves descriptive metadata (e.g. subhalo ID, catalog name) but cannot self-certify simulation authenticity.
-2. **`verified`**: Independently verified against physical assets on disk. Requires computing the cryptographic SHA-256 digest from actual file bytes, confirming equality with the trusted repository manifest (`8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31`), and matching snapshot and subhalo metadata.
+2. **`verified`**: Independently verified against physical assets on disk via an operative check (`verify_simulation_asset`). Requires computing the cryptographic SHA-256 digest from actual file bytes, confirming equality with the trusted repository manifest (`8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31`), and matching snapshot and subhalo metadata.
 3. **`invalid`**: Explicit failure state triggered when a file is missing, metadata is contradicted, or the computed content digest diverges from the expected checksum.
 4. **`unknown`**: Default fail-closed state for unmanifested specimens or unverified inputs. Cannot be promoted to empirical simulation modes.
+
+### Core Governance Invariants
+- **Rule 1 — Verification must be an operation, not a field**: A caller can never establish authenticity simply by passing `verification_status="verified"`. The verified state emerges exclusively from an active verification operation that evaluates the physical asset against an authoritative manifest on disk.
+- **Rule 2 — Scientific claims must fail closed**: If an input source cannot be operatively verified against an authoritative manifest, Specsynth preserves data where appropriate, but classifies provenance as `declared` or `unknown`, never `simulation_derived`.
 
 ---
 

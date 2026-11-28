@@ -177,6 +177,7 @@ def run_audit() -> Dict[str, Any]:
             verification_status=VerificationStatus.VERIFIED,
             content_sha256=EXPECTED_TNG_SHA256,
             expected_sha256=EXPECTED_TNG_SHA256,
+            manifest_path=str(REPO_ROOT / "sample_models" / "3d" / "tng100_subhalo_real_manifest.json"),
         )
         ep = ExecutionProvenance(
             execution_mode=ExecutionMode.LIVE_BACKEND,
@@ -306,21 +307,41 @@ def run_audit() -> Dict[str, Any]:
         ac5_details["node_test_exit_code"] = node_test_run.returncode
         ac5_details["node_test_passed"] = node_test_run.returncode == 0
 
-        # Cross-parity tool output checks
-        inspect_node = run_node_tool("specsynth_inspect_galaxy", {"galaxy_id": "TNG-DISC-01"})
-        g3d_node = run_node_tool("specsynth_get_3d_galaxy", {"galaxy_id": "TNG-0059"})
+        # Cross-parity tool output checks with strict normalized value assertions
+        inspect_node = run_node_tool("specsynth_inspect_galaxy", {"galaxy_id": "tng_424601"})
+        inspect_py = mcp._tool_inspect_galaxy({"galaxy_id": "tng_424601"})
 
-        ac5_details["inspect_has_source"] = "source_provenance" in inspect_node
-        ac5_details["inspect_has_exec"] = "execution_provenance" in inspect_node
-        ac5_details["g3d_has_source"] = "source_provenance" in g3d_node
-        ac5_details["g3d_has_exec"] = "execution_provenance" in g3d_node
+        g3d_node = run_node_tool("specsynth_get_3d_galaxy", {"galaxy_id": "tng100_subhalo_real"})
+        g3d_py = mcp._tool_get_3d_galaxy({"galaxy_id": "tng100_subhalo_real"})
+
+        trk_node = run_node_tool("specsynth_get_evolution_track", {"galaxy_id": "424601"})
+        trk_py = mcp._tool_get_evolution_track({"galaxy_id": "424601"})
+
+        inspect_parity = (
+            inspect_py["data_mode"] == inspect_node["data_mode"] == "simulation_derived"
+            and inspect_py["source_provenance"]["verification_status"] == inspect_node["source_provenance"]["verification_status"] == "verified"
+            and inspect_py["source_provenance"]["checksum_sha256"] == inspect_node["source_provenance"]["checksum_sha256"] == "8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31"
+        )
+        g3d_parity = (
+            g3d_py["data_mode"] == g3d_node["data_mode"] == "simulation_derived"
+            and g3d_py["source_provenance"]["verification_status"] == g3d_node["source_provenance"]["verification_status"] == "verified"
+            and g3d_py["source_provenance"]["verified_authentic"] == g3d_node["source_provenance"]["verified_authentic"] is True
+        )
+        trk_parity = (
+            trk_py["data_mode"] == trk_node["data_mode"] == "simulation_derived"
+            and trk_py["source_provenance"]["verification_status"] == trk_node["source_provenance"]["verification_status"] == "verified"
+            and trk_py["source_provenance"]["subhalo_id"] == trk_node["source_provenance"]["subhalo_id"] == 424601
+        )
+
+        ac5_details["inspect_parity"] = inspect_parity
+        ac5_details["g3d_parity"] = g3d_parity
+        ac5_details["trk_parity"] = trk_parity
 
         ac5_passed = (
             node_test_run.returncode == 0
-            and ac5_details["inspect_has_source"]
-            and ac5_details["inspect_has_exec"]
-            and ac5_details["g3d_has_source"]
-            and ac5_details["g3d_has_exec"]
+            and inspect_parity
+            and g3d_parity
+            and trk_parity
         )
     except Exception as exc:
         ac5_details["error"] = str(exc)
@@ -342,10 +363,11 @@ def run_audit() -> Dict[str, Any]:
         gi_path = REPO_ROOT / "perandam-psi" / "src" / "components" / "GalaxyInspector.tsx"
         gi_src = gi_path.read_text(encoding="utf-8")
 
-        has_fingerprint = "currentFingerprint = `${originGalaxy.id}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}`" in gi_src
+        has_fingerprint = "currentFingerprint = `${originGalaxy.id}:${inputDataId}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}:cfg=${engineCfgVersion}`" in gi_src
         has_match_check = "activeFingerprintRef.current === reqFingerprint" in gi_src
         has_galaxy_match = "activeGalaxyIdRef.current === reqGalaxyId" in gi_src
         has_abort_controller = "new AbortController()" in gi_src
+        has_finally_guard = "if (activeFingerprintRef.current === reqFingerprint)" in gi_src
 
         # 2. Check ProvenanceModal.tsx for zero fallback manufacture
         pm_path = REPO_ROOT / "perandam-psi" / "src" / "components" / "ProvenanceModal.tsx"
@@ -359,6 +381,7 @@ def run_audit() -> Dict[str, Any]:
         ac6_details["has_match_check"] = has_match_check
         ac6_details["has_galaxy_match"] = has_galaxy_match
         ac6_details["has_abort_controller"] = has_abort_controller
+        ac6_details["has_finally_guard"] = has_finally_guard
         ac6_details["no_fallback_tng"] = no_fallback_tng
         ac6_details["no_fallback_snap"] = no_fallback_snap
         ac6_details["no_hardcoded_cosmology"] = no_hardcoded_cosmology
@@ -369,6 +392,7 @@ def run_audit() -> Dict[str, Any]:
             has_match_check,
             has_galaxy_match,
             has_abort_controller,
+            has_finally_guard,
             no_fallback_tng,
             no_fallback_snap,
             no_hardcoded_cosmology,

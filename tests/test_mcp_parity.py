@@ -79,12 +79,29 @@ def test_cosmology_cross_language_parity():
         assert diff_t_lb < 0.05, f"Lookback time mismatch at z={z}: py={py_data['lookback_time_gyr']}, node={node_data['lookback_time_gyr']}"
 
 
+def normalize_mcp_dict(d: dict) -> dict:
+    """Normalize payload by stripping dynamic timestamps and latencies for strict cross-runtime parity."""
+    out = {}
+    for k, v in d.items():
+        if k in ("timestamp_utc", "latency_ms", "timestamp", "executor", "engine"):
+            continue
+        if isinstance(v, dict):
+            out[k] = normalize_mcp_dict(v)
+        elif isinstance(v, list):
+            out[k] = [normalize_mcp_dict(item) if isinstance(item, dict) else item for item in v]
+        elif isinstance(v, float):
+            out[k] = round(v, 3)
+        else:
+            out[k] = v
+    return out
+
+
 def test_evolution_track_cross_language_parity():
     """Verify progenitor evolutionary track parity across Python and Node.js MCP servers."""
     py_server = SpecsynthMCPServer()
 
+    # 1. Bundled procedural track fails closed to analytical_mock on both runtimes
     galaxy_id = "TNG-DISC-01"
-
     py_resp = py_server.handle_request({
         "jsonrpc": "2.0",
         "id": 2,
@@ -94,19 +111,32 @@ def test_evolution_track_cross_language_parity():
     py_data = json.loads(py_resp["result"]["content"][0]["text"])
     node_data = run_node_mcp_call("specsynth_get_evolution_track", {"galaxy_id": galaxy_id})
 
-    assert "main_branch" in py_data
-    assert "main_branch" in node_data
+    assert "main_branch" in py_data and "main_branch" in node_data
     assert len(py_data["main_branch"]) == len(node_data["main_branch"])
-    assert len(py_data["main_branch"]) >= 5
-    assert py_data.get("data_mode") == node_data.get("data_mode")
-    assert "provenance" in py_data and "provenance" in node_data
+    assert py_data.get("data_mode") == node_data.get("data_mode") == "analytical_mock"
+    assert py_data["source_provenance"]["verification_status"] == node_data["source_provenance"]["verification_status"] == "declared"
+
+    # 2. Authentic SubLink merger tree is verified simulation_derived on both runtimes
+    py_sub_resp = py_server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {"name": "specsynth_get_evolution_track", "arguments": {"galaxy_id": "424601"}},
+    })
+    py_sub = json.loads(py_sub_resp["result"]["content"][0]["text"])
+    node_sub = run_node_mcp_call("specsynth_get_evolution_track", {"galaxy_id": "424601"})
+
+    assert py_sub.get("data_mode") == node_sub.get("data_mode") == "simulation_derived"
+    assert py_sub["source_provenance"]["verification_status"] == node_sub["source_provenance"]["verification_status"] == "verified"
+    assert py_sub["source_provenance"]["subhalo_id"] == node_sub["source_provenance"]["subhalo_id"] == 424601
+    assert py_sub["source_provenance"]["simulation"] == node_sub["source_provenance"]["simulation"] == "IllustrisTNG-100-1"
 
 
 def test_data_mode_and_provenance_cross_language_parity():
-    """Verify data_mode and structured provenance parity for inspect and 3D galaxy tools."""
+    """Verify data_mode and structured provenance parity for inspect and 3D galaxy tools across 4 regimes."""
     py_server = SpecsynthMCPServer()
 
-    # 1. specsynth_inspect_galaxy
+    # Regime 1: Calibrated reference mock catalog galaxy
     py_resp = py_server.handle_request({
         "jsonrpc": "2.0",
         "id": 4,
@@ -116,25 +146,52 @@ def test_data_mode_and_provenance_cross_language_parity():
     py_inspect = json.loads(py_resp["result"]["content"][0]["text"])
     node_inspect = run_node_mcp_call("specsynth_inspect_galaxy", {"galaxy_id": "0"})
 
-    assert "data_mode" in py_inspect
-    assert "data_mode" in node_inspect
     assert py_inspect["data_mode"] == node_inspect["data_mode"] == "cached_reference"
-    assert "provenance" in py_inspect and "provenance" in node_inspect
+    assert py_inspect["source_provenance"]["verification_status"] == node_inspect["source_provenance"]["verification_status"] == "declared"
+    assert py_inspect["source_provenance"]["verified_authentic"] == node_inspect["source_provenance"]["verified_authentic"] is False
 
-    # 2. specsynth_get_3d_galaxy
-    py_3d_resp = py_server.handle_request({
+    # Regime 2: Authentic simulation cutout inspection (tng_424601)
+    py_tng_resp = py_server.handle_request({
         "jsonrpc": "2.0",
         "id": 5,
+        "method": "tools/call",
+        "params": {"name": "specsynth_inspect_galaxy", "arguments": {"galaxy_id": "tng_424601"}},
+    })
+    py_tng = json.loads(py_tng_resp["result"]["content"][0]["text"])
+    node_tng = run_node_mcp_call("specsynth_inspect_galaxy", {"galaxy_id": "tng_424601"})
+
+    assert py_tng["data_mode"] == node_tng["data_mode"] == "simulation_derived"
+    assert py_tng["source_provenance"]["verification_status"] == node_tng["source_provenance"]["verification_status"] == "verified"
+    assert py_tng["source_provenance"]["verified_authentic"] == node_tng["source_provenance"]["verified_authentic"] is True
+    assert py_tng["source_provenance"]["checksum_sha256"] == node_tng["source_provenance"]["checksum_sha256"] == "8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31"
+
+    # Regime 3: Authentic 3D galaxy cutout (tng100_subhalo_real)
+    py_3d_resp = py_server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 6,
         "method": "tools/call",
         "params": {"name": "specsynth_get_3d_galaxy", "arguments": {"galaxy_id": "tng100_subhalo_real"}},
     })
     py_3d = json.loads(py_3d_resp["result"]["content"][0]["text"])
     node_3d = run_node_mcp_call("specsynth_get_3d_galaxy", {"galaxy_id": "tng100_subhalo_real"})
 
-    assert "data_mode" in py_3d
-    assert "data_mode" in node_3d
     assert py_3d["data_mode"] == node_3d["data_mode"] == "simulation_derived"
-    assert "provenance" in py_3d and "provenance" in node_3d
+    assert py_3d["source_provenance"]["verification_status"] == node_3d["source_provenance"]["verification_status"] == "verified"
+    assert py_3d["source_provenance"]["verified_authentic"] == node_3d["source_provenance"]["verified_authentic"] is True
+
+    # Regime 4: Procedural 3D model (goods_s_508_0)
+    py_proc_resp = py_server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "tools/call",
+        "params": {"name": "specsynth_get_3d_galaxy", "arguments": {"galaxy_id": "goods_s_508_0"}},
+    })
+    py_proc = json.loads(py_proc_resp["result"]["content"][0]["text"])
+    node_proc = run_node_mcp_call("specsynth_get_3d_galaxy", {"galaxy_id": "goods_s_508_0"})
+
+    assert py_proc["data_mode"] == node_proc["data_mode"] == "analytical_mock"
+    assert py_proc["source_provenance"]["verification_status"] == node_proc["source_provenance"]["verification_status"] == "declared"
+    assert py_proc["source_provenance"]["verified_authentic"] == node_proc["source_provenance"]["verified_authentic"] is False
 
 
 

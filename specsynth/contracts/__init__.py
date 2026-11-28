@@ -17,6 +17,7 @@ from specsynth.contracts.data_mode import (
     compute_file_sha256,
     propagate_mode,
     validate_source_provenance_evidence,
+    verify_simulation_asset,
     verify_simulation_cutout_manifest,
 )
 from specsynth.contracts.evolution import (
@@ -52,11 +53,14 @@ __all__ = [
     "__version__",
     "DataMode",
     "ExecutionMode",
+    "VerificationStatus",
     "SourceProvenance",
     "ExecutionProvenance",
     "propagate_mode",
     "classify_source_data_mode",
     "validate_source_provenance_evidence",
+    "verify_simulation_asset",
+    "verify_simulation_cutout_manifest",
     "SSPGridContract",
     "SimulationGalaxyContract",
     "ParticleType",

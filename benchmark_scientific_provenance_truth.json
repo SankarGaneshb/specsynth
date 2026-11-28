@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-11-28T15:48:27.362595+00:00",
+  "timestamp_utc": "2026-11-28T16:34:33.224120+00:00",
   "milestone": "P1 / Issue #33",
   "overall_status": "ALL_PASSED",
   "passed_criteria": 7,
@@ -12,7 +12,7 @@
       "details": {
         "empty_provenance_rejected": "Truth-in-labeling violation: Claimed data_mode 'simulation_derived' requires an authentic simulation name in provenance, got 'None'",
         "fabricated_tng_rejected": "Truth-in-labeling violation: Claimed data_mode 'simulation_derived' has unverified provenance status.",
-        "tampered_checksum_rejected": "Truth-in-labeling violation: Cryptographic checksum mismatch: content 'tampered_hash_0000' != expected '8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31'",
+        "tampered_checksum_rejected": "Rule 2 Violation: Claimed data_mode 'simulation_derived' requires verified provenance, got 'None'",
         "disk_cutout_verification": "Cryptographic SHA-256 verified (8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31) matching IllustrisTNG-100-1 Snapshot 99 Subhalo 424601."
       }
     },
@@ -80,10 +80,9 @@
       "details": {
         "node_test_exit_code": 0,
         "node_test_passed": true,
-        "inspect_has_source": true,
-        "inspect_has_exec": true,
-        "g3d_has_source": true,
-        "g3d_has_exec": true
+        "inspect_parity": true,
+        "g3d_parity": true,
+        "trk_parity": true
       }
     },
     {
@@ -95,6 +94,7 @@
         "has_match_check": true,
         "has_galaxy_match": true,
         "has_abort_controller": true,
+        "has_finally_guard": true,
         "no_fallback_tng": true,
         "no_fallback_snap": true,
         "no_hardcoded_cosmology": true,
