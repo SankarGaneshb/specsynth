@@ -58,6 +58,7 @@ DEFAULT_SUBHALO_ID = 424601
 DEFAULT_SNAPSHOT = 99
 DEFAULT_SIMULATION = "IllustrisTNG-100-1"
 DEFAULT_TREE_PATH = repo_root / "sample_models" / "evolution" / "tng100_subhalo_424601_sublink_tree.json"
+DEFAULT_RAW_TREE_PATH = repo_root / "sample_models" / "evolution" / "tng100_subhalo_424601_sublink_raw.json"
 DEFAULT_MANIFEST_PATH = repo_root / "sample_models" / "evolution" / "tng100_subhalo_424601_sublink_manifest.json"
 DEFAULT_PERANDAM_PATH = repo_root / "perandam-psi" / "src" / "data" / "evolution_tracks.json"
 
@@ -189,31 +190,50 @@ def download_sublink_tree(
     api_key: str,
     subhalo_id: int = DEFAULT_SUBHALO_ID,
     snapshot: int = DEFAULT_SNAPSHOT,
-    output_path: Path = DEFAULT_TREE_PATH,
+    output_path: Path = DEFAULT_RAW_TREE_PATH,
 ) -> bool:
     """Download live SubLink merger tree from IllustrisTNG API using user key."""
-    if not api_key:
+    key = (api_key or os.environ.get("TNG_API_KEY", "")).strip().strip("'\"")
+    if not key:
         print("[FAIL] Missing TNG API key. Live download requires '--api-key YOUR_KEY' or $env:TNG_API_KEY.")
         return False
 
     url = f"https://www.tng-project.org/api/TNG100-1/snapshots/{snapshot}/subhalos/{subhalo_id}/sublink/mpb.json"
-    headers = {"api-key": api_key, "User-Agent": "specsynth-merger-tree-fetcher/1.0"}
-    req = urllib.request.Request(url, headers=headers)
+    headers = {"api-key": key, "User-Agent": "specsynth-merger-tree-fetcher/1.0"}
 
     print(f"[*] Requesting live SubLink tree from: {url}")
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        with open(output_path, "w", encoding="utf-8", newline="\n") as f:
-            json.dump(data, f, indent=2)
-        print(f"[OK] Successfully downloaded live SubLink tree to {output_path}")
-        return True
-    except urllib.error.HTTPError as e:
-        print(f"[FAIL] TNG API HTTP Error {e.code}: {e.reason}")
-        return False
-    except Exception as e:
-        print(f"[FAIL] Network or parse error: {e}")
-        return False
+        import requests
+        session = requests.Session()
+        session.headers.update(headers)
+        resp = session.get(url, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+                json.dump(data, f, indent=2)
+            print(f"[OK] Successfully downloaded live SubLink tree to {output_path}")
+            return True
+        else:
+            body_msg = resp.text[:300].strip() if resp.text else ""
+            print(f"[FAIL] TNG API HTTP Error {resp.status_code}: {resp.reason}")
+            if body_msg:
+                print(f"[SERVER RESPONSE] {body_msg}")
+            return False
+    except ImportError:
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+                json.dump(data, f, indent=2)
+            print(f"[OK] Successfully downloaded live SubLink tree to {output_path}")
+            return True
+        except urllib.error.HTTPError as e:
+            print(f"[FAIL] TNG API HTTP Error {e.code}: {e.reason}")
+            return False
+        except Exception as e:
+            print(f"[FAIL] Network or parse error: {e}")
+            return False
 
 
 def main() -> None:

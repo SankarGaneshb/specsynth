@@ -202,11 +202,19 @@ def test_ab_magnitude_zero_point_against_astropy_flux_density():
     assert abs(mag) < 1e-4, f"AB zero point mismatch: {mag:.6f} mag"
 
 
-def test_dust_attenuation_energy_conservation():
+def test_dust_attenuation_non_amplification_invariant():
     """
-    Physical law: Dust attenuation can only absorb/scatter stellar photons, never create them.
+    Physical law: Dust attenuation in the UV/optical/NIR can only absorb and scatter stellar photons,
+    never amplify or create them (absorption non-amplification invariant).
     Integrated flux of dust-attenuated spectra must be strictly <= intrinsic unattenuated flux:
-    integral(F_attenuated d_lambda) <= integral(F_intrinsic d_lambda)
+        integral(F_attenuated d_lambda) <= integral(F_intrinsic d_lambda)
+
+    Scientific Note on Dust Energy Balance:
+    Full dust energy balance requires equating absorbed stellar UV/optical luminosity with emitted
+    thermal dust luminosity in the mid- and far-infrared (e.g. L_dust = integral(F_int - F_att) d_lambda).
+    Because Specsynth models stellar population synthesis and forward-models UV-to-NIR photometry
+    (without synthesizing far-IR dust thermal re-emission), full dust energy balance is explicitly
+    NOT implemented. This test verifies the physical absorption non-amplification invariant.
     """
     from specsynth.core import attenuation_curve, synth_block
 
@@ -258,37 +266,135 @@ def test_dust_power_law_scaling_limits():
 
 
 # -----------------------------------------------------------------------------
-# 5. Direct Astropy FLRW and SFH Mass Conservation Parity (Milestone 2 / P1)
+# 5. Direct Astropy FLRW and SFH Mass Conservation Parity (Milestone P1 / GitHub Milestone #2)
 # -----------------------------------------------------------------------------
 
 def test_astropy_flrw_cosmology_direct_parity():
     """
     Directly verify Specsynth FlatLambdaCDM against Astropy's native FlatLambdaCDM.
-    Tests comoving, luminosity, and angular diameter distances for z in [0.05, 5.0].
-    Tolerance: relative error < 1e-5.
+    Tests comoving, luminosity, and angular diameter distances, plus lookback time and cosmic age,
+    across a documented fine redshift grid z in [0.0, 10.0] for Planck 2018 and WMAP9.
+    Tolerance: relative error < 1e-5 (scientifically rigorous).
     Requires scipy for Astropy's hypergeometric elliptic integration.
     """
     pytest.importorskip("scipy.special")
     from astropy.cosmology import FlatLambdaCDM as AstropyFlatLambdaCDM
     from specsynth.cosmology import FlatLambdaCDM
 
-    H0 = 67.74
-    Om0 = 0.3089
-    spec_cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
-    astro_cosmo = AstropyFlatLambdaCDM(H0=H0, Om0=Om0)
+    test_models = [
+        ("Planck 2015/2018", 67.74, 0.3089),
+        ("WMAP9", 69.3, 0.286),
+    ]
+    test_redshifts = [0.0, 0.01, 0.05, 0.1, 0.2, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0, 7.0, 10.0]
 
-    for z in [0.05, 0.5, 1.0, 2.0, 3.5, 5.0]:
-        d_c_spec = float(spec_cosmo.comoving_distance(z))
-        d_c_astro = float(astro_cosmo.comoving_distance(z).value)
-        assert abs(d_c_spec - d_c_astro) / d_c_astro < 1e-5
+    for model_name, H0, Om0 in test_models:
+        spec_cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+        astro_cosmo = AstropyFlatLambdaCDM(H0=H0, Om0=Om0)
 
-        d_l_spec = float(spec_cosmo.luminosity_distance(z))
-        d_l_astro = float(astro_cosmo.luminosity_distance(z).value)
-        assert abs(d_l_spec - d_l_astro) / d_l_astro < 1e-5
+        for z in test_redshifts:
+            if z == 0.0:
+                assert spec_cosmo.comoving_distance(0.0) == 0.0
+                assert spec_cosmo.luminosity_distance(0.0) == 0.0
+                assert spec_cosmo.angular_diameter_distance(0.0) == 0.0
+                assert spec_cosmo.lookback_time_gyr(0.0) == 0.0
+                # Age at z=0 matches Astropy
+                age_spec = float(spec_cosmo.cosmic_time_gyr(0.0))
+                age_astro = float(astro_cosmo.age(0.0).value)
+                assert abs(age_spec - age_astro) / age_astro < 1e-5
+                continue
 
-        d_a_spec = float(spec_cosmo.angular_diameter_distance(z))
-        d_a_astro = float(astro_cosmo.angular_diameter_distance(z).value)
-        assert abs(d_a_spec - d_a_astro) / d_a_astro < 1e-5
+            # Comoving distance
+            d_c_spec = float(spec_cosmo.comoving_distance(z))
+            d_c_astro = float(astro_cosmo.comoving_distance(z).value)
+            rel_err_dc = abs(d_c_spec - d_c_astro) / d_c_astro
+            assert rel_err_dc < 1e-5, f"[{model_name}] Comoving distance error at z={z}: {rel_err_dc:.2e}"
+
+            # Luminosity distance
+            d_l_spec = float(spec_cosmo.luminosity_distance(z))
+            d_l_astro = float(astro_cosmo.luminosity_distance(z).value)
+            rel_err_dl = abs(d_l_spec - d_l_astro) / d_l_astro
+            assert rel_err_dl < 1e-5, f"[{model_name}] Luminosity distance error at z={z}: {rel_err_dl:.2e}"
+
+            # Angular diameter distance
+            d_a_spec = float(spec_cosmo.angular_diameter_distance(z))
+            d_a_astro = float(astro_cosmo.angular_diameter_distance(z).value)
+            rel_err_da = abs(d_a_spec - d_a_astro) / d_a_astro
+            assert rel_err_da < 1e-5, f"[{model_name}] Angular diameter distance error at z={z}: {rel_err_da:.2e}"
+
+            # Lookback time
+            t_lb_spec = float(spec_cosmo.lookback_time_gyr(z))
+            t_lb_astro = float(astro_cosmo.lookback_time(z).value)
+            assert abs(t_lb_spec - t_lb_astro) / t_lb_astro < 1e-5, f"[{model_name}] Lookback time error at z={z}"
+
+            # Cosmic age
+            t_age_spec = float(spec_cosmo.cosmic_time_gyr(z))
+            t_age_astro = float(astro_cosmo.age(z).value)
+            assert abs(t_age_spec - t_age_astro) / t_age_astro < 1e-5, f"[{model_name}] Cosmic age error at z={z}"
+
+
+def test_cosmology_quadrature_convergence():
+    """
+    Verify numerical convergence of Gauss-Legendre quadrature in comoving distance calculation.
+    Compares quadrature orders n = [20, 50, 100, 200, 500] at z = 2.0.
+    """
+    from specsynth.cosmology import DEFAULT_COSMOLOGY
+
+    cosmo = DEFAULT_COSMOLOGY
+    z = 2.0
+    orders = [20, 50, 100, 200, 500]
+    distances = [float(cosmo.comoving_distance(z, n_steps=n)) for n in orders]
+
+    ref_d = distances[-1]  # n=500 high-order reference
+    for n, d in zip(orders[:-1], distances[:-1]):
+        rel_diff = abs(d - ref_d) / ref_d
+        if n >= 50:
+            assert rel_diff < 1e-5, f"Quadrature order n={n} failed convergence tolerance: rel_diff={rel_diff:.2e}"
+        if n >= 100:
+            assert rel_diff < 1e-6, f"Production order n={n} failed precision tolerance: rel_diff={rel_diff:.2e}"
+
+
+def test_cosmology_edge_cases_and_exceptions():
+    """
+    Test edge cases and fail-closed exception handling in FlatLambdaCDM:
+    1. z=0 returns exact zero distance and lookback time.
+    2. Negative z raises ValueError.
+    3. Non-positive H0 raises ValueError.
+    4. Om0 outside (0, 1] raises ValueError.
+    5. High-redshift (z=20) evaluates without overflow or NaNs.
+    """
+    from specsynth.cosmology import FlatLambdaCDM
+
+    cosmo = FlatLambdaCDM(H0=70.0, Om0=0.3)
+
+    # z = 0 boundary
+    assert cosmo.comoving_distance(0.0) == 0.0
+    assert cosmo.luminosity_distance(0.0) == 0.0
+    assert cosmo.angular_diameter_distance(0.0) == 0.0
+    assert cosmo.lookback_time_gyr(0.0) == 0.0
+
+    # Negative z must fail closed
+    with pytest.raises(ValueError, match="non-negative"):
+        cosmo.comoving_distance(-0.5)
+    with pytest.raises(ValueError, match="non-negative"):
+        cosmo.cosmic_time_gyr(-1.0)
+    with pytest.raises(ValueError, match="non-negative"):
+        cosmo.lookback_time_gyr(-0.01)
+
+    # Invalid cosmology parameters must fail closed
+    with pytest.raises(ValueError, match="positive"):
+        FlatLambdaCDM(H0=0.0, Om0=0.3)
+    with pytest.raises(ValueError, match="positive"):
+        FlatLambdaCDM(H0=-70.0, Om0=0.3)
+    with pytest.raises(ValueError, match=r"\(0, 1\]"):
+        FlatLambdaCDM(H0=70.0, Om0=0.0)
+    with pytest.raises(ValueError, match=r"\(0, 1\]"):
+        FlatLambdaCDM(H0=70.0, Om0=1.5)
+
+    # High-z stability
+    dc_20 = cosmo.comoving_distance(20.0)
+    t_20 = cosmo.cosmic_time_gyr(20.0)
+    assert np.isfinite(dc_20) and dc_20 > cosmo.comoving_distance(10.0)
+    assert np.isfinite(t_20) and 0.0 < t_20 < cosmo.cosmic_time_gyr(10.0)
 
 
 def test_sfh_delayed_tau_exact_mass_conservation():

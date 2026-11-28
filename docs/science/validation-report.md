@@ -16,7 +16,7 @@
 | **D03: TNG Cosmology** | Luminosity distance & dimming | Planck 2015 FLRW quadrature | $|\Delta D_L / D_L| < 10^{-5}$ | **PASS** |
 | **D04: NIRCam Filter Integrity** | SHA-256 Checksums | 6 target bands + F115W | 100% matched | **PASS** |
 | **D05: AB Zero Point Calibration** | $3631\,\mathrm{Jy}$ flat-spectrum standard | $|m_{\mathrm{AB}}| < 0.005\,\mathrm{mag}$ | Max $|\Delta m| = 0.0000\,\mathrm{mag}$ | **PASS** |
-| **D06: Dust Conservation** | Charlot & Fall energy conservation | Monotonic flux reduction vs $\tau$ | Monotonic decreasing | **PASS** |
+| **D06: Dust Attenuation Non-Amplification** | Charlot & Fall absorption non-amplification invariant | Monotonic flux reduction vs $\tau$ ($\int F_{\rm att}\,d\lambda \le \int F_{\rm int}\,d\lambda$) | Monotonic decreasing | **PASS** |
 | **D07: Float32 vs Float64** | Production vs double precision | $|\Delta m| < 0.002\,\mathrm{mag}$ across all 6 filters | Max $|\Delta m| < 0.0001\,\mathrm{mag}$ | **PASS** |
 | **D08: Repeatability** | Deterministic outputs | Repeated runs with identical seeds | Bitwise identical | **PASS** |
 

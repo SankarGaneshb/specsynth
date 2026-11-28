@@ -420,7 +420,7 @@ def download_tng_cutout(
     Download authentic cutout from official IllustrisTNG API.
     Fails closed if API key is not provided; does NOT silently generate mock data.
     """
-    key = api_key or os.environ.get("TNG_API_KEY")
+    key = (api_key or os.environ.get("TNG_API_KEY", "")).strip().strip("'\"")
     url = f"https://www.tng-project.org/api/TNG100-1/snapshots/{snapshot}/subhalos/{subhalo_id}/cutout.hdf5"
     print(f"\n[DOWNLOAD] Requesting cutout from: {url}")
 
@@ -438,16 +438,36 @@ def download_tng_cutout(
         print(f"  [ERROR] {err_msg}")
         raise RuntimeError(err_msg)
 
-    req = urllib.request.Request(url, headers={"api-key": key, "User-Agent": "specsynth-fetch/1.0"})
+    # Use requests to properly handle 302 redirects with custom authentication headers
     try:
-        with urllib.request.urlopen(req) as resp, open(output_path, "wb") as out_f:
-            while chunk := resp.read(65536):
-                out_f.write(chunk)
-        print(f"  [SUCCESS] Downloaded authentic cutout to {output_path}")
-        return True
-    except urllib.error.HTTPError as err:
-        print(f"  [ERROR] HTTP Error {err.code}: {err.reason}")
-        raise RuntimeError(f"HTTP Error {err.code} while downloading cutout from {url}: {err.reason}") from err
+        import requests
+        session = requests.Session()
+        session.headers.update({"api-key": key, "User-Agent": "specsynth-fetch/1.0"})
+        with session.get(url, stream=True, timeout=120) as resp:
+            if resp.status_code == 200:
+                with open(output_path, "wb") as out_f:
+                    for chunk in resp.iter_content(chunk_size=65536):
+                        if chunk:
+                            out_f.write(chunk)
+                print(f"  [SUCCESS] Downloaded authentic cutout to {output_path}")
+                return True
+            else:
+                body_msg = resp.text[:300].strip() if resp.text else ""
+                print(f"  [ERROR] HTTP Error {resp.status_code}: {resp.reason}")
+                if body_msg:
+                    print(f"  [SERVER RESPONSE] {body_msg}")
+                raise RuntimeError(f"HTTP Error {resp.status_code} while downloading cutout from {url}: {resp.reason}. Server message: {body_msg}")
+    except ImportError:
+        req = urllib.request.Request(url, headers={"api-key": key, "User-Agent": "specsynth-fetch/1.0"})
+        try:
+            with urllib.request.urlopen(req) as resp, open(output_path, "wb") as out_f:
+                while chunk := resp.read(65536):
+                    out_f.write(chunk)
+            print(f"  [SUCCESS] Downloaded authentic cutout to {output_path}")
+            return True
+        except urllib.error.HTTPError as err:
+            print(f"  [ERROR] HTTP Error {err.code}: {err.reason}")
+            raise RuntimeError(f"HTTP Error {err.code} while downloading cutout from {url}: {err.reason}") from err
     except Exception as exc:
         print(f"  [ERROR] Download failed: {exc}")
         raise RuntimeError(f"Failed to download cutout from {url}: {exc}") from exc

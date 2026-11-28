@@ -9,7 +9,7 @@ When forward-modeling millions of simulated subhalos, unphysical edge cases (neg
 1. **Tier 1 — Fast Numerical Invariants**:
    - Finite-value bitmask (`np.isfinite`) trapping IEEE 754 `NaN` and $\pm\infty$.
    - Strict non-negativity ($F > 0$).
-   - Energy conservation ($\int F_{\text{attenuated}}\,d\lambda \le (1 + 10^{-6}) \int F_{\text{intrinsic}}\,d\lambda$).
+   - Flux non-amplification invariant ($\int F_{\text{attenuated}}\,d\lambda \le (1 + 10^{-6}) \int F_{\text{intrinsic}}\,d\lambda$).
 2. **Tier 2 — Spectral & Photometric Physical Diagnostics**:
    - Narrowband $D_n(4000)$ spectral break index ($0.95 \le D_n(4000) \le 2.50$).
    - UV continuum slope $\beta_{\text{UV}}$ ($-2.80 \le \beta_{\text{UV}} \le +1.50$).

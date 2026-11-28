@@ -1,0 +1,124 @@
+{
+  "milestone": "P1",
+  "issue": "#31",
+  "title": "Strengthen scientific validation: dust energy balance and cosmology accuracy",
+  "verified_at": "2026-11-28T07:58:44.917931+00:00",
+  "environment": {
+    "python_version": "3.13.1",
+    "numpy_version": "2.5.4",
+    "astropy_version": "8.0.2",
+    "scipy_version": "1.18.1"
+  },
+  "total_criteria": 5,
+  "passed_criteria": 5,
+  "all_passed": true,
+  "total_elapsed_sec": 1.3441,
+  "criteria": [
+    {
+      "id": "CRITERION_1_DUST_NON_AMPLIFICATION",
+      "name": "Dust Absorption Non-Amplification Invariant",
+      "passed": true,
+      "elapsed_sec": 0.0017,
+      "details": {
+        "invariant_checked": "Integral(F_attenuated d_lambda) < Integral(F_intrinsic d_lambda)",
+        "max_attenuated_flux_fraction": 0.7947,
+        "min_attenuated_flux_fraction": 0.0619,
+        "zero_dust_identity_verified": true
+      }
+    },
+    {
+      "id": "CRITERION_2_DUST_IR_DISCLOSURE",
+      "name": "Absence of Far-IR Re-emission Disclosure",
+      "passed": true,
+      "elapsed_sec": 0.0005,
+      "details": {
+        "test_renamed_to": "test_dust_attenuation_non_amplification_invariant",
+        "disclosure_text_present": true,
+        "misleading_claims_eliminated": true
+      }
+    },
+    {
+      "id": "CRITERION_3_ASTROPY_COSMOLOGY_PARITY",
+      "name": "Independent Astropy FlatLambdaCDM Grid Parity",
+      "passed": true,
+      "elapsed_sec": 1.2942,
+      "details": {
+        "astropy_version": "8.0.2",
+        "redshifts_tested": [
+          0.0,
+          0.01,
+          0.05,
+          0.1,
+          0.2,
+          0.5,
+          1.0,
+          1.5,
+          2.0,
+          3.0,
+          5.0,
+          7.0,
+          10.0
+        ],
+        "max_relative_residuals": {
+          "comoving_distance": "1.36e-13",
+          "luminosity_distance": "1.36e-13",
+          "angular_diameter_distance": "1.36e-13",
+          "lookback_time": "8.09e-13",
+          "cosmic_age": "8.07e-13"
+        },
+        "tolerance": "< 1.00e-05",
+        "sample_grid_evaluations": 24
+      }
+    },
+    {
+      "id": "CRITERION_4_QUADRATURE_CONVERGENCE",
+      "name": "Gauss-Legendre Quadrature Convergence",
+      "passed": true,
+      "elapsed_sec": 0.04,
+      "details": {
+        "test_redshift": 2.0,
+        "production_quadrature_order": 100,
+        "relative_error_vs_500_nodes": "2.81e-15",
+        "convergence_table": [
+          {
+            "order": 20,
+            "distance_mpc": 5179.86207,
+            "rel_diff_vs_500": "2.98e-15"
+          },
+          {
+            "order": 50,
+            "distance_mpc": 5179.86207,
+            "rel_diff_vs_500": "2.46e-15"
+          },
+          {
+            "order": 100,
+            "distance_mpc": 5179.86207,
+            "rel_diff_vs_500": "2.81e-15"
+          },
+          {
+            "order": 200,
+            "distance_mpc": 5179.86207,
+            "rel_diff_vs_500": "3.34e-15"
+          },
+          {
+            "order": 500,
+            "distance_mpc": 5179.86207,
+            "rel_diff_vs_500": "0.00e+00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "CRITERION_5_COSMOLOGY_EDGE_CASES",
+      "name": "Cosmology Edge Cases & Fail-Closed Validation",
+      "passed": true,
+      "elapsed_sec": 0.0075,
+      "details": {
+        "z_zero_boundary_tested": true,
+        "negative_z_rejection_tested": true,
+        "parameter_bounds_rejection_tested": true,
+        "high_redshift_z20_stability_tested": true
+      }
+    }
+  ]
+}

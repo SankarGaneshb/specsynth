@@ -7,7 +7,7 @@ Validates:
 - D03: Cosmological distance and flux scaling (TNG Planck 2015 cosmology)
 - D04: JWST NIRCam filter integration (6 core filters: F090W, F150W, F200W, F277W, F356W, F444W)
 - D05: AB magnitude zero point calibration across all NIRCam filters
-- D06: Dust attenuation physical energy conservation and monotonic extinction
+- D06: Dust attenuation absorption non-amplification invariant and monotonic extinction
 - D07: Numerical precision evaluation (float32 vs float64)
 - D08: Numerical repeatability and reproducibility
 - Required scientific test cases 1 through 8.
