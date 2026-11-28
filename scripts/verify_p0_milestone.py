@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Verification Script for Milestone 1: P0 — Scope and Architecture Freeze (Issue #14)
+Verification Script for Milestone P0 (GitHub Milestone #1): Scope and Architecture Freeze (Issue #14)
 ===================================================================================
 Executes an automated, reproducible validation pass across all 7 acceptance criteria
 of Milestone P0:
@@ -260,7 +260,7 @@ def verify_canonical_mcp_contracts():
 
 def main():
     print(f"\n{BOLD}======================================================================{RESET}")
-    print(f"{BOLD}   Specsynth & PerandamΨ — Milestone 1 (P0) Validation Harness        {RESET}")
+    print(f"{BOLD}   Specsynth & PerandamΨ — Milestone P0 (GitHub #1) Validation Harness {RESET}")
     print(f"{BOLD}   Scope and Architecture Freeze Acceptance Verification              {RESET}")
     print(f"{BOLD}======================================================================{RESET}")
 
@@ -271,7 +271,7 @@ def main():
     verify_canonical_mcp_contracts()
 
     print(f"\n{BOLD}{GREEN}======================================================================{RESET}")
-    print(f"{BOLD}{GREEN}   [SUCCESS] Milestone 1 (P0) Architecture Freeze FULLY VALIDATED!   {RESET}")
+    print(f"{BOLD}{GREEN}   [SUCCESS] Milestone P0 (GitHub #1) Architecture Freeze FULLY VALIDATED! {RESET}")
     print(f"{BOLD}{GREEN}======================================================================{RESET}\n")
 
 

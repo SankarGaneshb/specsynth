@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Specsynth & PerandamΨ — Milestone 5 (P4) Validation Harness
-===========================================================
+Specsynth & PerandamΨ — Milestone P4 (GitHub Milestone #5) Validation Harness
+=============================================================================
 Python and Node MCP Interoperability Acceptance Verification ([Issue #18])
 
-This harness independently tests and demonstrates the 7 requirements of Milestone 5:
+This harness independently tests and demonstrates the 7 requirements of Milestone P4 (GitHub #5):
   [Step 1] Canonical Tool Contracts Completeness (10/10 tools registered in specsynth.contracts.mcp)
   [Step 2] Python MCP Server Tool Discovery & Legacy Aliasing (sps_* -> specsynth_*)
   [Step 3] Node.js MCP Server Tool Discovery & Legacy Aliasing (psi_* -> specsynth_*)
@@ -66,7 +66,7 @@ def fail_item(msg: str) -> None:
 
 def main() -> None:
     print("=" * 78)
-    print("  Specsynth & PerandamΨ — Milestone 5 (P4) Acceptance Verification Harness")
+    print("  Specsynth & PerandamΨ — Milestone P4 (GitHub #5) Acceptance Verification Harness")
     print("=" * 78)
     print("Validating: Python and Node MCP Interoperability ([Issue #18])")
 
@@ -250,7 +250,7 @@ def main() -> None:
     print("\n" + "=" * 78)
     print("  Acceptance Verification Summary")
     print("=" * 78)
-    print("\n[SUCCESS] ALL 7 MILESTONE 5 (P4) ACCEPTANCE REQUIREMENTS VALIDATED!\n")
+    print("\n[SUCCESS] ALL 7 MILESTONE P4 (GitHub #5) ACCEPTANCE REQUIREMENTS VALIDATED!\n")
     print("What was verified:")
     print("  1. Canonical Tool Contracts: complete 10/10 tool suite in specsynth.contracts.mcp")
     print("  2. Python MCP Server: dual-mode stdio JSON-RPC + FastMCP with sps_* aliases")

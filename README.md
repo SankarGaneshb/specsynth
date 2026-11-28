@@ -54,7 +54,9 @@ pytest -v
 python scripts/cross_validate_sps.py --n-gal 500
 ```
 
-### TNG → JWST NIRCam Scientific Validation & Demonstration (Milestone 1)
+### TNG → JWST NIRCam Scientific Validation & Demonstration (Foundational Demonstration Package / Issue #2)
+
+*(Note: This foundational validation package was established prior to the Master Programme P0–P6 architecture. See [`docs/architecture/roadmap_mapping.md`](docs/architecture/roadmap_mapping.md) for master roadmap alignment).*
 
 For researchers evaluating synthetic JWST NIRCam photometry from cosmological simulations (IllustrisTNG-100) using FSPS:
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Specsynth & PerandamΨ — Milestone 6 (P5) Validation Harness
-===========================================================
+Specsynth & PerandamΨ — Milestone P5 (GitHub Milestone #6) Validation Harness
+=============================================================================
 Live PerandamΨ Research Environment & Scientific Provenance Verification ([Issue #19])
 
-This harness independently tests and demonstrates the 8 requirements of Milestone 6:
+This harness independently tests and demonstrates the 8 requirements of Milestone P5 (GitHub #6):
   [Step 1] Truth-in-Labeling & Scientific Provenance Invariant Check (no ambiguous "Live Data")
   [Step 2] HTTP Bridge Health & Heartbeat Probe (/api/health)
   [Step 3] Dynamic In-Flight Galaxy Inspection with Parameter Overrides (/api/inspect)
@@ -59,7 +59,7 @@ def fail_item(msg: str) -> None:
 
 def main() -> None:
     print("======================================================================")
-    print("Specsynth & PerandamΨ — Milestone 6 (P5) Verification Harness")
+    print("Specsynth & PerandamΨ — Milestone P5 (GitHub #6) Verification Harness")
     print("Live PerandamΨ Research Environment & Scientific Provenance [Issue #19]")
     print("======================================================================")
 
@@ -185,10 +185,10 @@ def main() -> None:
     pass_item("LightconeCanvas3D auto-frames camera dynamically to occupy 75-85% of canvas without black margins")
 
     # -------------------------------------------------------------------------
-    # Milestone 6 Summary
+    # Milestone P5 Summary
     # -------------------------------------------------------------------------
     print("\n" + "=" * 70)
-    print("ALL 8 ACCEPTANCE CRITERIA PASSED [Milestone 6 / P5 Complete]")
+    print("ALL 8 ACCEPTANCE CRITERIA PASSED [Milestone P5 / GitHub #6 Complete]")
     print("  - Zero Ambiguous 'Live Data' Claims: Truth in Labeling Established")
     print("  - SpecSynth Engine (:8000) In-Flight Contraction Connected")
     print("  - 100% Full-Screen Viewport Collapsible Dock & Auto-Framing Active")

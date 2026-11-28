@@ -382,7 +382,7 @@ def generate_reference_tng_evolution_track(
         provenance={
             "simulation": "IllustrisTNG-100",
             "cosmology": "Planck 2015 (FlatLambdaCDM)",
-            "pipeline": "Specsynth Evolutionary Lineage Synthesizer (P3/Milestone 4)",
+            "pipeline": "Specsynth Evolutionary Lineage Synthesizer (Milestone P3 / GitHub #4)",
             "data_mode": "illustrative_demo",
             "contract_version": "1.0.0",
         },

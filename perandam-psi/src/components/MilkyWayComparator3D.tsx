@@ -229,7 +229,7 @@ function buildGalaxyModel(
   const isSimDerived = g.galaxy3d?.geometry_source === 'simulation_derived' && simStars?.coordinates_kpc?.length > 0;
 
   if (isSimDerived && simStars) {
-    // 0. Empirical Simulation-Derived Particle Geometry (P2 Milestone 3 Foundation)
+    // 0. Empirical Simulation-Derived Particle Geometry (Milestone P2 / GitHub #3 Foundation)
     const count = Math.min(simStars.coordinates_kpc.length, nStars);
     const rHalfKpc = Math.max(0.5, g.galaxy3d?.half_mass_radius_kpc ?? 3.0);
     const coordScale = (visualRadius * 0.45) / rHalfKpc;

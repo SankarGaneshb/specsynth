@@ -1,17 +1,17 @@
 {
   "milestone": "P4",
   "title": "Independent MCP Transport and Client End-to-End Acceptance",
-  "verified_at": "2026-11-27T20:36:43.952582+00:00",
+  "verified_at": "2026-11-28T07:43:32.862060+00:00",
   "total_criteria": 7,
   "passed_criteria": 7,
   "all_passed": true,
-  "total_elapsed_sec": 4.3079,
+  "total_elapsed_sec": 6.2267,
   "criteria": [
     {
       "id": "CRITERION_1_LIFECYCLE",
       "name": "Out-of-Process stdio Transport Lifecycle",
       "passed": true,
-      "elapsed_sec": 0.726,
+      "elapsed_sec": 1.0212,
       "details": {
         "python_server_name": "specsynth-mcp",
         "python_server_version": "1.0.0",
@@ -25,7 +25,7 @@
       "id": "CRITERION_2_TOOL_DISCOVERY",
       "name": "Tool Discovery via tools/list",
       "passed": true,
-      "elapsed_sec": 0.6421,
+      "elapsed_sec": 0.9442,
       "details": {
         "python_tool_count": 26,
         "python_canonical_tools_present": [
@@ -49,7 +49,7 @@
       "id": "CRITERION_3_WORKFLOW_EXECUTION",
       "name": "End-to-End Scientific Workflow Execution",
       "passed": true,
-      "elapsed_sec": 0.9618,
+      "elapsed_sec": 1.2918,
       "details": {
         "python_workflow_steps_executed": 5,
         "python_galaxy_inspected": "tng100_subhalo_009873",
@@ -63,7 +63,7 @@
       "id": "CRITERION_4_CROSS_LANGUAGE_PARITY",
       "name": "Cross-Language Schema & Unit Parity",
       "passed": true,
-      "elapsed_sec": 0.7484,
+      "elapsed_sec": 1.0763,
       "details": {
         "cosmology_parity": [
           {
@@ -101,7 +101,7 @@
       "id": "CRITERION_5_ROBUSTNESS_NEGATIVE",
       "name": "Protocol Robustness & Error Handling",
       "passed": true,
-      "elapsed_sec": 0.6717,
+      "elapsed_sec": 0.9952,
       "details": {
         "python_malformed_code": -32700,
         "python_unknown_method_code": -32601,
@@ -115,7 +115,7 @@
       "id": "CRITERION_6_INSPECTOR_FIXTURES",
       "name": "MCP Inspector Documentation & Fixtures",
       "passed": true,
-      "elapsed_sec": 0.0017,
+      "elapsed_sec": 0.0237,
       "details": {
         "python_fixture": "sample_models\\mcp\\inspector_session_python.json",
         "python_interactions": 6,
@@ -128,7 +128,7 @@
       "id": "CRITERION_7_SECURITY_LOOPBACK",
       "name": "Loopback Interface Security & Isolation",
       "passed": true,
-      "elapsed_sec": 0.5549,
+      "elapsed_sec": 0.8727,
       "details": {
         "loopback_checks_passed": true,
         "non_loopback_rejected": true,

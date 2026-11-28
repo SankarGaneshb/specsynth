@@ -9,7 +9,7 @@
 
 ## Executive Summary & Milestone Charter
 
-The primary objective of Milestone 1 is to demonstrate that `specsynth` generates scientifically credible, peer-reviewable JWST NIRCam synthetic photometry from simulated galaxies (IllustrisTNG) using Flexible Stellar Population Synthesis (FSPS). 
+The primary objective of the TNG–JWST Scientific Validation package (Foundational Milestone 1 / Issue #2) is to demonstrate that `specsynth` generates scientifically credible, peer-reviewable JWST NIRCam synthetic photometry from simulated galaxies (IllustrisTNG) using Flexible Stellar Population Synthesis (FSPS). 
 
 Rather than treating synthetic photometry as an opaque numerical pipeline, this milestone establishes an **open, reproducible, and verifiable scientific contract** between simulation properties (stellar mass, age, metallicity, SFR, dust) and space-telescope observables across the six core NIRCam wide filters: **F090W, F150W, F200W, F277W, F356W, and F444W**.
 
@@ -89,7 +89,7 @@ The test suite consists of **163 automated pytest tests** (162 passing, 1 skippe
   - Validates `FlatLambdaCDM` comoving and luminosity distance across $z \in [0.01, 10.0]$ against 2,000-node Gauss-Legendre quadrature ($< 10^{-5}$ relative tolerance).
   - Validates Madau (1995) unabsorbed redward region, Ly$\alpha$ valley, and Lyman continuum photoelectric absorption.
   - Validates AB zero point for $3631\text{ Jy}$ source across NIRCam, HST, and SDSS filters ($|\Delta m_{\text{AB}}| < 0.005\text{ mag}$).
-  - Validates dust attenuation energy conservation ($\int F_{\text{atten}} d\lambda < \int F_{\text{intrinsic}} d\lambda$).
+  - Validates dust attenuation absorption non-amplification invariant ($\int F_{\text{atten}} d\lambda < \int F_{\text{intrinsic}} d\lambda$; note full IR re-emission energy balance is not modeled).
   - Validates physical constants against `astropy.constants` ($c, L_\odot, \text{Mpc}$).
 - `tests/test_adapters.py` (22 tests): Tests FSPS, BC03, EMILES, and FITS grid loaders.
 - `tests/test_cosmology.py`, `tests/test_filters.py`, `tests/test_catalog.py`, `tests/test_sentry.py`: Full coverage of core execution mechanics.

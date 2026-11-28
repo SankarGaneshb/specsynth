@@ -1,7 +1,7 @@
 """
 Specsynth Adapter Conformance Test Suite & Compatibility Policy
 ==============================================================
-Fulfills Milestone 7 (P6 / Issue #20, Task M1.6):
+Fulfills Milestone P6 (GitHub Milestone #7 / Issue #20, Task M1.6):
 "Deliver adapter conformance tests and compatibility policy."
 
 This module provides programmatic conformance validation and formal compatibility

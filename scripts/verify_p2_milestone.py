@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Specsynth & PerandamΨ — Milestone 3 (P2) Validation Harness
-===========================================================
+Specsynth & PerandamΨ — Milestone P2 (GitHub Milestone #3) Validation Harness
+=============================================================================
 Simulation-Derived 3D Galaxy Foundation Acceptance Verification
 
-This harness independently tests and demonstrates the 7 requirements of Milestone 3:
+This harness independently tests and demonstrates the 7 requirements of Milestone P2 (GitHub #3):
   [1] Coordinate conversions (ckpc/h -> physical kpc)
   [2] Simulation snapshot ingestion & HDF5 particle extraction
   [3] Mass-weighted CoM centering & Rodrigues angular momentum rotation (+Z alignment)
@@ -86,7 +86,7 @@ def fail_msg(msg: str) -> None:
 
 def run_milestone_3_validation() -> bool:
     all_passed = True
-    header("Specsynth & Perandam\u03a8 \u2014 Milestone 3 (P2) Acceptance Verification Harness")
+    header("Specsynth & Perandam\u03a8 \u2014 Milestone P2 (GitHub #3) Acceptance Verification Harness")
     print("Validating: Simulation-Derived 3D Galaxy Foundation ([Issue #16])")
 
     # -------------------------------------------------------------------------
@@ -320,7 +320,7 @@ def run_milestone_3_validation() -> bool:
     # -------------------------------------------------------------------------
     header("Acceptance Verification Summary")
     if all_passed:
-        print("\n\033[92m[SUCCESS] ALL 7 MILESTONE 3 (P2) ACCEPTANCE REQUIREMENTS VALIDATED!\033[0m")
+        print("\n\033[92m[SUCCESS] ALL 7 MILESTONE P2 (GitHub #3) ACCEPTANCE REQUIREMENTS VALIDATED!\033[0m")
         print("\nWhat was verified:")
         print("  1. Comoving ckpc/h -> physical kpc scaling: exact scale factor conversion")
         print("  2. Center of Mass: mass-weighted translation to (0, 0, 0)")

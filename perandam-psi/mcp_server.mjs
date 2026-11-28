@@ -3,7 +3,7 @@
  * PerandamΨ (Perandam Space Intelligence) - Standalone Node.js MCP Server.
  * Implements Model Context Protocol (MCP) JSON-RPC 2.0 over stdio for AI agents.
  * 
- * Enforces Milestone 5 (P4, Issue #18) Dual-Language Interoperability and Protocol Parity
+ * Enforces Milestone P4 (GitHub Milestone #5 / Issue #18) Dual-Language Interoperability and Protocol Parity
  * with the Specsynth Python MCP Server.
  *
  * Supported Canonical Tools:

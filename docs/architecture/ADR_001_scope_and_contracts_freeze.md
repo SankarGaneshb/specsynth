@@ -136,7 +136,7 @@ To guarantee that external adapters and independent research pipelines can integ
 
 - **Baseline Commit SHA**: `8e36648d7bad3959cdd8ed32c0232f0370fec461`
 - **Git Tag**: `p0-architecture-freeze`
-- **Commit Title**: `feat(contracts): implement Milestone 1 (P0) Scope and Architecture Freeze (#14)`
+- **Commit Title**: `feat(contracts): implement Milestone 1 (P0) Scope and Architecture Freeze (#14)` *(Milestone P0 corresponds to GitHub Milestone #1; see `docs/architecture/roadmap_mapping.md` for full taxonomy reconciliation)*
 - **Verification Rule**: Any external adapter or plugin must prove that it was authored outside the frozen core. Verification tools compare directly against `8e36648d7bad3959cdd8ed32c0232f0370fec461`, not against transient branch tips.
 - **Diagnostic Allowlist**: Any modifications to `specsynth/` since P0 must be explicitly attributed to an authorized roadmap milestone (P1 through P6). Unclassified modifications are cataloged with line diffs and feature subsystem details in the verification report.
 - **Fail-Closed Policy**: If the baseline commit is unreachable (e.g. shallow clones in CI), verification fails closed with explicit remediation instructions (`git fetch origin 8e36648d7bad3959cdd8ed32c0232f0370fec461` or `git fetch --unshallow`).

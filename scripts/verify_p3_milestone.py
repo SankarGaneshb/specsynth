@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Specsynth & PerandamΨ — Milestone 4 (P3) Validation Harness
-===========================================================
+Specsynth & PerandamΨ — Milestone P3 (GitHub Milestone #4) Validation Harness
+=============================================================================
 Cosmic-Time & Galaxy Evolution Acceptance Verification ([Issue #17])
 
-This harness independently tests and demonstrates the 7 requirements of Milestone 4:
+This harness independently tests and demonstrates the 7 requirements of Milestone P3 (GitHub #4):
   [Step 1] Exact Closed-Form FLRW Cosmology Times (t(z) & t_L(z) monotonic across z in [0, 10+])
   [Step 2] Progenitor Lineage Contract Compliance (EvolutionaryTrackContract v1.0.0)
   [Step 3] Physical Mass Assembly & Leitner-Kravtsov (2011) Stellar Recycling Conservation
@@ -61,7 +61,7 @@ from specsynth.evolution import (
 
 def run_acceptance_tests() -> bool:
     print("\n" + "=" * 78)
-    print("  Specsynth & PerandamΨ — Milestone 4 (P3) Acceptance Verification Harness")
+    print("  Specsynth & PerandamΨ — Milestone P3 (GitHub #4) Acceptance Verification Harness")
     print("=" * 78)
     print("Validating: Cosmic-Time & Galaxy Evolution ([Issue #17])\n")
 
@@ -194,7 +194,7 @@ def run_acceptance_tests() -> bool:
     print("\n" + "=" * 78)
     print("  Acceptance Verification Summary")
     print("=" * 78)
-    print("\n[SUCCESS] ALL 7 MILESTONE 4 (P3) ACCEPTANCE REQUIREMENTS VALIDATED!\n")
+    print("\n[SUCCESS] ALL 7 MILESTONE P3 (GitHub #4) ACCEPTANCE REQUIREMENTS VALIDATED!\n")
     print("What was verified:")
     print("  1. FLRW Cosmology: exact arcsinh closed-form cosmic & lookback times")
     print("  2. EvolutionaryTrackContract: version 1.0.0 monotonic progenitor lineages")

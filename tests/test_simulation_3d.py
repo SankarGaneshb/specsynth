@@ -1,7 +1,7 @@
 """
 tests.test_simulation_3d
 ========================
-Automated scientific test suite for Milestone 3 (P2 — Simulation-Derived 3D Galaxy Foundation).
+Automated scientific test suite for Milestone P2 (GitHub Milestone #3 — Simulation-Derived 3D Galaxy Foundation).
 Verifies:
   - Coordinate conversions (ckpc/h -> physical kpc)
   - Kinematic centering & Rodrigues angular momentum alignment

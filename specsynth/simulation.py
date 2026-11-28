@@ -3,7 +3,7 @@ specsynth.simulation
 ====================
 Simulation snapshot ingestion, HDF5/parquet loader, particle kinematics & coordinate conversions,
 and empirical 3D galaxy model generation.
-Enforces Milestone 3 (P2.M3.2 & P2.M3.3) standards.
+Enforces Milestone P2 (GitHub Milestone #3 / P2.M3.2 & P2.M3.3) standards.
 """
 
 from __future__ import annotations

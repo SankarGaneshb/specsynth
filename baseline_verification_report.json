@@ -1,6 +1,6 @@
 {
   "baseline_sha": "8e36648d7bad3959cdd8ed32c0232f0370fec461",
-  "tested_commit_sha": "e901b1e05aaee74a4a86d4cb8f9b8ac88610d5fe",
+  "tested_commit_sha": "575629c582299fdd1ea5eb8725aba4392407a36c",
   "tested_branch": "main",
   "is_shallow_clone": false,
   "status": "CONFORMANT",
@@ -117,8 +117,8 @@
     {
       "file_path": "specsynth/cosmology.py",
       "change_type": "M",
-      "lines_added": 31,
-      "lines_deleted": 0,
+      "lines_added": 83,
+      "lines_deleted": 8,
       "milestone": "P1",
       "issue": "#15",
       "feature": "FlatLambdaCDM cosmological distance measures and TNG cosmology"
@@ -221,5 +221,5 @@
     "python_version": "3.13.1",
     "git_available": true
   },
-  "timestamp_utc": "2026-11-27T20:37:54Z"
+  "timestamp_utc": "2026-11-28T08:11:42Z"
 }

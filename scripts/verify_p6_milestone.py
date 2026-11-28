@@ -1,5 +1,5 @@
 """
-Comprehensive Verification Harness for Milestone 7 (Issue #20 / P6)
+Comprehensive Verification Harness for Milestone P6 (GitHub Milestone #7 / Issue #20)
 Independent Developer and External-Engine Validation
 ==================================================================
 Verifies:
@@ -245,7 +245,7 @@ def test_documentation_and_nav():
 
 def main():
     print("=" * 75)
-    print("SPECSYNTH MILESTONE 7 (P6 / ISSUE #20) VERIFICATION HARNESS")
+    print("SPECSYNTH MILESTONE P6 (GitHub #7 / ISSUE #20) VERIFICATION HARNESS")
     print("Zero-Core-Modification Pluggability & External-Engine Validation")
     print("=" * 75)
 
@@ -258,7 +258,7 @@ def main():
     test_documentation_and_nav()
 
     print("\n" + "=" * 75)
-    print("ALL MILESTONE 7 ACCEPTANCE CRITERIA VERIFIED AND PASSED!")
+    print("ALL MILESTONE P6 ACCEPTANCE CRITERIA VERIFIED AND PASSED!")
     print("=" * 75)
 
 

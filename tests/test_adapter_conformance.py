@@ -1,6 +1,6 @@
 """
 Unit & Integration Tests for Specsynth Adapter Conformance & Compatibility Policy.
-Fulfills Milestone 7 (Issue #20 / Task M1.6).
+Fulfills Milestone P6 (GitHub Milestone #7 / Issue #20 / Task M1.6).
 """
 
 from __future__ import annotations

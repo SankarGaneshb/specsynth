@@ -66,7 +66,7 @@ where young populations ($< 10^7\text{ yr}$) experience additional birth-cloud a
 
 ### End-to-End Simulation-to-Telescope Validation: TNG → JWST NIRCam
 
-To ensure that `specsynth` delivers scientifically credible, peer-reviewable observables for high-redshift astrophysics, Milestone 1 establishes a comprehensive end-to-end forward-modeling pipeline from IllustrisTNG-100 [@pillepich2018simulating] simulated galaxies through FSPS [@conroy2009propagation] to calibrated JWST NIRCam broadband photometry (F090W, F150W, F200W, F277W, F356W, F444W):
+To ensure that `specsynth` delivers scientifically credible, peer-reviewable observables for high-redshift astrophysics, the foundational TNG-to-JWST validation workflow establishes a comprehensive end-to-end forward-modeling pipeline from IllustrisTNG-100 [@pillepich2018simulating] simulated galaxies through FSPS [@conroy2009propagation] to calibrated JWST NIRCam broadband photometry (F090W, F150W, F200W, F277W, F356W, F444W):
 
 1. **Simulation Cosmology & Full-Wavelength Coverage**: Implements the IllustrisTNG Flat $\Lambda\text{CDM}$ cosmology (Planck 2015: $H_0 = 67.74\text{ km s}^{-1}\text{Mpc}^{-1}$, $\Omega_m = 0.3089$) and couples a 2,500-point FSPS stellar population library spanning $91.2\,\text{\AA}$ to $100{,}000\,\text{\AA}$ ($10\,\mu\text{m}$), ensuring complete rest-frame and observed-frame overlap with NIRCam Long-Wavelength channels up to $z \approx 4$.
 2. **Instrument Throughput Provenance**: Calibrated STScI module-averaged total system photon transmission curves (incorporating OTE mirrors, pick-off optics, filters, and detector quantum efficiency averaged over Modules A & B) are cryptographically verified via SHA-256 checksums.
