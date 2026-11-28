@@ -259,10 +259,30 @@ export const CANONICAL_MCP_TOOLS = {
         fluxes_uJy[band] = uJy;
       }
 
+      const dmode = galaxy.data_mode || 'cached_reference';
+      const isAuthenticSim = Boolean(galaxy.subhalo_id && ds === 'tng_100');
+      const sourceProv = {
+        data_mode: dmode,
+        simulation: isAuthenticSim ? 'IllustrisTNG-100-1' : 'Synthetic Mock Suite',
+        snapshot: galaxy.snapshot || 99,
+        subhalo_id: galaxy.subhalo_id || null,
+        dataset_name: ds,
+        catalog_file: ds === 'tng_100' ? 'tng_100_calibration.json' : 'tng_goods_s_mock_508.json',
+        checksum_sha256: galaxy.manifest_hash || galaxy.sha256 || null,
+        verified_authentic: isAuthenticSim,
+      };
+      const execProv = {
+        execution_mode: 'precomputed_cached',
+        executor: 'Node.js MCP Reference Cache',
+        timestamp_utc: new Date().toISOString(),
+        is_dynamic_override: false,
+        parameters_applied: {},
+      };
+
       return {
         id: galaxy.id,
         galaxy_id: galaxy.id,
-        data_mode: galaxy.data_mode || 'cached_reference',
+        data_mode: dmode,
         redshift: galaxy.redshift,
         log_mstar: galaxy.log_mstar,
         sfr: galaxy.sfr,
@@ -285,10 +305,14 @@ export const CANONICAL_MCP_TOOLS = {
         has_discovery_profile: Boolean(galaxy.discovery_profile),
         sed: galaxy.sed || [],
         sed_points_count: galaxy.sed ? galaxy.sed.length : 0,
+        source_provenance: sourceProv,
+        execution_provenance: execProv,
         provenance: {
-          data_mode: galaxy.data_mode || 'cached_reference',
+          data_mode: dmode,
           source: 'IllustrisTNG-100 Mock Catalog',
           sentry_status: galaxy.sentry_status || 'PASS',
+          source_provenance: sourceProv,
+          execution_provenance: execProv,
         },
       };
     },
@@ -356,6 +380,21 @@ export const CANONICAL_MCP_TOOLS = {
           const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
           const geomSrc = data.geometry_source || 'simulation_derived';
           const dataMode = data.data_mode || (geomSrc === 'simulation_derived' ? 'simulation_derived' : 'analytical_mock');
+          const sourceProv = {
+            data_mode: dataMode,
+            simulation: dataMode === 'simulation_derived' ? 'IllustrisTNG-100-1' : 'Synthetic Procedural Model',
+            snapshot: data.simulation_metadata?.snapshot || 99,
+            subhalo_id: data.simulation_metadata?.subhalo_id || null,
+            checksum_sha256: data.provenance?.sha256 || data.provenance?.hdf5_sha256 || null,
+            verified_authentic: (dataMode === 'simulation_derived'),
+          };
+          const execProv = {
+            execution_mode: 'precomputed_cached',
+            executor: 'SpecSynth 3D Asset Store',
+            timestamp_utc: new Date().toISOString(),
+            is_dynamic_override: false,
+            parameters_applied: {},
+          };
           return {
             galaxy_id: galaxyId,
             data_mode: dataMode,
@@ -366,10 +405,14 @@ export const CANONICAL_MCP_TOOLS = {
             total_stellar_mass_msun: data.total_stellar_mass_msun || 1.78e10,
             simulation_metadata: data.simulation_metadata || {},
             total_particles: data.total_particles || 4000,
+            source_provenance: sourceProv,
+            execution_provenance: execProv,
             provenance: data.provenance || {
               data_mode: dataMode,
               geometry_source: geomSrc,
               source_manifest: path.basename(manifestPath),
+              source_provenance: sourceProv,
+              execution_provenance: execProv,
             },
             status: 'LOADED_FROM_SNAPSHOT',
           };
@@ -384,6 +427,19 @@ export const CANONICAL_MCP_TOOLS = {
           const isSim = Boolean(g.galaxy3d);
           const geomSrc = isSim ? 'simulation_derived' : 'procedural_illustrative';
           const dataMode = isSim ? 'simulation_derived' : 'analytical_mock';
+          const sourceProv = {
+            data_mode: dataMode,
+            simulation: isSim ? 'IllustrisTNG-100-1' : 'Synthetic Procedural Model',
+            subhalo_id: g.subhalo_id || null,
+            verified_authentic: isSim,
+          };
+          const execProv = {
+            execution_mode: 'precomputed_cached',
+            executor: 'Perandam Reference Catalog Store',
+            timestamp_utc: new Date().toISOString(),
+            is_dynamic_override: false,
+            parameters_applied: {},
+          };
           return {
             galaxy_id: g.id,
             data_mode: dataMode,
@@ -393,10 +449,14 @@ export const CANONICAL_MCP_TOOLS = {
             half_mass_radius_kpc: g.galaxy3d?.half_mass_radius_kpc || 2.5,
             total_stellar_mass_msun: Math.pow(10, g.log_mstar || 10),
             components: g.galaxy3d?.components || { star: { count: Math.min(maxParticles, 2000), sampled: true } },
+            source_provenance: sourceProv,
+            execution_provenance: execProv,
             provenance: {
               data_mode: dataMode,
               geometry_source: geomSrc,
               catalog: manifest.title,
+              source_provenance: sourceProv,
+              execution_provenance: execProv,
             },
             status: 'LOADED_FROM_CATALOG',
           };
@@ -404,6 +464,18 @@ export const CANONICAL_MCP_TOOLS = {
       }
 
       // 3. Fallback
+      const fallbackSourceProv = {
+        data_mode: 'analytical_mock',
+        simulation: 'Synthetic Procedural Model',
+        verified_authentic: false,
+      };
+      const fallbackExecProv = {
+        execution_mode: 'precomputed_cached',
+        executor: 'Procedural Generator Fallback',
+        timestamp_utc: new Date().toISOString(),
+        is_dynamic_override: false,
+        parameters_applied: {},
+      };
       return {
         galaxy_id: galaxyId,
         data_mode: 'analytical_mock',
@@ -413,10 +485,14 @@ export const CANONICAL_MCP_TOOLS = {
         half_mass_radius_kpc: 2.5,
         total_stellar_mass_msun: 1e10,
         components: { star: { count: Math.min(maxParticles, 2000), sampled: true } },
+        source_provenance: fallbackSourceProv,
+        execution_provenance: fallbackExecProv,
         provenance: {
           data_mode: 'analytical_mock',
           geometry_source: 'procedural_illustrative',
           source: 'procedural_fallback',
+          source_provenance: fallbackSourceProv,
+          execution_provenance: fallbackExecProv,
         },
         status: 'PROCEDURAL_FALLBACK',
       };
@@ -447,10 +523,30 @@ export const CANONICAL_MCP_TOOLS = {
         for (const [tid, trk] of Object.entries(evolutionTracksData.tracks)) {
           if (tid.toLowerCase() === galaxyId.toLowerCase() || trk.galaxy_id?.toLowerCase() === galaxyId.toLowerCase()) {
             const dataMode = trk.data_mode || 'simulation_derived';
+            const sourceProv = {
+              data_mode: dataMode,
+              simulation: dataMode === 'simulation_derived' ? 'IllustrisTNG-100-1' : 'Synthetic Evolution Suite',
+              subhalo_id: trk.subhalo_id || null,
+              verified_authentic: (dataMode === 'simulation_derived'),
+            };
+            const execProv = {
+              execution_mode: 'precomputed_cached',
+              executor: 'Node.js MCP Evolution Store',
+              timestamp_utc: new Date().toISOString(),
+              is_dynamic_override: false,
+              parameters_applied: {},
+            };
             return {
               ...trk,
               data_mode: dataMode,
-              provenance: trk.provenance || { data_mode: dataMode, tree_type: trk.tree_type || 'SubLink' },
+              source_provenance: sourceProv,
+              execution_provenance: execProv,
+              provenance: trk.provenance || {
+                data_mode: dataMode,
+                tree_type: trk.tree_type || 'SubLink',
+                source_provenance: sourceProv,
+                execution_provenance: execProv,
+              },
             };
           }
         }

@@ -1,6 +1,6 @@
 {
   "baseline_sha": "8e36648d7bad3959cdd8ed32c0232f0370fec461",
-  "tested_commit_sha": "bd12c560cece589199d410afa25fc13e6c0486b9",
+  "tested_commit_sha": "526d702b00297b2b438293d3cfc4bc6448898fe3",
   "tested_branch": "main",
   "is_shallow_clone": false,
   "status": "CONFORMANT",
@@ -73,16 +73,25 @@
     {
       "file_path": "specsynth/contracts/__init__.py",
       "change_type": "M",
-      "lines_added": 14,
+      "lines_added": 22,
       "lines_deleted": 0,
       "milestone": "P0",
       "issue": "#14",
       "feature": "Canonical contract schemas namespace exports"
     },
     {
+      "file_path": "specsynth/contracts/data_mode.py",
+      "change_type": "A",
+      "lines_added": 96,
+      "lines_deleted": 0,
+      "milestone": "P5",
+      "issue": "#32",
+      "feature": "Canonical DataMode and scientific provenance classifications (v1.0.0)"
+    },
+    {
       "file_path": "specsynth/contracts/evolution.py",
       "change_type": "A",
-      "lines_added": 275,
+      "lines_added": 277,
       "lines_deleted": 0,
       "milestone": "P3",
       "issue": "#17,#27",
@@ -91,7 +100,7 @@
     {
       "file_path": "specsynth/contracts/galaxy3d.py",
       "change_type": "M",
-      "lines_added": 222,
+      "lines_added": 279,
       "lines_deleted": 0,
       "milestone": "P0,#16",
       "issue": "#14,#16",
@@ -100,11 +109,20 @@
     {
       "file_path": "specsynth/contracts/mcp.py",
       "change_type": "M",
-      "lines_added": 209,
+      "lines_added": 214,
       "lines_deleted": 4,
       "milestone": "P0,#18",
       "issue": "#14,#18",
       "feature": "Canonical MCP Tool Schemas and M8ven annotations (v1.0.0)"
+    },
+    {
+      "file_path": "specsynth/contracts/photometry.py",
+      "change_type": "M",
+      "lines_added": 5,
+      "lines_deleted": 0,
+      "milestone": "P0,#15",
+      "issue": "#14,#15",
+      "feature": "Canonical SyntheticObservationContract and PhotometryPointContract (v1.0.0)"
     },
     {
       "file_path": "specsynth/core.py",
@@ -145,7 +163,7 @@
     {
       "file_path": "specsynth/governance/baseline_verifier.py",
       "change_type": "A",
-      "lines_added": 411,
+      "lines_added": 416,
       "lines_deleted": 0,
       "milestone": "P6",
       "issue": "#29",
@@ -163,8 +181,8 @@
     {
       "file_path": "specsynth/mcp/server.py",
       "change_type": "M",
-      "lines_added": 358,
-      "lines_deleted": 119,
+      "lines_added": 387,
+      "lines_deleted": 120,
       "milestone": "P4",
       "issue": "#18",
       "feature": "Canonical Model Context Protocol (MCP) server implementation"
@@ -216,11 +234,11 @@
     "examples/external_engine_plugin/run_external_workflow.py",
     "examples/external_engine_plugin/run_genuine_external_workflow.py"
   ],
-  "diagnostic_summary": "P0 Frozen Baseline Verification: CONFORMANT. All 19 modified core files are documented under authorized roadmap milestones. External adapter plugin files (7 files) are strictly isolated.",
+  "diagnostic_summary": "P0 Frozen Baseline Verification: CONFORMANT. All 21 modified core files are documented under authorized roadmap milestones. External adapter plugin files (7 files) are strictly isolated.",
   "environment": {
     "os_platform": "Windows-11-10.0.26300-SP0",
     "python_version": "3.13.1",
     "git_available": true
   },
-  "timestamp_utc": "2026-11-28T09:34:45Z"
+  "timestamp_utc": "2026-11-28T14:49:48Z"
 }

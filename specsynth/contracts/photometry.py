@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 import numpy as np
 
-from specsynth.contracts.data_mode import DataMode
+from specsynth.contracts.data_mode import DataMode, validate_source_provenance_evidence
 
 
 @dataclass
@@ -71,7 +71,7 @@ class SyntheticObservationContract:
     sed_wave_angstrom: np.ndarray
     sed_flux_obs_cgs: np.ndarray
     sed_flux_rest_lsun_angstrom: Optional[np.ndarray] = None
-    data_mode: str = "simulation_derived"
+    data_mode: str = "unknown_unverified"
     version: str = "1.0.0"
     provenance: dict[str, Any] = field(default_factory=dict)
 
@@ -84,8 +84,9 @@ class SyntheticObservationContract:
         self.validate()
 
     def validate(self) -> None:
-        """Validate dimensions, non-negativity, and numerical integrity."""
-        DataMode.from_str(self.data_mode)
+        """Validate dimensions, non-negativity, numerical integrity, and provenance evidence."""
+        mode = DataMode.from_str(self.data_mode)
+        validate_source_provenance_evidence(mode, self.provenance)
         if not self.galaxy_id:
             raise ValueError("galaxy_id cannot be empty")
         if self.redshift < 0:
@@ -128,5 +129,14 @@ class SyntheticObservationContract:
             ],
             "n_sed_points": len(self.sed_wave_angstrom),
             "sed_wave_range_angstrom": [float(self.sed_wave_angstrom[0]), float(self.sed_wave_angstrom[-1])],
+            "source_provenance": self.provenance.get("source_provenance", {
+                "data_mode": self.data_mode,
+                "source_name": self.provenance.get("source_name") or self.provenance.get("simulation") or "unspecified",
+                "source_id": self.provenance.get("source_id") or self.provenance.get("subhalo_id"),
+            }),
+            "execution_provenance": self.provenance.get("execution_provenance", {
+                "execution_mode": self.provenance.get("execution_mode", "precomputed_cached"),
+                "engine": self.provenance.get("engine", "SpecSynth"),
+            }),
             "provenance": self.provenance,
         }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Galaxy, FilterCurveData, DataMode } from '../types/galaxy';
+import { Galaxy, FilterCurveData, DataMode, ExecutionMode, ExecutionProvenance } from '../types/galaxy';
 import { forwardModelGalaxy } from '../utils/physics';
 import { SedPlot } from './SedPlot';
 import { ColorColorPlot } from './ColorColorPlot';
@@ -24,6 +24,9 @@ import {
   ChevronRight,
   ChevronLeft,
   Activity,
+  Cpu,
+  ShieldCheck,
+  Database,
 } from 'lucide-react';
 import { SimulationEvolutionCard } from './SimulationEvolutionCard';
 
@@ -60,6 +63,8 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [engineLatencyMs, setEngineLatencyMs] = useState<number | null>(null);
   const [isRecalculating, setIsRecalculating] = useState<boolean>(false);
+  const [backendResult, setBackendResult] = useState<any>(null);
+  const [backendPulse, setBackendPulse] = useState<boolean>(false);
 
   // Snapshot the unmutated base galaxy when selection changes
   useEffect(() => {
@@ -68,6 +73,8 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       setSliderZ(null);
       setSliderAv(null);
       setEngineLatencyMs(null);
+      setBackendResult(null);
+      setBackendPulse(false);
     }
     if (activeTab === 'discovery' && !galaxy?.discovery_profile && galaxy?.sentry_status !== 'ANOMALY') {
       setActiveTab('sed');
@@ -87,16 +94,16 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const baselineZ = originGalaxy.redshift;
   const baselineAv = originGalaxy.av;
 
-  // Determine effective data mode and styling for truth-in-labeling
-  let effectiveMode: DataMode = 'cached_reference';
-  if (originGalaxy.data_mode) {
-    effectiveMode = originGalaxy.data_mode;
-  } else if (originGalaxy.subhalo_id && (originGalaxy.subhalo_id === '424601' || originGalaxy.galaxy3d?.geometry_source === 'simulation_derived')) {
-    effectiveMode = 'simulation_derived';
-  } else if (isConnected) {
-    effectiveMode = 'live_computation';
+  // Source Data Mode is derived strictly from origin data (never from isConnected!)
+  let sourceDataMode: DataMode = 'cached_reference';
+  if (originGalaxy.source_provenance?.data_mode) {
+    sourceDataMode = originGalaxy.source_provenance.data_mode;
+  } else if (originGalaxy.data_mode) {
+    sourceDataMode = originGalaxy.data_mode;
+  } else if (originGalaxy.subhalo_id && originGalaxy.galaxy3d?.geometry_source === 'simulation_derived') {
+    sourceDataMode = 'simulation_derived';
   } else if (originGalaxy.is_synthetic_scenario || originGalaxy.galaxy3d?.geometry_source === 'procedural_illustrative') {
-    effectiveMode = 'analytical_mock';
+    sourceDataMode = 'analytical_mock';
   }
 
   const modeBadgeStyles: Record<DataMode, { label: string; badge: string; drawerBadge: string }> = {
@@ -125,6 +132,11 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       badge: 'bg-slate-900/80 text-slate-300 border-slate-700/60',
       drawerBadge: 'bg-slate-900 text-slate-300 border-slate-700',
     },
+    unknown_unverified: {
+      label: 'UNKNOWN / UNVERIFIED',
+      badge: 'bg-zinc-900/80 text-zinc-300 border-zinc-700/60',
+      drawerBadge: 'bg-zinc-900 text-zinc-300 border-zinc-700',
+    },
   };
 
   const currentZ = sliderZ !== null ? sliderZ : baselineZ;
@@ -132,10 +144,31 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
 
   const isZEdited = sliderZ !== null && Math.abs(sliderZ - baselineZ) > 0.01;
   const isAvEdited = sliderAv !== null && Math.abs(sliderAv - baselineAv) > 0.01;
+  const isEdited = isZEdited || isAvEdited;
+
+  // Truthful Execution Mode Derivation
+  let activeExecutionMode: ExecutionMode = 'precomputed_cached';
+  let activeExecutor = 'Precomputed Reference Store';
+  let activeLatencyMs: number | null = null;
+
+  if (isEdited) {
+    if (backendResult) {
+      activeExecutionMode = 'live_backend';
+      activeExecutor = backendResult.execution_provenance?.executor || 'SpecSynth Python GEMM (:8000)';
+      activeLatencyMs = engineLatencyMs;
+    } else {
+      activeExecutionMode = 'client_browser';
+      activeExecutor = 'In-Browser JavaScript Engine (WebAssembly/JS)';
+      activeLatencyMs = null;
+    }
+  }
 
   // Live Parameter Sweep via SpecSynth Engine (when connected)
   useEffect(() => {
-    if (!isConnected || !galaxy || (sliderZ === null && sliderAv === null)) return;
+    if (!isConnected || !galaxy || (sliderZ === null && sliderAv === null)) {
+      setBackendResult(null);
+      return;
+    }
     const zQuery = sliderZ !== null ? sliderZ : baselineZ;
     const avQuery = sliderAv !== null ? sliderAv : baselineAv;
 
@@ -146,9 +179,14 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
         const url = `http://127.0.0.1:8000/api/inspect?galaxy_id=${encodeURIComponent(galaxy.id)}&z=${zQuery}&av=${avQuery}`;
         const res = await fetch(url);
         if (res.ok) {
-          await res.json();
+          const data = await res.json();
           const elapsed = Math.round(performance.now() - t0);
           setEngineLatencyMs(elapsed);
+          if (data && (data.photometry || data.mags)) {
+            setBackendResult(data);
+            setBackendPulse(true);
+            setTimeout(() => setBackendPulse(false), 900);
+          }
         }
       } catch {
         // Fallback gracefully to client-side forward model
@@ -175,12 +213,27 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
     );
   }, [originGalaxy.sed, baselineZ, currentZ, baselineAv, currentAv, filters]);
 
-  const currentFluxes = activeForwardModel.fluxes;
-  const currentMags = activeForwardModel.mags;
+  // Atomically select backend results when live_backend is active, else browser calculation
+  const currentFluxes = (isEdited && backendResult?.fluxes_cgs) ? backendResult.fluxes_cgs : activeForwardModel.fluxes;
+  const currentMags = (isEdited && (backendResult?.photometry || backendResult?.mags))
+    ? (backendResult.photometry || backendResult.mags)
+    : activeForwardModel.mags;
+
+  const activeExecutionProvenance: ExecutionProvenance = {
+    execution_mode: activeExecutionMode,
+    executor: activeExecutor,
+    backend_url: isConnected ? 'http://127.0.0.1:8000' : null,
+    latency_ms: activeLatencyMs,
+    timestamp_utc: new Date().toISOString(),
+    is_dynamic_override: isEdited,
+    parameters_applied: isEdited ? { redshift: currentZ, dust_av: currentAv } : {},
+  };
 
   const handleResetSliders = () => {
     setSliderZ(null);
     setSliderAv(null);
+    setBackendResult(null);
+    setBackendPulse(false);
     if (onExternalZChange && originGalaxy) {
       onExternalZChange(originGalaxy.redshift);
     }
@@ -395,27 +448,56 @@ print("[OK] In-browser and Python numerical parity verified.")
           {/* Data Provenance Badge (Clickable to open ProvenanceModal) */}
           <button
             onClick={() => setIsProvenanceModalOpen(true)}
-            className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shadow-sm transition-all hover:brightness-125 cursor-pointer ${modeBadgeStyles[effectiveMode].badge}`}
+            className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shadow-sm transition-all hover:brightness-125 cursor-pointer ${modeBadgeStyles[sourceDataMode].badge}`}
             title="Click to view comprehensive data-mode provenance and audit trail"
           >
-            <span>{modeBadgeStyles[effectiveMode].label}</span>
+            <span>{modeBadgeStyles[sourceDataMode].label}</span>
           </button>
 
-          {/* SpecSynth Engine / Mock Mode Indicator */}
-          {isConnected ? (
+          {/* Truthful Execution Mode Badge */}
+          {activeExecutionMode === 'live_backend' ? (
             <span
-              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-600/70 shadow-sm"
-              title="SpecSynth Engine Connected (:8000) — In-Flight Python GEMM Active"
+              className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950/90 text-cyan-300 border border-cyan-500/80 shadow-sm transition-all ${
+                backendPulse ? 'ring-2 ring-cyan-400 scale-105' : ''
+              }`}
+              title="Active Execution: Computed live by SpecSynth Python GEMM (:8000)"
             >
-              <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
-              <span>SpecSynth Engine</span>
+              <Cpu className="w-3 h-3 text-cyan-400 animate-pulse" />
+              <span>Backend GEMM ({engineLatencyMs ?? 15}ms)</span>
+            </span>
+          ) : activeExecutionMode === 'client_browser' ? (
+            <span
+              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-600/70 shadow-sm"
+              title="Active Execution: In-Browser JavaScript Forward Model"
+            >
+              <Sliders className="w-3 h-3 text-amber-400" />
+              <span>Client-Side JS</span>
             </span>
           ) : (
             <span
-              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900/80 text-slate-400 border border-slate-700/60 shadow-sm"
-              title="In-Browser Mock Mode — Pre-computed snapshot"
+              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-600/70 shadow-sm"
+              title="Active Execution: Static Calibrated Reference Baseline"
             >
-              <span>In-Browser Mock</span>
+              <ShieldCheck className="w-3 h-3 text-indigo-400" />
+              <span>Cached Ref</span>
+            </span>
+          )}
+
+          {/* Decoupled Backend Connectivity Indicator */}
+          {isConnected ? (
+            <span
+              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/70 text-emerald-400 border border-emerald-700/60 shadow-sm"
+              title="SpecSynth Local HTTP Bridge (:8000) Online & Reachable"
+            >
+              <Activity className="w-3 h-3 text-emerald-400" />
+              <span className="hidden sm:inline">:8000 Online</span>
+            </span>
+          ) : (
+            <span
+              className="flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900/70 text-slate-400 border border-slate-700/60 shadow-sm"
+              title="SpecSynth Bridge Offline — Browser Standalone Mode"
+            >
+              <span>Offline</span>
             </span>
           )}
 
@@ -715,7 +797,7 @@ print("[OK] In-browser and Python numerical parity verified.")
           </div>
         )}
 
-        {/* Data Provenance Summary Line inside Drawer */}
+        {/* Data Provenance & Execution Summary Line inside Drawer */}
         <div
           onClick={() => setIsProvenanceModalOpen(true)}
           className="flex items-center justify-between px-2.5 py-1.5 bg-cosmos-950/70 hover:bg-cosmos-950 border border-cosmos-800 hover:border-cosmos-700 rounded-lg text-xs cursor-pointer transition-colors group shadow-sm"
@@ -723,11 +805,27 @@ print("[OK] In-browser and Python numerical parity verified.")
         >
           <div className="flex items-center space-x-2 truncate min-w-0">
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Provenance:</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${modeBadgeStyles[effectiveMode].drawerBadge}`}>
-              {effectiveMode}
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${modeBadgeStyles[sourceDataMode].drawerBadge}`}>
+              {sourceDataMode}
+            </span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                activeExecutionMode === 'live_backend'
+                  ? 'bg-cyan-950 text-cyan-300 border-cyan-600'
+                  : activeExecutionMode === 'client_browser'
+                  ? 'bg-amber-950 text-amber-300 border-amber-600'
+                  : 'bg-indigo-950 text-indigo-300 border-indigo-600'
+              }`}
+            >
+              {activeExecutionMode === 'live_backend'
+                ? 'live_backend (:8000)'
+                : activeExecutionMode === 'client_browser'
+                ? 'client_browser (JS)'
+                : 'precomputed_cached'}
             </span>
             <span className="text-[11px] text-slate-300 truncate font-mono">
-              {originGalaxy.subhalo_id === '424601' ? 'IllustrisTNG-100-1 (Subhalo 424601)' : (originGalaxy.provenance_type || 'TNG-100 Mock Suite')}
+              {originGalaxy.source_provenance?.simulation ||
+                (originGalaxy.subhalo_id ? `TNG-100 Subhalo ${originGalaxy.subhalo_id}` : (originGalaxy.provenance_type || 'Catalog Extract'))}
             </span>
           </div>
           <span className="text-[10px] text-cyan-400 group-hover:text-cyan-300 font-medium flex items-center space-x-0.5 flex-shrink-0">
@@ -847,6 +945,7 @@ print("[OK] In-browser and Python numerical parity verified.")
         onClose={() => setIsProvenanceModalOpen(false)}
         galaxy={originGalaxy}
         isConnected={isConnected}
+        activeExecution={activeExecutionProvenance}
       />
     </aside>
   );

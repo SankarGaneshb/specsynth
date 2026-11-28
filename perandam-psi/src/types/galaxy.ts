@@ -6,7 +6,31 @@ export type DataMode =
   | 'cached_reference'
   | 'live_computation'
   | 'analytical_mock'
-  | 'illustrative_demo';
+  | 'illustrative_demo'
+  | 'unknown_unverified';
+
+export type ExecutionMode = 'live_backend' | 'client_browser' | 'precomputed_cached';
+
+export interface SourceProvenance {
+  data_mode: DataMode;
+  simulation?: string | null;
+  snapshot?: number | string | null;
+  subhalo_id?: number | string | null;
+  dataset_name?: string | null;
+  checksum_sha256?: string | null;
+  catalog_file?: string | null;
+  verified_authentic?: boolean;
+}
+
+export interface ExecutionProvenance {
+  execution_mode: ExecutionMode;
+  executor: string;
+  backend_url?: string | null;
+  latency_ms?: number | null;
+  timestamp_utc: string;
+  is_dynamic_override?: boolean;
+  parameters_applied?: Record<string, any>;
+}
 
 export interface GalaxyProvenance {
   data_mode: DataMode;
@@ -161,6 +185,8 @@ export interface Galaxy {
   id: string;
   subhalo_id?: string;
   data_mode?: DataMode;
+  source_provenance?: SourceProvenance;
+  execution_provenance?: ExecutionProvenance;
   provenance?: GalaxyProvenance | Record<string, any>;
   ra: number;
   dec: number;

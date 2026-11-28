@@ -9,8 +9,12 @@ from __future__ import annotations
 
 from specsynth.contracts.data_mode import (
     DataMode,
+    ExecutionMode,
+    ExecutionProvenance,
+    SourceProvenance,
     classify_source_data_mode,
     propagate_mode,
+    validate_source_provenance_evidence,
 )
 from specsynth.contracts.evolution import (
     EvolutionaryTrackContract,
@@ -44,8 +48,12 @@ __version__ = "1.0.0"
 __all__ = [
     "__version__",
     "DataMode",
+    "ExecutionMode",
+    "SourceProvenance",
+    "ExecutionProvenance",
     "propagate_mode",
     "classify_source_data_mode",
+    "validate_source_provenance_evidence",
     "SSPGridContract",
     "SimulationGalaxyContract",
     "ParticleType",

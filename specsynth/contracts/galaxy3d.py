@@ -11,7 +11,11 @@ from enum import Enum
 from typing import Any, Optional
 import numpy as np
 
-from specsynth.contracts.data_mode import DataMode, propagate_mode
+from specsynth.contracts.data_mode import (
+    DataMode,
+    propagate_mode,
+    validate_source_provenance_evidence,
+)
 
 
 class ParticleType(str, Enum):
@@ -126,7 +130,7 @@ class Galaxy3DContract:
     center_of_mass_kpc: tuple[float, float, float]
     half_mass_radius_kpc: float
     components: dict[str, ParticleBatchContract]
-    data_mode: str = "simulation_derived"
+    data_mode: str = "unknown_unverified"
     version: str = "1.0.0"
     provenance: dict[str, Any] = field(default_factory=dict)
 
@@ -140,6 +144,8 @@ class Galaxy3DContract:
             raise ValueError(
                 f"Truth-in-labeling violation: Procedural illustrative galaxy cannot have empirical data_mode '{self.data_mode}'"
             )
+        if mode == DataMode.SIMULATION_DERIVED:
+            validate_source_provenance_evidence(mode, self.provenance)
 
         if not self.galaxy_id:
             raise ValueError("galaxy_id cannot be empty")
@@ -320,6 +326,15 @@ class Galaxy3DContract:
         """
         from specsynth.contracts.photometry import SyntheticObservationContract
         eff_mode = propagate_mode(self.data_mode, requested_data_mode).value
+        parent_prov = {
+            "source_galaxy_id": self.galaxy_id,
+            "source_geometry": self.geometry_source.value,
+            "source_data_mode": self.data_mode,
+            "inherited_data_mode": eff_mode,
+            "parent_provenance": self.provenance,
+        }
+        prov = self.provenance.copy() if self.provenance else {}
+        prov.update(parent_prov)
         return SyntheticObservationContract(
             galaxy_id=self.galaxy_id,
             redshift=self.redshift,
@@ -331,12 +346,7 @@ class Galaxy3DContract:
             sed_wave_angstrom=sed_wave_angstrom,
             sed_flux_obs_cgs=sed_flux_obs_cgs,
             data_mode=eff_mode,
-            provenance={
-                "source_galaxy_id": self.galaxy_id,
-                "source_geometry": self.geometry_source.value,
-                "source_data_mode": self.data_mode,
-                "inherited_data_mode": eff_mode,
-            },
+            provenance=prov,
         )
 
     @classmethod
@@ -424,7 +434,11 @@ class Galaxy3DContract:
             if geometry_source == GeometrySource.PROCEDURAL_ILLUSTRATIVE:
                 actual_data_mode = DataMode.ANALYTICAL_MOCK.value
             else:
-                actual_data_mode = DataMode.SIMULATION_DERIVED.value
+                try:
+                    validate_source_provenance_evidence(DataMode.SIMULATION_DERIVED, prov)
+                    actual_data_mode = DataMode.SIMULATION_DERIVED.value
+                except ValueError:
+                    actual_data_mode = DataMode.UNKNOWN_UNVERIFIED.value
         else:
             actual_data_mode = str(data_mode)
 

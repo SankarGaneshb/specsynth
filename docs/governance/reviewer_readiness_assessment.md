@@ -1,9 +1,9 @@
 # Independent 3rd-Party Reviewer Readiness Assessment & Claim-to-Evidence Matrix
-**Audit & Evidence Packet for GitHub Issue [#22](https://github.com/SankarGaneshb/specsynth/issues/22) & [#32](https://github.com/SankarGaneshb/specsynth/issues/32)**
+**Audit & Evidence Packet for GitHub Issues [#22](https://github.com/SankarGaneshb/specsynth/issues/22), [#32](https://github.com/SankarGaneshb/specsynth/issues/32), & [#33](https://github.com/SankarGaneshb/specsynth/issues/33)**
 
 > [!IMPORTANT]
 > **Audit Status: FULLY RECONCILED & AUDITED FOR INDEPENDENT REVIEW**
-> This document audits all deliverables from **Milestones 1 through 7 (P0 to P6)** against the strict 6-dimensional evidence standard established in Issue #22 and the Truth-in-Labeling / Provenance Reconciliation mandates of Issue #32.
+> This document audits all deliverables from **Milestones 1 through 7 (P0 to P6)** plus P1 Scientific Provenance Truth (Issues #32 & #33) against the strict 6-dimensional evidence standard established in Issue #22, the Truth-in-Labeling / Provenance Reconciliation mandates of Issue #32, and the End-to-End Truthful Execution Reporting standard of Issue #33.
 
 ---
 
@@ -121,6 +121,8 @@
 | **C7** | **Authentic SubLink Merger Trees**: Progenitor branches maintain tree connectivity and mass conservation ($\le 35\%$). | `sample_models/evolution/`, `specsynth/evolution.py` | `scripts/fetch_tng_merger_tree.py --verify`, `tests/test_evolution.py` | 10 snapshots ($z \in [0.0, 8.5]$); residual budget accounts for tidal stripping and gas accretion. | **VERIFIED** |
 | **C8** | **Dual-Runtime MCP Parity**: Python and Node.js MCP servers exhibit matching schemas, outputs, and provenance. | `specsynth/mcp/server.py`, `perandam-psi/mcp_server.mjs` | `tests/test_mcp_parity.py`, `tests/test_mcp_canonical.py` | JSON-RPC 2.0 stdio transport; 10 canonical tools with identical parameter signatures. | **VERIFIED** |
 | **C9** | **Truth-in-Labeling & Non-Promotion**: Mock/demo models cannot be promoted to simulation-derived. | `specsynth/contracts/data_mode.py`, `GalaxyInspector.tsx` | `tests/test_contracts.py::test_truth_in_labeling_*` | DataMode strictly enforced across contracts, MCP, and UI badges. | **VERIFIED** |
+| **C10** | **Orthogonal Source vs Execution Provenance**: Source data mode and execution mode are modeled as independent, fail-closed contracts. | `specsynth/contracts/data_mode.py`, `photometry.py`, `galaxy3d.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `benchmark_scientific_provenance_truth.json` | Default is `unknown_unverified`; strict cryptographic/simulation evidence required to claim `simulation_derived`. | **VERIFIED** |
+| **C11** | **Truthful Execution Reporting & Zero UI Hardcoding**: UI and MCP report actual runtime computation engine without conflating connection status with computation authenticity. | `GalaxyInspector.tsx`, `ProvenanceModal.tsx`, `specsynth/mcp/server.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `tests/test_mcp_parity.py` | Sliders report `client_browser`; backend contractions report `live_backend` with latency; baseline lookups report `precomputed_cached`. Zero hardcoded galaxy IDs or particle fallbacks. | **VERIFIED** |
 
 ---
 
@@ -137,8 +139,10 @@ To ensure complete transparency and zero ambiguity, the exact test execution met
   4. `test_reference_dataset.py::test_reference_parquet_content`: Skipped (same optional external benchmark parquet file).
   5. `test_reference_dataset.py::test_reference_zarr_metadata`: Skipped (same optional external benchmark zarr store).
 
-### 2. Local Full Development Environment (with SciPy and Benchmark Assets)
-* **Status**: **322 passed, 1 skipped (Fortran FSPS binary), 0 failed**.
+### 2. Local Full Development Environment (with SciPy, Dual MCP, and Scientific Truth Verification)
+* **Status**: **326 passed, 1 skipped (Fortran FSPS binary), 0 failed** in 38.92s.
+* **Issue #33 Verification**: `python scripts/verify_p1_scientific_provenance_truth.py` passed **7/7 criteria** (`benchmark_scientific_provenance_truth.json`).
+* **Frozen Baseline**: `python scripts/verify_frozen_baseline.py` status **CONFORMANT** (0 unauthorized modified core files).
 
 ---
 
