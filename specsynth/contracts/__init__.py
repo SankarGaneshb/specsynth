@@ -12,9 +12,12 @@ from specsynth.contracts.data_mode import (
     ExecutionMode,
     ExecutionProvenance,
     SourceProvenance,
+    VerificationStatus,
     classify_source_data_mode,
+    compute_file_sha256,
     propagate_mode,
     validate_source_provenance_evidence,
+    verify_simulation_cutout_manifest,
 )
 from specsynth.contracts.evolution import (
     EvolutionaryTrackContract,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Galaxy, FilterCurveData, DataMode, ExecutionMode, ExecutionProvenance } from '../types/galaxy';
 import { forwardModelGalaxy } from '../utils/physics';
 import { SedPlot } from './SedPlot';
@@ -61,10 +61,21 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const [isProposalOpen, setIsProposalOpen] = useState<boolean>(false);
   const [isProvenanceModalOpen, setIsProvenanceModalOpen] = useState<boolean>(false);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
-  const [engineLatencyMs, setEngineLatencyMs] = useState<number | null>(null);
   const [isRecalculating, setIsRecalculating] = useState<boolean>(false);
-  const [backendResult, setBackendResult] = useState<any>(null);
+  const [backendCalculation, setBackendCalculation] = useState<{
+    fingerprint: string;
+    galaxyId: string;
+    fluxes: Record<string, number>;
+    mags: Record<string, number>;
+    sed?: number[][];
+    executor: string;
+    latencyMs: number;
+  } | null>(null);
   const [backendPulse, setBackendPulse] = useState<boolean>(false);
+
+  // Active request tracking refs to prevent stale responses
+  const activeFingerprintRef = useRef<string>('');
+  const activeGalaxyIdRef = useRef<string>('');
 
   // Snapshot the unmutated base galaxy when selection changes
   useEffect(() => {
@@ -72,8 +83,7 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
       setBaseGalaxy({ ...galaxy });
       setSliderZ(null);
       setSliderAv(null);
-      setEngineLatencyMs(null);
-      setBackendResult(null);
+      setBackendCalculation(null);
       setBackendPulse(false);
     }
     if (activeTab === 'discovery' && !galaxy?.discovery_profile && galaxy?.sentry_status !== 'ANOMALY') {
@@ -94,14 +104,12 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const baselineZ = originGalaxy.redshift;
   const baselineAv = originGalaxy.av;
 
-  // Source Data Mode is derived strictly from origin data (never from isConnected!)
-  let sourceDataMode: DataMode = 'cached_reference';
+  // Source Data Mode is derived strictly from origin data (never from isConnected or 3D existence alone!)
+  let sourceDataMode: DataMode = 'unknown_unverified';
   if (originGalaxy.source_provenance?.data_mode) {
     sourceDataMode = originGalaxy.source_provenance.data_mode;
   } else if (originGalaxy.data_mode) {
     sourceDataMode = originGalaxy.data_mode;
-  } else if (originGalaxy.subhalo_id && originGalaxy.galaxy3d?.geometry_source === 'simulation_derived') {
-    sourceDataMode = 'simulation_derived';
   } else if (originGalaxy.is_synthetic_scenario || originGalaxy.galaxy3d?.geometry_source === 'procedural_illustrative') {
     sourceDataMode = 'analytical_mock';
   }
@@ -146,16 +154,29 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
   const isAvEdited = sliderAv !== null && Math.abs(sliderAv - baselineAv) > 0.01;
   const isEdited = isZEdited || isAvEdited;
 
+  // Compute deterministic active fingerprint
+  const currentFingerprint = `${originGalaxy.id}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}`;
+  activeFingerprintRef.current = currentFingerprint;
+  activeGalaxyIdRef.current = originGalaxy.id;
+
+  // A backend calculation is only valid if its fingerprint strictly matches the current controls and galaxy!
+  const hasValidBackendResult = Boolean(
+    isEdited &&
+    backendCalculation &&
+    backendCalculation.fingerprint === currentFingerprint &&
+    backendCalculation.galaxyId === originGalaxy.id
+  );
+
   // Truthful Execution Mode Derivation
   let activeExecutionMode: ExecutionMode = 'precomputed_cached';
   let activeExecutor = 'Precomputed Reference Store';
   let activeLatencyMs: number | null = null;
 
   if (isEdited) {
-    if (backendResult) {
+    if (hasValidBackendResult) {
       activeExecutionMode = 'live_backend';
-      activeExecutor = backendResult.execution_provenance?.executor || 'SpecSynth Python GEMM (:8000)';
-      activeLatencyMs = engineLatencyMs;
+      activeExecutor = backendCalculation!.executor;
+      activeLatencyMs = backendCalculation!.latencyMs;
     } else {
       activeExecutionMode = 'client_browser';
       activeExecutor = 'In-Browser JavaScript Engine (WebAssembly/JS)';
@@ -165,38 +186,56 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
 
   // Live Parameter Sweep via SpecSynth Engine (when connected)
   useEffect(() => {
-    if (!isConnected || !galaxy || (sliderZ === null && sliderAv === null)) {
-      setBackendResult(null);
+    if (!isConnected || !originGalaxy || (sliderZ === null && sliderAv === null)) {
+      setBackendCalculation(null);
       return;
     }
-    const zQuery = sliderZ !== null ? sliderZ : baselineZ;
-    const avQuery = sliderAv !== null ? sliderAv : baselineAv;
+    const reqFingerprint = `${originGalaxy.id}:z=${currentZ.toFixed(4)}:av=${currentAv.toFixed(4)}`;
+    const reqGalaxyId = originGalaxy.id;
+    const reqZ = currentZ;
+    const reqAv = currentAv;
 
+    const controller = new AbortController();
     const t0 = performance.now();
     setIsRecalculating(true);
+
     const timer = setTimeout(async () => {
       try {
-        const url = `http://127.0.0.1:8000/api/inspect?galaxy_id=${encodeURIComponent(galaxy.id)}&z=${zQuery}&av=${avQuery}`;
-        const res = await fetch(url);
+        const url = `http://127.0.0.1:8000/api/inspect?galaxy_id=${encodeURIComponent(reqGalaxyId)}&z=${reqZ}&av=${reqAv}`;
+        const res = await fetch(url, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           const elapsed = Math.round(performance.now() - t0);
-          setEngineLatencyMs(elapsed);
-          if (data && (data.photometry || data.mags)) {
-            setBackendResult(data);
+          // Discard if user moved sliders or switched galaxies while request was in-flight
+          if (
+            activeFingerprintRef.current === reqFingerprint &&
+            activeGalaxyIdRef.current === reqGalaxyId
+          ) {
+            setBackendCalculation({
+              fingerprint: reqFingerprint,
+              galaxyId: reqGalaxyId,
+              fluxes: data.fluxes_cgs || data.fluxes || {},
+              mags: data.photometry || data.mags || {},
+              sed: data.sed,
+              executor: data.execution_provenance?.executor || 'SpecSynth Python GEMM (:8000)',
+              latencyMs: elapsed,
+            });
             setBackendPulse(true);
             setTimeout(() => setBackendPulse(false), 900);
           }
         }
       } catch {
-        // Fallback gracefully to client-side forward model
+        // Fallback gracefully to client-side forward model without leaving a stale backend state
       } finally {
         setIsRecalculating(false);
       }
     }, 180);
 
-    return () => clearTimeout(timer);
-  }, [sliderZ, sliderAv, isConnected, galaxy?.id, baselineZ, baselineAv]);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [sliderZ, sliderAv, isConnected, originGalaxy.id, currentZ, currentAv]);
 
   // Scientific Extrapolation check (outside standard simulation calibration bounds)
   const isExtrapolatedRegime = currentZ > 8.0 || currentAv > 2.5;
@@ -213,10 +252,12 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
     );
   }, [originGalaxy.sed, baselineZ, currentZ, baselineAv, currentAv, filters]);
 
-  // Atomically select backend results when live_backend is active, else browser calculation
-  const currentFluxes = (isEdited && backendResult?.fluxes_cgs) ? backendResult.fluxes_cgs : activeForwardModel.fluxes;
-  const currentMags = (isEdited && (backendResult?.photometry || backendResult?.mags))
-    ? (backendResult.photometry || backendResult.mags)
+  // Atomically select backend results when live_backend is active and fingerprint matches, else browser calculation
+  const currentFluxes = (hasValidBackendResult && backendCalculation?.fluxes && Object.keys(backendCalculation.fluxes).length > 0)
+    ? backendCalculation.fluxes
+    : activeForwardModel.fluxes;
+  const currentMags = (hasValidBackendResult && backendCalculation?.mags && Object.keys(backendCalculation.mags).length > 0)
+    ? backendCalculation.mags
     : activeForwardModel.mags;
 
   const activeExecutionProvenance: ExecutionProvenance = {
@@ -226,13 +267,15 @@ export const GalaxyInspector: React.FC<GalaxyInspectorProps> = ({
     latency_ms: activeLatencyMs,
     timestamp_utc: new Date().toISOString(),
     is_dynamic_override: isEdited,
+    request_id: hasValidBackendResult ? `req_${originGalaxy.id}_${currentZ.toFixed(2)}` : null,
+    input_fingerprint: currentFingerprint,
     parameters_applied: isEdited ? { redshift: currentZ, dust_av: currentAv } : {},
   };
 
   const handleResetSliders = () => {
     setSliderZ(null);
     setSliderAv(null);
-    setBackendResult(null);
+    setBackendCalculation(null);
     setBackendPulse(false);
     if (onExternalZChange && originGalaxy) {
       onExternalZChange(originGalaxy.redshift);
@@ -463,7 +506,7 @@ print("[OK] In-browser and Python numerical parity verified.")
               title="Active Execution: Computed live by SpecSynth Python GEMM (:8000)"
             >
               <Cpu className="w-3 h-3 text-cyan-400 animate-pulse" />
-              <span>Backend GEMM ({engineLatencyMs ?? 15}ms)</span>
+              <span>Backend GEMM ({activeLatencyMs ?? 15}ms)</span>
             </span>
           ) : activeExecutionMode === 'client_browser' ? (
             <span
@@ -877,8 +920,8 @@ print("[OK] In-browser and Python numerical parity verified.")
                   <span>
                     {isRecalculating
                       ? 'SpecSynth Contraction...'
-                      : engineLatencyMs !== null
-                      ? `SpecSynth Engine: ${engineLatencyMs}ms`
+                      : activeLatencyMs !== null
+                      ? `SpecSynth Engine: ${activeLatencyMs}ms`
                       : 'SpecSynth Engine Ready'}
                   </span>
                 </span>

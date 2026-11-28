@@ -11,6 +11,8 @@ export type DataMode =
 
 export type ExecutionMode = 'live_backend' | 'client_browser' | 'precomputed_cached';
 
+export type VerificationStatus = 'unknown' | 'declared' | 'verified' | 'invalid';
+
 export interface SourceProvenance {
   data_mode: DataMode;
   simulation?: string | null;
@@ -18,7 +20,10 @@ export interface SourceProvenance {
   subhalo_id?: number | string | null;
   dataset_name?: string | null;
   checksum_sha256?: string | null;
+  content_sha256?: string | null;
+  expected_sha256?: string | null;
   catalog_file?: string | null;
+  verification_status?: VerificationStatus;
   verified_authentic?: boolean;
 }
 
@@ -29,6 +34,8 @@ export interface ExecutionProvenance {
   latency_ms?: number | null;
   timestamp_utc: string;
   is_dynamic_override?: boolean;
+  request_id?: string | null;
+  input_fingerprint?: string | null;
   parameters_applied?: Record<string, any>;
 }
 

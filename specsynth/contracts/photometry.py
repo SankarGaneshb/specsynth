@@ -10,7 +10,13 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 import numpy as np
 
-from specsynth.contracts.data_mode import DataMode, validate_source_provenance_evidence
+from specsynth.contracts.data_mode import (
+    DataMode,
+    ExecutionProvenance,
+    SourceProvenance,
+    VerificationStatus,
+    validate_source_provenance_evidence,
+)
 
 
 @dataclass
@@ -72,6 +78,8 @@ class SyntheticObservationContract:
     sed_flux_obs_cgs: np.ndarray
     sed_flux_rest_lsun_angstrom: Optional[np.ndarray] = None
     data_mode: str = "unknown_unverified"
+    source_provenance: Optional[SourceProvenance] = None
+    execution_provenance: Optional[ExecutionProvenance] = None
     version: str = "1.0.0"
     provenance: dict[str, Any] = field(default_factory=dict)
 
@@ -81,12 +89,35 @@ class SyntheticObservationContract:
         if self.sed_flux_rest_lsun_angstrom is not None:
             self.sed_flux_rest_lsun_angstrom = np.asarray(self.sed_flux_rest_lsun_angstrom, dtype=np.float32)
 
+        # Synchronize typed provenance
+        if self.source_provenance is not None:
+            if isinstance(self.source_provenance, dict):
+                self.source_provenance = SourceProvenance(**self.source_provenance)
+            self.data_mode = self.source_provenance.data_mode.value
+            self.provenance["source_provenance"] = self.source_provenance.to_dict()
+        elif "source_provenance" in self.provenance and isinstance(self.provenance["source_provenance"], dict):
+            try:
+                self.source_provenance = SourceProvenance(**self.provenance["source_provenance"])
+            except Exception:
+                pass
+
+        if self.execution_provenance is not None:
+            if isinstance(self.execution_provenance, dict):
+                self.execution_provenance = ExecutionProvenance(**self.execution_provenance)
+            self.provenance["execution_provenance"] = self.execution_provenance.to_dict()
+        elif "execution_provenance" in self.provenance and isinstance(self.provenance["execution_provenance"], dict):
+            try:
+                self.execution_provenance = ExecutionProvenance(**self.provenance["execution_provenance"])
+            except Exception:
+                pass
+
         self.validate()
 
     def validate(self) -> None:
         """Validate dimensions, non-negativity, numerical integrity, and provenance evidence."""
         mode = DataMode.from_str(self.data_mode)
-        validate_source_provenance_evidence(mode, self.provenance)
+        prov_dict = self.source_provenance.to_dict() if self.source_provenance else self.provenance
+        validate_source_provenance_evidence(mode, prov_dict)
         if not self.galaxy_id:
             raise ValueError("galaxy_id cannot be empty")
         if self.redshift < 0:
@@ -129,12 +160,13 @@ class SyntheticObservationContract:
             ],
             "n_sed_points": len(self.sed_wave_angstrom),
             "sed_wave_range_angstrom": [float(self.sed_wave_angstrom[0]), float(self.sed_wave_angstrom[-1])],
-            "source_provenance": self.provenance.get("source_provenance", {
+            "source_provenance": self.source_provenance.to_dict() if self.source_provenance else self.provenance.get("source_provenance", {
                 "data_mode": self.data_mode,
                 "source_name": self.provenance.get("source_name") or self.provenance.get("simulation") or "unspecified",
                 "source_id": self.provenance.get("source_id") or self.provenance.get("subhalo_id"),
+                "verification_status": self.provenance.get("verification_status", "unknown"),
             }),
-            "execution_provenance": self.provenance.get("execution_provenance", {
+            "execution_provenance": self.execution_provenance.to_dict() if self.execution_provenance else self.provenance.get("execution_provenance", {
                 "execution_mode": self.provenance.get("execution_mode", "precomputed_cached"),
                 "engine": self.provenance.get("engine", "SpecSynth"),
             }),

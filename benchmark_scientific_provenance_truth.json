@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-11-28T14:49:22.981677+00:00",
+  "timestamp_utc": "2026-11-28T15:48:27.362595+00:00",
   "milestone": "P1 / Issue #33",
   "overall_status": "ALL_PASSED",
   "passed_criteria": 7,
@@ -10,9 +10,10 @@
       "title": "Fail-closed Invariant on simulation_derived Source Provenance",
       "status": "PASS",
       "details": {
-        "obs_validation_error": "Truth-in-labeling violation: Claimed data_mode 'simulation_derived' requires an authentic simulation name in provenance, got 'None'",
-        "obs_valid_contract": "Successfully validated authentic simulation evidence",
-        "combined_mode": "analytical_mock"
+        "empty_provenance_rejected": "Truth-in-labeling violation: Claimed data_mode 'simulation_derived' requires an authentic simulation name in provenance, got 'None'",
+        "fabricated_tng_rejected": "Truth-in-labeling violation: Claimed data_mode 'simulation_derived' has unverified provenance status.",
+        "tampered_checksum_rejected": "Truth-in-labeling violation: Cryptographic checksum mismatch: content 'tampered_hash_0000' != expected '8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31'",
+        "disk_cutout_verification": "Cryptographic SHA-256 verified (8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31) matching IllustrisTNG-100-1 Snapshot 99 Subhalo 424601."
       }
     },
     {
@@ -28,15 +29,22 @@
           "redshift",
           "cosmology",
           "checksums",
+          "verification_status",
           "verification_state",
+          "content_sha256",
+          "expected_sha256",
+          "manifest_path",
           "parent_provenance",
-          "version"
+          "version",
+          "is_verified"
         ],
         "execution_keys": [
           "execution_mode",
           "engine",
           "engine_version",
           "endpoint",
+          "request_id",
+          "input_fingerprint",
           "parameters_applied",
           "latency_ms",
           "timestamp_utc",
@@ -49,18 +57,11 @@
       "title": "Authentic In-Flight Forward Modeling in Python MCP Backend",
       "status": "PASS",
       "details": {
-        "returned_redshift": 4.5,
-        "returned_av": 1.2,
-        "execution_mode": "live_backend",
-        "is_dynamic_override": true,
-        "photometry_bands": [
-          "jwst_f090w",
-          "jwst_f150w",
-          "jwst_f200w",
-          "jwst_f277w",
-          "jwst_f356w",
-          "jwst_f444w"
-        ]
+        "baseline_execution_mode": "live_backend",
+        "dust_execution_mode": "live_backend",
+        "f_base_jwst_f090w": 2.777853518452785e-20,
+        "f_dust_jwst_f090w": 1.4960496985655454e-22,
+        "dust_attenuates": true
       }
     },
     {
@@ -77,13 +78,12 @@
       "title": "Dual-Language Cross-Parity for Source and Execution Provenance",
       "status": "PASS",
       "details": {
+        "node_test_exit_code": 0,
+        "node_test_passed": true,
         "inspect_has_source": true,
         "inspect_has_exec": true,
-        "inspect_exec_mode": "precomputed_cached",
         "g3d_has_source": true,
-        "g3d_has_exec": true,
-        "evo_has_source": true,
-        "evo_has_exec": true
+        "g3d_has_exec": true
       }
     },
     {
@@ -91,11 +91,14 @@
       "title": "Perandam\u03a8 Scientific UI Truth-in-Labeling & Zero-Hardcoding",
       "status": "PASS",
       "details": {
-        "has_active_exec": true,
-        "has_backend_result": true,
-        "no_hardcoded_id": true,
-        "no_hardcoded_particles": true,
-        "has_two_tabs": true
+        "has_fingerprint": true,
+        "has_match_check": true,
+        "has_galaxy_match": true,
+        "has_abort_controller": true,
+        "no_fallback_tng": true,
+        "no_fallback_snap": true,
+        "no_hardcoded_cosmology": true,
+        "has_verification_status": true
       }
     },
     {

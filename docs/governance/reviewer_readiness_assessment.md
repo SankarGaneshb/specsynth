@@ -123,6 +123,19 @@
 | **C9** | **Truth-in-Labeling & Non-Promotion**: Mock/demo models cannot be promoted to simulation-derived. | `specsynth/contracts/data_mode.py`, `GalaxyInspector.tsx` | `tests/test_contracts.py::test_truth_in_labeling_*` | DataMode strictly enforced across contracts, MCP, and UI badges. | **VERIFIED** |
 | **C10** | **Orthogonal Source vs Execution Provenance**: Source data mode and execution mode are modeled as independent, fail-closed contracts. | `specsynth/contracts/data_mode.py`, `photometry.py`, `galaxy3d.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `benchmark_scientific_provenance_truth.json` | Default is `unknown_unverified`; strict cryptographic/simulation evidence required to claim `simulation_derived`. | **VERIFIED** |
 | **C11** | **Truthful Execution Reporting & Zero UI Hardcoding**: UI and MCP report actual runtime computation engine without conflating connection status with computation authenticity. | `GalaxyInspector.tsx`, `ProvenanceModal.tsx`, `specsynth/mcp/server.py` | `scripts/verify_p1_scientific_provenance_truth.py`, `tests/test_mcp_parity.py` | Sliders report `client_browser`; backend contractions report `live_backend` with latency; baseline lookups report `precomputed_cached`. Zero hardcoded galaxy IDs or particle fallbacks. | **VERIFIED** |
+| **C12** | **Evidence-Based Verification Status**: Explicit distinction between `declared`, `verified`, `invalid`, and `unknown` status with disk byte SHA-256 validation. | `specsynth/contracts/data_mode.py` (`verify_simulation_cutout_manifest`) | `tests/test_scientific_provenance_truth.py`, `perandam-psi/test/scientific_provenance_truth.test.ts` | Rejects unmanifested models, fabricated identities, and tampered checksums. Genuine cutout verified against authentic SHA-256 (`8f5853a5fb...`). | **VERIFIED** |
+| **C13** | **Atomic Request Fingerprinting & Race Elimination**: Unique input fingerprints (`galaxy_id:z:av`) guard against stale or out-of-order backend responses. | `GalaxyInspector.tsx` (`activeFingerprintRef`, `activeCalculationState`) | `perandam-psi/test/scientific_provenance_truth.test.ts`, `node test/e2e_loaf.mjs` | Immediate synchronous invalidation on slider move; superseded backend responses and responses from switched galaxies are strictly discarded. | **VERIFIED** |
+
+---
+
+## 🛡️ Operational Definitions: Declared vs. Verified Provenance
+
+To eliminate ambiguity across scientific tooling, Specsynth and PerandamΨ define strict operational criteria for provenance states:
+
+1. **`declared`**: Metadata asserted by an ingestion source, catalog record, or user query without independent cryptographic or on-disk manifest validation. A declared record preserves descriptive metadata (e.g. subhalo ID, catalog name) but cannot self-certify simulation authenticity.
+2. **`verified`**: Independently verified against physical assets on disk. Requires computing the cryptographic SHA-256 digest from actual file bytes, confirming equality with the trusted repository manifest (`8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31`), and matching snapshot and subhalo metadata.
+3. **`invalid`**: Explicit failure state triggered when a file is missing, metadata is contradicted, or the computed content digest diverges from the expected checksum.
+4. **`unknown`**: Default fail-closed state for unmanifested specimens or unverified inputs. Cannot be promoted to empirical simulation modes.
 
 ---
 
@@ -140,7 +153,10 @@ To ensure complete transparency and zero ambiguity, the exact test execution met
   5. `test_reference_dataset.py::test_reference_zarr_metadata`: Skipped (same optional external benchmark zarr store).
 
 ### 2. Local Full Development Environment (with SciPy, Dual MCP, and Scientific Truth Verification)
-* **Status**: **326 passed, 1 skipped (Fortran FSPS binary), 0 failed** in 38.92s.
+* **Status**: **333 passed, 1 skipped (Fortran FSPS binary), 0 failed** in 69.28s.
+* **Dedicated Scientific Truth Tests**: `tests/test_scientific_provenance_truth.py` passed **7/7 behavioral & negative tests**.
+* **PerandamΨ Node Tests**: `npm --prefix perandam-psi test` passed **34/34 tests** (including 4 dedicated provenance & race condition tests).
+* **Headless Chrome CDP E2E & LoAF Suite**: `node perandam-psi/test/e2e_loaf.mjs` passed with verified full-page screenshot capture.
 * **Issue #33 Verification**: `python scripts/verify_p1_scientific_provenance_truth.py` passed **7/7 criteria** (`benchmark_scientific_provenance_truth.json`).
 * **Frozen Baseline**: `python scripts/verify_frozen_baseline.py` status **CONFORMANT** (0 unauthorized modified core files).
 

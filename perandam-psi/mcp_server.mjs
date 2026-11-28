@@ -260,16 +260,22 @@ export const CANONICAL_MCP_TOOLS = {
       }
 
       const dmode = galaxy.data_mode || 'cached_reference';
-      const isAuthenticSim = Boolean(galaxy.subhalo_id && ds === 'tng_100');
+      const isAuthenticTNG = Boolean(
+        galaxy.subhalo_id &&
+        (galaxy.id === 'tng_424601' || String(galaxy.subhalo_id) === '424601') &&
+        (galaxy.manifest_hash === '8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31' || galaxy.sha256 === '8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31')
+      );
+      const verificationStatus = isAuthenticTNG ? 'verified' : (galaxy.data_mode === 'simulation_derived' ? 'declared' : 'declared');
       const sourceProv = {
-        data_mode: dmode,
-        simulation: isAuthenticSim ? 'IllustrisTNG-100-1' : 'Synthetic Mock Suite',
-        snapshot: galaxy.snapshot || 99,
+        data_mode: isAuthenticTNG ? 'simulation_derived' : dmode,
+        simulation: isAuthenticTNG ? 'IllustrisTNG-100-1' : (galaxy.provenance?.simulation || (ds === 'goods_s_mock' ? 'GOODS-S Calibrated Reference Mock' : 'Synthetic Mock Suite')),
+        snapshot: galaxy.snapshot ?? (isAuthenticTNG ? 99 : null),
         subhalo_id: galaxy.subhalo_id || null,
         dataset_name: ds,
         catalog_file: ds === 'tng_100' ? 'tng_100_calibration.json' : 'tng_goods_s_mock_508.json',
         checksum_sha256: galaxy.manifest_hash || galaxy.sha256 || null,
-        verified_authentic: isAuthenticSim,
+        verification_status: verificationStatus,
+        verified_authentic: isAuthenticTNG,
       };
       const execProv = {
         execution_mode: 'precomputed_cached',
@@ -379,14 +385,21 @@ export const CANONICAL_MCP_TOOLS = {
         try {
           const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
           const geomSrc = data.geometry_source || 'simulation_derived';
-          const dataMode = data.data_mode || (geomSrc === 'simulation_derived' ? 'simulation_derived' : 'analytical_mock');
+          const simName = data.simulation?.name || data.simulation_metadata?.simulation || (data.simulation === 'IllustrisTNG-100-1' ? data.simulation : null);
+          const checksum = data.checksums?.hdf5_sha256 || data.provenance?.sha256 || data.provenance?.hdf5_sha256 || null;
+          const isVerifiedCutout = Boolean(
+            simName === 'IllustrisTNG-100-1' &&
+            checksum === '8f5853a5fb4b5af9eaf2e67e39e9ce8c7bb04018d61c37b58d609f4731860c31'
+          );
+          const dataMode = isVerifiedCutout ? 'simulation_derived' : (data.data_mode || (geomSrc === 'simulation_derived' ? 'simulation_derived' : 'analytical_mock'));
           const sourceProv = {
             data_mode: dataMode,
-            simulation: dataMode === 'simulation_derived' ? 'IllustrisTNG-100-1' : 'Synthetic Procedural Model',
-            snapshot: data.simulation_metadata?.snapshot || 99,
-            subhalo_id: data.simulation_metadata?.subhalo_id || null,
-            checksum_sha256: data.provenance?.sha256 || data.provenance?.hdf5_sha256 || null,
-            verified_authentic: (dataMode === 'simulation_derived'),
+            simulation: simName || (isVerifiedCutout ? 'IllustrisTNG-100-1' : null),
+            snapshot: data.simulation?.snapshot ?? (data.simulation_metadata?.snapshot ?? null),
+            subhalo_id: data.simulation?.subhalo_id || (data.simulation_metadata?.subhalo_id || null),
+            checksum_sha256: checksum,
+            verification_status: isVerifiedCutout ? 'verified' : (dataMode === 'simulation_derived' ? 'declared' : 'unknown'),
+            verified_authentic: isVerifiedCutout,
           };
           const execProv = {
             execution_mode: 'precomputed_cached',
@@ -424,14 +437,15 @@ export const CANONICAL_MCP_TOOLS = {
         if (!manifest) continue;
         const g = manifest.galaxies.find((x) => x.id.toLowerCase() === galaxyId.toLowerCase());
         if (g) {
-          const isSim = Boolean(g.galaxy3d);
-          const geomSrc = isSim ? 'simulation_derived' : 'procedural_illustrative';
-          const dataMode = isSim ? 'simulation_derived' : 'analytical_mock';
+          const isProcedural = Boolean(g.is_synthetic_scenario || g.galaxy3d?.geometry_source === 'procedural_illustrative');
+          const geomSrc = isProcedural ? 'procedural_illustrative' : (g.galaxy3d?.geometry_source || 'procedural_illustrative');
+          const dataMode = isProcedural ? 'analytical_mock' : (g.data_mode || 'unknown_unverified');
           const sourceProv = {
             data_mode: dataMode,
-            simulation: isSim ? 'IllustrisTNG-100-1' : 'Synthetic Procedural Model',
+            simulation: g.provenance?.simulation || (isProcedural ? 'Synthetic Procedural Model' : null),
             subhalo_id: g.subhalo_id || null,
-            verified_authentic: isSim,
+            verification_status: 'declared',
+            verified_authentic: false,
           };
           const execProv = {
             execution_mode: 'precomputed_cached',

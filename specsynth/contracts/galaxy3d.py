@@ -13,6 +13,9 @@ import numpy as np
 
 from specsynth.contracts.data_mode import (
     DataMode,
+    ExecutionProvenance,
+    SourceProvenance,
+    VerificationStatus,
     propagate_mode,
     validate_source_provenance_evidence,
 )
@@ -131,10 +134,28 @@ class Galaxy3DContract:
     half_mass_radius_kpc: float
     components: dict[str, ParticleBatchContract]
     data_mode: str = "unknown_unverified"
+    source_provenance: Optional[SourceProvenance] = None
+    execution_provenance: Optional[ExecutionProvenance] = None
     version: str = "1.0.0"
     provenance: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if self.source_provenance is not None:
+            if isinstance(self.source_provenance, dict):
+                self.source_provenance = SourceProvenance(**self.source_provenance)
+            self.data_mode = self.source_provenance.data_mode.value
+            self.provenance["source_provenance"] = self.source_provenance.to_dict()
+        elif "source_provenance" in self.provenance and isinstance(self.provenance["source_provenance"], dict):
+            try:
+                self.source_provenance = SourceProvenance(**self.provenance["source_provenance"])
+            except Exception:
+                pass
+
+        if self.execution_provenance is not None:
+            if isinstance(self.execution_provenance, dict):
+                self.execution_provenance = ExecutionProvenance(**self.execution_provenance)
+            self.provenance["execution_provenance"] = self.execution_provenance.to_dict()
+
         self.validate()
 
     def validate(self) -> None:
@@ -145,7 +166,8 @@ class Galaxy3DContract:
                 f"Truth-in-labeling violation: Procedural illustrative galaxy cannot have empirical data_mode '{self.data_mode}'"
             )
         if mode == DataMode.SIMULATION_DERIVED:
-            validate_source_provenance_evidence(mode, self.provenance)
+            prov_dict = self.source_provenance.to_dict() if self.source_provenance else self.provenance
+            validate_source_provenance_evidence(mode, prov_dict)
 
         if not self.galaxy_id:
             raise ValueError("galaxy_id cannot be empty")
@@ -181,6 +203,8 @@ class Galaxy3DContract:
             "half_mass_radius_kpc": self.half_mass_radius_kpc,
             "total_stellar_mass_msun": self.total_stellar_mass_msun(),
             "particle_counts": counts,
+            "source_provenance": self.source_provenance.to_dict() if self.source_provenance else self.provenance.get("source_provenance"),
+            "execution_provenance": self.execution_provenance.to_dict() if self.execution_provenance else self.provenance.get("execution_provenance"),
             "provenance": self.provenance,
         }
 

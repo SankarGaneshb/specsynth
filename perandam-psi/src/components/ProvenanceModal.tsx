@@ -23,14 +23,19 @@ export const ProvenanceModal: React.FC<ProvenanceModalProps> = ({
   if (!isOpen || !galaxy) return null;
 
   // 1. Extract Source Provenance (strictly empirical, independent of connection status)
+  const gProv = galaxy.provenance as any;
+  const gSrc = galaxy.source_provenance as any;
   const sourceProv: SourceProvenance = galaxy.source_provenance || {
-    data_mode: galaxy.data_mode || 'cached_reference',
-    simulation: galaxy.subhalo_id ? 'IllustrisTNG-100-1' : (galaxy.provenance_type || 'Catalog Extract'),
-    snapshot: (galaxy.provenance as any)?.snapshot ?? (galaxy.galaxy3d?.provenance?.snapshot ?? 99),
+    data_mode: galaxy.data_mode || 'unknown_unverified',
+    simulation: galaxy.provenance?.simulation || gProv?.source_name || null,
+    snapshot: gProv?.snapshot ?? (galaxy.galaxy3d?.provenance?.snapshot ?? null),
     subhalo_id: galaxy.subhalo_id || null,
-    dataset_name: galaxy.provenance_type || 'IllustrisTNG Mock Suite',
-    checksum_sha256: (galaxy.provenance as any)?.manifest_hash || (galaxy.galaxy3d?.provenance as any)?.sha256 || null,
-    verified_authentic: Boolean(galaxy.subhalo_id && galaxy.galaxy3d?.geometry_source === 'simulation_derived'),
+    dataset_name: galaxy.provenance_type || gProv?.dataset_name || null,
+    checksum_sha256: gProv?.manifest_hash || (galaxy.galaxy3d?.provenance as any)?.sha256 || gSrc?.checksum_sha256 || null,
+    content_sha256: gSrc?.content_sha256 || null,
+    expected_sha256: gSrc?.expected_sha256 || null,
+    verification_status: gSrc?.verification_status || gProv?.verification_status || 'unknown',
+    verified_authentic: Boolean(gSrc?.verified_authentic || gProv?.verification_status === 'verified'),
   };
 
   const effectiveSourceMode: DataMode = sourceProv.data_mode || 'cached_reference';
@@ -177,13 +182,13 @@ export const ProvenanceModal: React.FC<ProvenanceModalProps> = ({
       is_dynamic_override: execProv.is_dynamic_override ?? false,
       parameters_applied: execProv.parameters_applied || {},
     },
-    cosmology: {
+    cosmology: galaxy.provenance?.cosmology ? {
       model: 'FlatLambdaCDM',
-      H0: 67.74,
-      Om0: 0.3089,
-      Ol0: 0.6911,
-      source: 'Planck 2015 / TNG Baseline',
-    },
+      H0: (galaxy.provenance.cosmology as any)?.h0 ?? (galaxy.provenance.cosmology as any)?.H0,
+      Om0: (galaxy.provenance.cosmology as any)?.om0 ?? (galaxy.provenance.cosmology as any)?.Om0,
+      Ol0: (galaxy.provenance.cosmology as any)?.ol0 ?? (galaxy.provenance.cosmology as any)?.Ol0,
+      source: (galaxy.provenance as any)?.cosmology_source || 'Declared in Catalog Metadata',
+    } : 'Not Declared in Record',
     particle_accounting: {
       star_particles: starCount ?? 'Not Available in 2D Cutout',
       gas_particles: gasCount ?? 'Not Available in 2D Cutout',
@@ -295,9 +300,13 @@ export const ProvenanceModal: React.FC<ProvenanceModalProps> = ({
                     </div>
                   </div>
                   <div className="p-2 rounded bg-cosmos-900 border border-cosmos-800/80">
-                    <div className="text-slate-400 text-[10px]">Authenticity Verified</div>
-                    <div className={`font-mono font-semibold ${sourceProv.verified_authentic ? 'text-emerald-400' : 'text-amber-400'}`}>
-                      {sourceProv.verified_authentic ? 'Verified Simulation' : 'Mock / Unverified'}
+                    <div className="text-slate-400 text-[10px]">Verification Status</div>
+                    <div className={`font-mono font-semibold text-[10px] ${
+                      sourceProv.verification_status === 'verified' ? 'text-emerald-400' :
+                      sourceProv.verification_status === 'declared' ? 'text-amber-400' :
+                      sourceProv.verification_status === 'invalid' ? 'text-rose-400' : 'text-slate-400'
+                    }`}>
+                      {sourceProv.verification_status ? sourceProv.verification_status.toUpperCase() : 'UNKNOWN'}
                     </div>
                   </div>
                 </div>
